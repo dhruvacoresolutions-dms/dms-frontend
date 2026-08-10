@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation"
 
 export default async function Page() {
-  // const isLoggedIn = (await cookies()).has("session")
+  const isLoggedIn = false // Replace with your authentication logic
 
-  // if (isLoggedIn) {
-  redirect("/dashboard")
-  // }
+  if (isLoggedIn) {
+    redirect("/dashboard")
+  }
 
-  // redirect("/login")
+  redirect("/auth/login")
 }
