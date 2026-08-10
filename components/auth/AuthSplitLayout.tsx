@@ -13,7 +13,7 @@ export function AuthSplitLayout({ children }: { children: React.ReactNode }) {
           src="/images/login-banner.webp"
           alt="Image"
           fill
-          sizes="100vw"
+          sizes="50vw"
           priority
           className="h-auto w-full object-contain"
         />
