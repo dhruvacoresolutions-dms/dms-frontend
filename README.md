@@ -13,7 +13,7 @@ A Next.js frontend app for distributor management system
 
 ## Prerequisites
 
-- Node.js **22 LTS or newer**
+- Node.js **22 LTS** (see `.nvmrc` / `engines` in `package.json`)
 - npm **10+**
 
 ## Setup
@@ -85,7 +85,7 @@ The app is a standard Next.js project, so it can be deployed to [Vercel](https:/
 2. In Vercel, **Add New → Project** and import the repository.
 3. Vercel auto-detects Next.js and defaults to `npm run build` (no build/install overrides needed).
 4. If the app uses environment variables later, add them under **Settings → Environment Variables** (there are no build-time env vars today).
-5. Deploy. Production builds run with Node 22 LTS (see `.nvmrc` / `engines` in `package.json`); local development requires Node 22+.
+5. Deploy. Production builds run with Node 22 LTS (see `.nvmrc` / `engines` in `package.json`); local development should use Node 22 too.
 
 Local CLI alternative:
 
