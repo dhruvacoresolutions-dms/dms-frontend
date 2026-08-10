@@ -13,7 +13,8 @@ A Next.js frontend app for distributor management system
 
 ## Prerequisites
 
-- Node.js **20.9 or newer** (LTS recommended — the CI workflow runs on Node 20)
+- Node.js **22 LTS or newer**
+- npm **10+**
 
 ## Setup
 
@@ -25,7 +26,23 @@ npm install
 # cp .env.example .env.local
 ```
 
-There is no `.env.example` yet — environment variables are added once you connect an auth/API backend.
+See [Environment variables](#environment-variables) below for the expected keys.
+
+## Environment variables
+
+The template is in `.env.example`. Copy it to `.env.local` and fill in real values:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable             | Required | Description                                        |
+| -------------------- | -------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | When the app talks to a backend | Base URL of the backend/API the frontend calls |
+| `AUTH_SECRET`         | When auth is enabled          | Secret used to sign auth session cookies/tokens  |
+| `AUTH_URL`            | When auth is enabled          | Public URL of the deployed app (auth callbacks)  |
+
+> Env vars are only read once backend/auth is wired up — the app builds and runs today without any of them.
 
 ## Running the app
 
@@ -58,6 +75,24 @@ configs/            # App configuration
 hooks/              # Shared hooks
 lib/                # Utilities
 types/              # Shared TypeScript types
+```
+
+## Deploying to Vercel
+
+The app is a standard Next.js project, so it can be deployed to [Vercel](https://vercel.com) with zero configuration:
+
+1. Push this repo to GitHub.
+2. In Vercel, **Add New → Project** and import the repository.
+3. Vercel auto-detects Next.js and defaults to `npm run build` (no build/install overrides needed).
+4. If the app uses environment variables later, add them under **Settings → Environment Variables** (there are no build-time env vars today).
+5. Deploy. Production builds run with Node 22 LTS (see `.nvmrc` / `engines` in `package.json`); local development requires Node 22+.
+
+Local CLI alternative:
+
+```bash
+npm i -g vercel
+vercel
+vercel --prod
 ```
 
 ## CI/CD
