@@ -9,7 +9,7 @@ export function AuthSplitLayout({ children }: { children: React.ReactNode }) {
           alt="Image"
           fill
           priority
-          className="h-auto w-full object-contain dark:brightness-[0.2] dark:grayscale"
+          className="h-auto w-full object-contain dark:brightness-[0.2]"
         />
       </div>
       <div className="flex h-full items-center justify-center p-6 md:p-10">
