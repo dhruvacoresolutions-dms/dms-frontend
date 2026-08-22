@@ -1,16 +1,13 @@
-import { apiClient, type ApiSuccessResponse } from "@/lib/api-client"
+import { apiClient } from "@/lib/api-client"
+import type { ApiSuccessResponse } from "@/lib/api-client"
 import type {
+  AuthSession,
+  ChangePasswordResponse,
+  LoginValues,
   ChangePasswordValues,
   ForgotPasswordValues,
-  LoginValues,
   ResetPasswordValues,
-} from "@/lib/validations/auth"
-import type { AuthSession } from "@/stores/auth-store"
-
-type ChangePasswordResponse = {
-  passwordChanged: boolean
-  loginAgainRequired: boolean
-}
+} from "./auth.types"
 
 export async function loginUser(values: LoginValues): Promise<AuthSession> {
   const { data } = await apiClient.post<ApiSuccessResponse<AuthSession>>(

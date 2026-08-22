@@ -7,6 +7,7 @@ import { PanelLeftIcon } from "lucide-react"
 import { HeaderUserMenu } from "./user-menu"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { AccentSwitcher } from "@/components/accent-switcher"
+import { ServerStatus } from "@/components/server-status"
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar()
@@ -27,6 +28,7 @@ export function SiteHeader() {
           className="mr-2 data-vertical:h-4 data-vertical:self-auto"
         />
         <div className="ml-auto flex items-center gap-2">
+          <ServerStatus />
           <AccentSwitcher />
           <ThemeSwitcher />
           <HeaderUserMenu />

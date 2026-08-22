@@ -6,20 +6,20 @@ import { usePathname, useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore((state) => state.user)
+  const session = useAuthStore((state) => state.session)
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    if (user) {
+    if (session) {
       return
     }
 
     const redirect = encodeURIComponent(pathname)
     router.replace(`/auth/login?redirect=${redirect}`)
-  }, [user, pathname, router])
+  }, [session, pathname, router])
 
-  if (!user) {
+  if (!session) {
     return null
   }
 
