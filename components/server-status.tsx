@@ -1,7 +1,11 @@
 "use client"
 
 import { useHealth } from "@/hooks/use-health"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 export function ServerStatus() {
@@ -23,7 +27,6 @@ export function ServerStatus() {
             isFetching && "animate-pulse"
           )}
         />
-        {isUp ? "API Up" : "API Down"}
       </TooltipTrigger>
       <TooltipContent>
         {isUp

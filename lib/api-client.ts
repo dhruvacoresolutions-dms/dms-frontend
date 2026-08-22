@@ -4,15 +4,15 @@ import { handleUnauthorized } from "@/lib/unauthorized-handler"
 import { useAuthStore } from "@/stores/auth-store"
 
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "/api",
   headers: { "Content-Type": "application/json" },
   timeout: 15_000,
 })
 
 const PUBLIC_PATHS = [
-  "/auth/login",
-  "/auth/forgot-password",
-  "/auth/reset-password",
+  "/v1/auth/login",
+  "/v1/auth/forgot-password",
+  "/v1/auth/reset-password",
 ]
 
 function isPublicPath(url: string | undefined) {
@@ -24,14 +24,15 @@ function isPublicPath(url: string | undefined) {
 }
 
 apiClient.interceptors.request.use((config) => {
-  if (isPublicPath(config.url)) {
-    return config
+  const accessToken = useAuthStore.getState().session?.accessToken
+  const companyUuid = useAuthStore.getState().session?.user?.companyUuid
+
+  if (accessToken && !isPublicPath(config.url)) {
+    config.headers.Authorization = `Bearer ${accessToken}`
   }
 
-  const accessToken = useAuthStore.getState().session?.accessToken
-
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`
+  if (companyUuid && !config.headers["X-Company-Context"]) {
+    config.headers["X-Company-Context"] = companyUuid
   }
 
   return config

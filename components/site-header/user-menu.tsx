@@ -1,6 +1,7 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from "next/link"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOutIcon, UserIcon } from "lucide-react"
+import { LogOutIcon, UserIcon, KeyIcon } from "lucide-react"
 
 import { useAuthStore } from "@/stores/auth-store"
 import { useLogout } from "@/features/auth/hooks/use-logout"
@@ -57,9 +58,13 @@ export function HeaderUserMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => {}}>
+          <DropdownMenuItem render={<Link href="/profile" />}>
             <UserIcon />
-            Profile
+            My Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/profile/change-password" />}>
+            <KeyIcon />
+            Change Password
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

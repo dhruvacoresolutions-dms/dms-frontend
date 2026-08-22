@@ -3,7 +3,12 @@ import type { NextRequest } from "next/server"
 
 const SESSION_COOKIE = "session"
 
-const protectedRoutes = ["/dashboard"]
+const protectedRoutes = [
+  "/dashboard",
+  "/companies",
+  "/permissions",
+  "/profile",
+]
 const authRoutes = [
   "/auth/login",
   "/auth/forgot-password",

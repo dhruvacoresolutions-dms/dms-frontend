@@ -35,7 +35,7 @@ function resolveBackend(path: string[]): { baseUrl: string; remainingPath: strin
 
   return {
     baseUrl: DEFAULT_BACKEND,
-    remainingPath: path,
+    remainingPath: ["api", ...path],
   }
 }
 
