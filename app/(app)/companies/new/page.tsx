@@ -91,8 +91,6 @@ export default function NewCompanyPage() {
     handleSubmit,
     setValue,
     control,
-    watch,
-    setError,
     formState: { errors },
   } = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),

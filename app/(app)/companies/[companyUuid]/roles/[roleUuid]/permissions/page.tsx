@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { useRole } from "@/features/roles/hooks/use-role"
 import { useUpdateRolePermissions } from "@/features/roles/hooks/use-update-role-permissions"
 import { usePermissionMatrix } from "@/features/permissions/hooks/use-permission-matrix"
@@ -19,7 +18,6 @@ import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function RolePermissionsPage() {
   const params = useParams<{ companyUuid: string; roleUuid: string }>()
-  const router = useRouter()
   const companyUuid = params.companyUuid
   const roleUuid = params.roleUuid
 
@@ -30,12 +28,12 @@ export default function RolePermissionsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
   const [hasChanges, setHasChanges] = useState(false)
+  const [didInit, setDidInit] = useState(false)
 
-  useEffect(() => {
-    if (role?.permissions) {
-      setSelected(new Set(role.permissions))
-    }
-  }, [role])
+  if (role?.permissions && !didInit) {
+    setDidInit(true)
+    setSelected(new Set(role.permissions))
+  }
 
   const togglePermission = (code: string) => {
     setSelected((prev) => {

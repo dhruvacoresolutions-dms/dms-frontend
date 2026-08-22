@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useParams } from "next/navigation"
-import { Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -41,12 +40,12 @@ export default function FeaturesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [hasChanges, setHasChanges] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [didInit, setDidInit] = useState(false)
 
-  useEffect(() => {
-    if (company?.enabledFeatures) {
-      setSelected(new Set(company.enabledFeatures))
-    }
-  }, [company])
+  if (company?.enabledFeatures && !didInit) {
+    setDidInit(true)
+    setSelected(new Set(company.enabledFeatures))
+  }
 
   const toggle = (feature: string) => {
     setSelected((prev) => {

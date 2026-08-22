@@ -1,7 +1,6 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
-import { Building2 } from "lucide-react"
+import { useParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/common/PageHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"

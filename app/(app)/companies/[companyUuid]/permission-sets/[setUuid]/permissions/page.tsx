@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,6 @@ import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function PermissionSetPermissionsPage() {
   const params = useParams<{ companyUuid: string; setUuid: string }>()
-  const router = useRouter()
   const companyUuid = params.companyUuid
   const setUuid = params.setUuid
 
@@ -29,10 +28,12 @@ export default function PermissionSetPermissionsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
   const [hasChanges, setHasChanges] = useState(false)
+  const [didInit, setDidInit] = useState(false)
 
-  useEffect(() => {
-    if (ps?.permissions) setSelected(new Set(ps.permissions))
-  }, [ps])
+  if (ps?.permissions && !didInit) {
+    setDidInit(true)
+    setSelected(new Set(ps.permissions))
+  }
 
   const toggle = (code: string) => {
     setSelected((prev) => {

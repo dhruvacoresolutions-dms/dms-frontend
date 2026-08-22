@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, MoreHorizontal, Edit, ToggleLeft, ToggleRight, MapPin } from "lucide-react"
+import { Plus, Search, MoreHorizontal, ToggleLeft, ToggleRight, MapPin } from "lucide-react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

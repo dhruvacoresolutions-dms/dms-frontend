@@ -4,13 +4,10 @@ import { useAuthStore } from "@/stores/auth-store"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/common/PageHeader"
-import { useCurrentUser } from "@/features/auth/hooks/use-current-user"
 import { useCurrentAccess } from "@/features/auth/hooks/use-current-access"
-import { LoadingState } from "@/components/common/LoadingState"
 
 export default function ProfilePage() {
   const user = useAuthStore((state) => state.session?.user)
-  const { data: currentUser } = useCurrentUser()
   const { data: access } = useCurrentAccess()
 
   const displayName = user?.displayName ?? "User"

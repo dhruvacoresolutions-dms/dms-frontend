@@ -50,7 +50,6 @@ export default function NewUserPage() {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),

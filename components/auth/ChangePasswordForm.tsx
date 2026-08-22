@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
@@ -24,7 +23,6 @@ import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 const PASSWORD_FIELDS = ["currentPassword", "newPassword", "confirmPassword"] as const
 
 export function ChangePasswordForm() {
-  const router = useRouter()
   const { logout } = useLogout()
   const changePasswordMutation = useChangePassword()
 
