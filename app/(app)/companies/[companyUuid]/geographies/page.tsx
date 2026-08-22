@@ -44,7 +44,7 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { useGeographies } from "@/features/geographies/hooks/use-geographies"
 import { useCreateGeography } from "@/features/geographies/hooks/use-create-geography"
 import { useUpdateGeographyStatus } from "@/features/geographies/hooks/use-update-geography-status"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -77,10 +77,12 @@ export default function GeographiesPage() {
   const createMutation = useCreateGeography(companyUuid)
   const updateStatusMutation = useUpdateGeographyStatus(companyUuid)
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<GeoFormValues>({
+  const { register, handleSubmit, setValue, control, reset, formState: { errors } } = useForm<GeoFormValues>({
     resolver: zodResolver(geoSchema),
     defaultValues: { code: "", name: "", type: undefined, description: "" },
   })
+
+  const typeValue = useWatch({ control, name: "type" })
 
   const geographies = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
@@ -121,7 +123,7 @@ export default function GeographiesPage() {
                   </Field>
                   <Field>
                     <FieldLabel>Type</FieldLabel>
-                    <Select value={watch("type")} onValueChange={(v) => setValue("type", v as GeographyType)}>
+                    <Select value={typeValue} onValueChange={(v) => v && setValue("type", v as GeographyType)}>
                       <SelectTrigger aria-invalid={!!errors.type}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>

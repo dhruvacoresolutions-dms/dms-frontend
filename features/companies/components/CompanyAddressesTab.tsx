@@ -25,7 +25,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -63,7 +63,7 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<AddressFormValues>({
@@ -79,6 +79,9 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
       primary: false,
     },
   })
+
+  const addressTypeValue = useWatch({ control, name: "addressType" })
+  const primaryValue = useWatch({ control, name: "primary" })
 
   if (isLoading) return <LoadingState />
   if (error) return <ErrorState onRetry={refetch} />
@@ -117,7 +120,7 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
                 <Field>
                   <FieldLabel>Address Type</FieldLabel>
                   <Select
-                    value={watch("addressType")}
+                    value={addressTypeValue}
                     onValueChange={(v) => {
                       if (v) setValue("addressType", v, { shouldValidate: true })
                     }}
@@ -191,7 +194,7 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="isPrimary"
-                      checked={watch("primary")}
+                      checked={primaryValue}
                       onCheckedChange={(checked) =>
                         setValue("primary", !!checked)
                       }

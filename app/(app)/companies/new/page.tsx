@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -90,6 +90,7 @@ export default function NewCompanyPage() {
     register,
     handleSubmit,
     setValue,
+    control,
     watch,
     setError,
     formState: { errors },
@@ -116,7 +117,10 @@ export default function NewCompanyPage() {
     },
   })
 
-  const enabledFeatures = watch("enabledFeatures")
+  const enabledFeatures = useWatch({ control, name: "enabledFeatures" })
+  const businessDomainValue = useWatch({ control, name: "businessDomain" })
+  const erpSystemValue = useWatch({ control, name: "erpSystem" })
+  const addressTypeValue = useWatch({ control, name: "addressType" })
 
   const toggleFeature = (feature: string) => {
     const current = enabledFeatures ?? []
@@ -202,7 +206,7 @@ export default function NewCompanyPage() {
               <Field>
                 <FieldLabel>Business Domain</FieldLabel>
                 <Select
-                  value={watch("businessDomain")}
+                  value={businessDomainValue}
                   onValueChange={(v) => {
                     if (v) setValue("businessDomain", v as CompanyFormValues["businessDomain"], { shouldValidate: true })
                   }}
@@ -220,7 +224,7 @@ export default function NewCompanyPage() {
               <Field>
                 <FieldLabel>ERP System</FieldLabel>
                 <Select
-                  value={watch("erpSystem")}
+                  value={erpSystemValue}
                   onValueChange={(v) => {
                     if (v) setValue("erpSystem", v as CompanyFormValues["erpSystem"], { shouldValidate: true })
                   }}
@@ -276,7 +280,7 @@ export default function NewCompanyPage() {
               <Field>
                 <FieldLabel>Address Type</FieldLabel>
                 <Select
-                  value={watch("addressType")}
+                  value={addressTypeValue}
                   onValueChange={(v) => {
                     if (v) setValue("addressType", v, { shouldValidate: true })
                   }}

@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { useEffectiveAccess } from "@/features/users/hooks/use-effective-access"
@@ -23,11 +22,11 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
   const groupedPermissions: Record<string, string[]> = {}
   for (const perm of access.permissions) {
     const parts = perm.split(".")
-    const module = parts[0] ?? "other"
-    if (!groupedPermissions[module]) {
-      groupedPermissions[module] = []
+    const mod = parts[0] ?? "other"
+    if (!groupedPermissions[mod]) {
+      groupedPermissions[mod] = []
     }
-    groupedPermissions[module].push(perm)
+    groupedPermissions[mod].push(perm)
   }
 
   return (
@@ -83,9 +82,9 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
           <p className="text-sm text-muted-foreground">No permissions</p>
         ) : (
           <div className="space-y-4">
-            {Object.entries(groupedPermissions).map(([module, perms]) => (
-              <div key={module} className="space-y-2">
-                <h4 className="text-sm font-medium capitalize">{module}</h4>
+            {Object.entries(groupedPermissions).map(([mod, perms]) => (
+              <div key={mod} className="space-y-2">
+                <h4 className="text-sm font-medium capitalize">{mod}</h4>
                 <div className="flex flex-wrap gap-1">
                   {perms.map((perm) => (
                     <span
