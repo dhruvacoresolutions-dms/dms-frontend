@@ -56,7 +56,10 @@ export function SidebarBreadcrumbs() {
               {crumb.isCurrent ? (
                 <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink render={<Link href={crumb.href} />} href={crumb.href}>
+                <BreadcrumbLink
+                  render={<Link href={crumb.href} />}
+                  href={crumb.href}
+                >
                   {crumb.label}
                 </BreadcrumbLink>
               )}

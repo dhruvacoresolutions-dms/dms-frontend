@@ -1,6 +1,7 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from "next/link"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,27 +11,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOutIcon, UserIcon } from "lucide-react"
+import { LogOutIcon, UserIcon, KeyIcon } from "lucide-react"
 
-const user = {
-  name: "Aman Dhariwal",
-  email: "aman@example.com",
-  avatar: "https://avatars.githubusercontent.com/u/1",
-}
+import { useAuthStore } from "@/stores/auth-store"
+import { useLogout } from "@/features/auth/hooks/use-logout"
 
 export function HeaderUserMenu() {
-  const logout = () => {}
+  const user = useAuthStore((state) => state.session?.user)
+  const { logout } = useLogout()
+
+  const displayName = user?.displayName ?? "User"
+  const initials = displayName
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar className="size-8">
-          <AvatarImage src={user.avatar} alt={user.name} />
           <AvatarFallback className="bg-primary text-primary-foreground">
-            {user.name
-              .split(" ")
-              .map((part) => part.charAt(0))
-              .join("")}
+            {initials}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -43,21 +45,26 @@ export function HeaderUserMenu() {
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar>
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback>AS</AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{displayName}</span>
+                <span className="truncate text-xs">
+                  {user?.username ?? ""}
+                </span>
               </div>
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => {}}>
+          <DropdownMenuItem render={<Link href="/profile" />}>
             <UserIcon />
-            Profile
+            My Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/profile/change-password" />}>
+            <KeyIcon />
+            Change Password
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

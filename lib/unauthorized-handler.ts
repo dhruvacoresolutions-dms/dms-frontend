@@ -1,11 +1,13 @@
 import { useAuthStore } from "@/stores/auth-store"
+import { clearSessionCookie } from "@/lib/session"
 
 const AUTH_PREFIX = "/auth/"
 
 let redirecting = false
 
 export function handleUnauthorized() {
-  useAuthStore.getState().clearUser()
+  useAuthStore.getState().clearSession()
+  clearSessionCookie()
 
   if (typeof window === "undefined") {
     return

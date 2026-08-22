@@ -1,8 +1,15 @@
 import { z } from "zod"
 
 export const loginSchema = z.object({
-  email: z.string().email("Enter a valid email").trim(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  username: z
+    .string()
+    .trim()
+    .min(1, "Username is required")
+    .max(100, "Username must not exceed 100 characters"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .max(256, "Password must not exceed 256 characters"),
 })
 
 export type LoginValues = z.infer<typeof loginSchema>
@@ -28,3 +35,23 @@ export const resetPasswordSchema = z
   })
 
 export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(12, "Password must be at least 12 characters")
+      .max(128, "Password must not exceed 128 characters")
+      .regex(/[A-Z]/, "Must contain an uppercase letter")
+      .regex(/[a-z]/, "Must contain a lowercase letter")
+      .regex(/[0-9]/, "Must contain a number")
+      .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+
+export type ChangePasswordValues = z.infer<typeof changePasswordSchema>

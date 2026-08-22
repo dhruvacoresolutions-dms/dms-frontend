@@ -44,7 +44,7 @@ export default function RootLayout({
             <AccentThemeProvider />
             <TooltipProvider>{children}</TooltipProvider>
           </ThemeProvider>
-          <Toaster position="top-right" richColors />
+          <Toaster richColors />
         </QueryProvider>
       </body>
     </html>
