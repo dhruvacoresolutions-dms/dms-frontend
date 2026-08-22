@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -17,9 +16,11 @@ import {
   forgotPasswordSchema,
   type ForgotPasswordValues,
 } from "@/lib/validations/auth"
-import { forgotPassword } from "@/lib/api/auth"
+import { useForgotPassword } from "@/features/auth/hooks/use-forgot-password"
 
 export function ForgotPasswordForm() {
+  const forgotPasswordMutation = useForgotPassword()
+
   const {
     register,
     handleSubmit,
@@ -29,20 +30,19 @@ export function ForgotPasswordForm() {
     defaultValues: { email: "" },
   })
 
-  const mutation = useMutation({
-    mutationFn: forgotPassword,
-    onSuccess: () => {
-      toast.success("If an account exists, a reset link has been sent")
-    },
-    onError: () => {
-      toast.error("Something went wrong, please try again")
-    },
-  })
-
   return (
     <form
       className="flex flex-col gap-6"
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      onSubmit={handleSubmit((values) =>
+        forgotPasswordMutation.mutate(values, {
+          onSuccess: () => {
+            toast.success("If an account exists, a reset link has been sent")
+          },
+          onError: () => {
+            toast.error("Something went wrong, please try again")
+          },
+        })
+      )}
     >
       <div className="flex flex-col gap-1 text-center">
         <h1 className="text-2xl font-bold">Forgot your password?</h1>
@@ -76,9 +76,9 @@ export function ForgotPasswordForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={mutation.isPending || isSubmitSuccessful}
+            disabled={forgotPasswordMutation.isPending || isSubmitSuccessful}
           >
-            {mutation.isPending ? "Sending..." : "Send reset link"}
+            {forgotPasswordMutation.isPending ? "Sending..." : "Send reset link"}
           </Button>
         </Field>
 

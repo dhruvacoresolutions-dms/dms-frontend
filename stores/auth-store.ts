@@ -4,23 +4,34 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 export type User = {
-  id: string
-  email: string
-  name?: string
+  userUuid: string
+  username: string
+  displayName: string
+  companyUuid: string | null
+  companyCode: string | null
+  roles: string[]
+}
+
+export type AuthSession = {
+  accessToken: string
+  tokenType: string
+  expiresIn: number
+  mustChangePassword: boolean
+  user: User
 }
 
 type AuthState = {
-  user: User | null
-  setUser: (user: User) => void
-  clearUser: () => void
+  session: AuthSession | null
+  setSession: (session: AuthSession) => void
+  clearSession: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
-      setUser: (user) => set({ user }),
-      clearUser: () => set({ user: null }),
+      session: null,
+      setSession: (session) => set({ session }),
+      clearSession: () => set({ session: null }),
     }),
     { name: "dms-auth" }
   )

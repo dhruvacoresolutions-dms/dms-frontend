@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -17,9 +16,11 @@ import {
   resetPasswordSchema,
   type ResetPasswordValues,
 } from "@/lib/validations/auth"
-import { resetPassword } from "@/lib/api/auth"
+import { useResetPassword } from "@/features/auth/hooks/use-reset-password"
 
 export function ResetPasswordForm({ token }: { token: string }) {
+  const resetPasswordMutation = useResetPassword()
+
   const {
     register,
     handleSubmit,
@@ -29,20 +30,22 @@ export function ResetPasswordForm({ token }: { token: string }) {
     defaultValues: { password: "", confirmPassword: "" },
   })
 
-  const mutation = useMutation({
-    mutationFn: (values: ResetPasswordValues) => resetPassword(token, values),
-    onSuccess: () => {
-      toast.success("Password reset successfully")
-    },
-    onError: () => {
-      toast.error("This reset link is invalid or has expired")
-    },
-  })
-
   return (
     <form
       className="flex flex-col gap-6"
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      onSubmit={handleSubmit((values) =>
+        resetPasswordMutation.mutate(
+          { token, values },
+          {
+            onSuccess: () => {
+              toast.success("Password reset successfully")
+            },
+            onError: () => {
+              toast.error("This reset link is invalid or has expired")
+            },
+          }
+        )
+      )}
     >
       <div className="flex flex-col gap-1 text-center">
         <h1 className="text-2xl font-bold">Reset your password</h1>
@@ -92,9 +95,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={mutation.isPending}
+                disabled={resetPasswordMutation.isPending}
               >
-                {mutation.isPending ? "Resetting..." : "Reset password"}
+                {resetPasswordMutation.isPending ? "Resetting..." : "Reset password"}
               </Button>
             </Field>
           </>
