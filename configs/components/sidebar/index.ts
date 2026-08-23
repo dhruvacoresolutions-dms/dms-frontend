@@ -28,7 +28,7 @@ export const mainNav: MainNav = [
   },
   {
     title: "Organization",
-    url: "#",
+    url: "/organization",
     icon: Users,
     items: [
       {
@@ -55,7 +55,7 @@ export const mainNav: MainNav = [
   },
   {
     title: "Access Management",
-    url: "#",
+    url: "/access-management",
     icon: Lock,
     items: [
       {
@@ -82,7 +82,7 @@ export const mainNav: MainNav = [
   },
   {
     title: "Administration",
-    url: "#",
+    url: "/administration",
     icon: Settings,
     items: [
       {
