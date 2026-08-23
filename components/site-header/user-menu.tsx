@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -11,14 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOutIcon, UserIcon, KeyIcon } from "lucide-react"
+import { LogOutIcon, UserIcon, KeyIcon, PaintbrushIcon } from "lucide-react"
 
 import { useAuthStore } from "@/stores/auth-store"
 import { useLogout } from "@/features/auth/hooks/use-logout"
+import { ThemeCustomizer } from "@/components/theme/theme-customizer"
 
 export function HeaderUserMenu() {
   const user = useAuthStore((state) => state.session?.user)
   const { logout } = useLogout()
+  const [themeOpen, setThemeOpen] = useState(false)
 
   const displayName = user?.displayName ?? "User"
   const initials = displayName
@@ -28,7 +31,9 @@ export function HeaderUserMenu() {
     .slice(0, 2)
 
   return (
-    <DropdownMenu>
+    <>
+      <ThemeCustomizer open={themeOpen} onOpenChange={setThemeOpen} />
+      <DropdownMenu>
       <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Avatar className="size-8">
           <AvatarFallback className="bg-primary text-primary-foreground">
@@ -69,6 +74,13 @@ export function HeaderUserMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => setThemeOpen(true)}>
+            <PaintbrushIcon />
+            Theme
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
           <DropdownMenuItem variant="destructive" onClick={logout}>
             <LogOutIcon />
             Logout
@@ -76,5 +88,6 @@ export function HeaderUserMenu() {
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   )
 }

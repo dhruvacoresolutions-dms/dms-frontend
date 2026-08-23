@@ -2,7 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { AccentThemeProvider } from "@/components/accent-provider"
+import { DynamicThemeProvider } from "@/components/theme/dynamic-theme-provider"
 import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { QueryProvider } from "@/components/providers/query-provider"
@@ -31,18 +31,12 @@ export default function RootLayout({
         geist.variable
       )}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var a=JSON.parse(localStorage.getItem("dms-accent"));if(a&&a.state&&a.state.accent)document.documentElement.dataset.accent=a.state.accent}catch(e){}`,
-          }}
-        />
-      </head>
       <body>
         <QueryProvider>
           <ThemeProvider>
-            <AccentThemeProvider />
-            <TooltipProvider>{children}</TooltipProvider>
+            <DynamicThemeProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+            </DynamicThemeProvider>
           </ThemeProvider>
           <Toaster richColors />
         </QueryProvider>
