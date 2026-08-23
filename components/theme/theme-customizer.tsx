@@ -21,10 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ColorSetting } from "@/components/theme/color-setting"
-import { ThemePreview } from "@/components/theme/theme-preview"
 import { useDynamicTheme } from "@/components/theme/dynamic-theme-provider"
 import { THEME_PRESETS } from "@/lib/theme/default-theme"
 import type { ThemeConfig } from "@/lib/theme/types"
+import {
+  useNavigationStore,
+  type NavigationLayout,
+} from "@/stores/navigation-store"
+import { cn } from "@/lib/utils"
+import { ThemePreview } from "./theme-preview"
 
 export function ThemeCustomizer({
   open,
@@ -36,14 +41,18 @@ export function ThemeCustomizer({
   const { theme, defaultTheme, previewTheme, applyTheme, resetTheme } =
     useDynamicTheme()
   const { theme: mode, setTheme: setMode } = useNextTheme()
+  const layout = useNavigationStore((s) => s.layout)
+  const setLayout = useNavigationStore((s) => s.setLayout)
   const [snapshot, setSnapshot] = useState<ThemeConfig>(theme)
   const [modeSnapshot, setModeSnapshot] = useState<string | undefined>(mode)
+  const [layoutSnapshot, setLayoutSnapshot] = useState<NavigationLayout>(layout)
 
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSnapshot(theme)
       setModeSnapshot(mode)
+      setLayoutSnapshot(layout)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -53,6 +62,7 @@ export function ThemeCustomizer({
   const cancel = () => {
     previewTheme(snapshot)
     if (modeSnapshot) setMode(modeSnapshot)
+    setLayout(layoutSnapshot)
     onOpenChange(false)
   }
 
@@ -82,7 +92,7 @@ export function ThemeCustomizer({
         </SheetHeader>
 
         <div className="flex-1 space-y-6 overflow-y-auto p-4">
-          {/* <ThemePreview config={theme} /> */}
+          <ThemePreview config={theme} />
 
           <section className="space-y-3">
             <h3 className="text-sm font-semibold">Appearance</h3>
@@ -103,6 +113,53 @@ export function ThemeCustomizer({
             </Select>
             <p className="text-xs text-muted-foreground">
               Light / Dark / System mode
+            </p>
+          </section>
+
+          <Separator />
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold">Navigation</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                  layout === "sidebar"
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-input bg-background hover:bg-muted"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="navigation-layout"
+                  value="sidebar"
+                  checked={layout === "sidebar"}
+                  onChange={() => setLayout("sidebar")}
+                  className="size-4 accent-primary"
+                />
+                Sidebar
+              </label>
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                  layout === "topnav"
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-input bg-background hover:bg-muted"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="navigation-layout"
+                  value="topnav"
+                  checked={layout === "topnav"}
+                  onChange={() => setLayout("topnav")}
+                  className="size-4 accent-primary"
+                />
+                Top Navbar
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Choose navigation layout
             </p>
           </section>
 
