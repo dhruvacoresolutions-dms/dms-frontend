@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
+import { Check, Copy, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -21,10 +23,18 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { PasswordInput } from "@/components/auth/PasswordInput"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { PageHeader } from "@/components/common/PageHeader"
 import { useCreateCompany } from "@/features/companies/hooks/use-create-company"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import type { CreateCompanyResponse } from "@/features/companies/api/company.types"
 
 const FEATURES = [
   { value: "DMS_CORE", label: "DMS Core", description: "Core document management capabilities" },
@@ -60,24 +70,6 @@ const companySchema = z.object({
   countryCode: z
     .string()
     .length(2, "Country code must be exactly 2 characters"),
-  adminUsername: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(100, "Username must not exceed 100 characters")
-    .regex(
-      /^[A-Za-z0-9._-]+$/,
-      "Username must contain only letters, numbers, dots, hyphens, or underscores"
-    ),
-  adminDisplayName: z.string().min(1, "Display name is required"),
-  adminEmail: z.string().email("Enter a valid email address"),
-  adminPassword: z
-    .string()
-    .min(12, "Password must be at least 12 characters")
-    .max(128, "Password must not exceed 128 characters")
-    .regex(/[A-Z]/, "Must contain an uppercase letter")
-    .regex(/[a-z]/, "Must contain a lowercase letter")
-    .regex(/[0-9]/, "Must contain a number")
-    .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
 })
 
 type CompanyFormValues = z.infer<typeof companySchema>
@@ -85,6 +77,8 @@ type CompanyFormValues = z.infer<typeof companySchema>
 export default function NewCompanyPage() {
   const router = useRouter()
   const createCompanyMutation = useCreateCompany()
+  const [successData, setSuccessData] = useState<CreateCompanyResponse | null>(null)
+  const [copiedField, setCopiedField] = useState<"username" | "password" | null>(null)
 
   const {
     register,
@@ -108,10 +102,6 @@ export default function NewCompanyPage() {
       state: "",
       postalCode: "",
       countryCode: "IN",
-      adminUsername: "",
-      adminDisplayName: "",
-      adminEmail: "",
-      adminPassword: "",
     },
   })
 
@@ -128,11 +118,26 @@ export default function NewCompanyPage() {
     setValue("enabledFeatures", next, { shouldValidate: true })
   }
 
+  const handleCopy = async (value: string, field: "username" | "password") => {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopiedField(field)
+      toast.success(`${field === "username" ? "Username" : "Password"} copied to clipboard`)
+      setTimeout(() => setCopiedField(null), 2000)
+    } catch {
+      toast.error("Failed to copy")
+    }
+  }
+
+  const handleGoToCompanies = () => {
+    router.push("/companies")
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Create Company"
-        description="Provision a new company with an administrator"
+        description="Provision a new company — administrator is created automatically"
       />
 
       <form
@@ -154,9 +159,9 @@ export default function NewCompanyPage() {
               },
             },
             {
-              onSuccess: (company) => {
+              onSuccess: (data) => {
                 toast.success("Company created successfully")
-                router.push(`/companies/${company.publicId}`)
+                setSuccessData(data)
               },
               onError: (error) => {
                 const apiError = getApiErrorMessage(
@@ -169,7 +174,7 @@ export default function NewCompanyPage() {
           )
         })}
       >
-        <div className="rounded-lg border p-6 space-y-4">
+        <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm transition-shadow hover:shadow-md">
           <h2 className="text-lg font-semibold">Company Information</h2>
           <FieldGroup>
             <Field>
@@ -244,7 +249,7 @@ export default function NewCompanyPage() {
           </FieldGroup>
         </div>
 
-        <div className="rounded-lg border p-6 space-y-4">
+        <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm transition-shadow hover:shadow-md">
           <h2 className="text-lg font-semibold">Features</h2>
           <p className="text-sm text-muted-foreground">
             Select at least one feature to enable for this company.
@@ -253,7 +258,7 @@ export default function NewCompanyPage() {
             {FEATURES.map((feature) => (
               <label
                 key={feature.value}
-                className="flex items-start gap-3 rounded-md border p-3 cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                className="flex items-start gap-3 rounded-md border bg-card p-3 cursor-pointer shadow-xs transition-shadow hover:shadow-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm"
               >
                 <Checkbox
                   checked={enabledFeatures?.includes(feature.value) ?? false}
@@ -271,7 +276,7 @@ export default function NewCompanyPage() {
           <FieldError errors={[errors.enabledFeatures]} />
         </div>
 
-        <div className="rounded-lg border p-6 space-y-4">
+        <div className="rounded-xl border bg-card p-6 space-y-4 shadow-sm transition-shadow hover:shadow-md">
           <h2 className="text-lg font-semibold">Primary Address</h2>
           <FieldGroup>
             <div className="grid grid-cols-2 gap-4">
@@ -356,53 +361,6 @@ export default function NewCompanyPage() {
           </FieldGroup>
         </div>
 
-        <div className="rounded-lg border p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Administrator</h2>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="adminUsername">Username</FieldLabel>
-              <Input
-                id="adminUsername"
-                placeholder="e.g. admin"
-                aria-invalid={!!errors.adminUsername}
-                {...register("adminUsername")}
-              />
-              <FieldError errors={[errors.adminUsername]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="adminDisplayName">Display Name</FieldLabel>
-              <Input
-                id="adminDisplayName"
-                placeholder="e.g. John Doe"
-                aria-invalid={!!errors.adminDisplayName}
-                {...register("adminDisplayName")}
-              />
-              <FieldError errors={[errors.adminDisplayName]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="adminEmail">Email</FieldLabel>
-              <Input
-                id="adminEmail"
-                type="email"
-                placeholder="e.g. admin@acme.com"
-                aria-invalid={!!errors.adminEmail}
-                {...register("adminEmail")}
-              />
-              <FieldError errors={[errors.adminEmail]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="adminPassword">Password</FieldLabel>
-              <PasswordInput
-                id="adminPassword"
-                placeholder="Minimum 12 characters"
-                aria-invalid={!!errors.adminPassword}
-                {...register("adminPassword")}
-              />
-              <FieldError errors={[errors.adminPassword]} />
-            </Field>
-          </FieldGroup>
-        </div>
-
         <div className="flex gap-2">
           <Button
             type="submit"
@@ -421,6 +379,68 @@ export default function NewCompanyPage() {
           </Button>
         </div>
       </form>
+
+      <Dialog open={!!successData} onOpenChange={(open) => { if (!open) setSuccessData(null) }}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-6 text-green-600" />
+              <DialogTitle>Company Created Successfully</DialogTitle>
+            </div>
+            <DialogDescription>
+              Company <span className="font-medium text-foreground">{successData?.company.companyName}</span> has been provisioned.
+              Save the administrator credentials below — the temporary password will not be shown again.
+            </DialogDescription>
+          </DialogHeader>
+
+          {successData && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Username</label>
+                <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 shadow-xs">
+                  <span className="flex-1 font-mono text-sm break-all">{successData.bootstrapAdmin.username}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleCopy(successData.bootstrapAdmin.username, "username")}
+                    aria-label="Copy username"
+                  >
+                    {copiedField === "username" ? <Check className="size-4 text-green-600" /> : <Copy className="size-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Temporary Password</label>
+                <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 shadow-xs">
+                  <span className="flex-1 font-mono text-sm break-all">{successData.bootstrapAdmin.temporaryPassword}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleCopy(successData.bootstrapAdmin.temporaryPassword, "password")}
+                    aria-label="Copy password"
+                  >
+                    {copiedField === "password" ? <Check className="size-4 text-green-600" /> : <Copy className="size-4" />}
+                  </Button>
+                </div>
+                {successData.bootstrapAdmin.mustChangePassword && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Administrator must change password on first login.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={handleGoToCompanies} className="w-full sm:w-auto">
+              Go to Companies
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -36,6 +36,15 @@ export type CompanySummaryResponse = {
   enabledFeatures?: string[]
 }
 
+export type CreateCompanyResponse = {
+  company: CompanySummaryResponse
+  bootstrapAdmin: {
+    username: string
+    temporaryPassword: string
+    mustChangePassword: boolean
+  }
+}
+
 export type AddressResponse = {
   addressUuid: string
   addressType: string
