@@ -7,11 +7,12 @@ import type { GeographyListParams } from "../api/geography.types"
 
 export function useGeographies(
   companyUuid: string,
-  params?: GeographyListParams
+  params?: GeographyListParams,
+  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: geographyKeys.list(companyUuid, params),
     queryFn: () => getGeographies(companyUuid, params),
-    enabled: !!companyUuid,
+    enabled: !!companyUuid && (options?.enabled ?? true),
   })
 }

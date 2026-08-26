@@ -4,7 +4,6 @@ export type CreateUserRequest = {
   username: string
   displayName: string
   email: string
-  password: string
 }
 
 export type UpdateUserRequest = {
@@ -17,17 +16,28 @@ export type UpdateUserStatusRequest = {
 }
 
 export type UserResponse = {
+  publicId: string
+  /** Alias for publicId — kept for backward compat with existing UI (userUuid). */
   userUuid: string
   username: string
   displayName: string
-  email: string
+  email: string | null
   status: UserStatus
-  createdAt: string
-  updatedAt: string
+  membershipStatus?: string
+  mustChangePassword?: boolean
+  bootstrapAccount?: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type RawUserResponse = Omit<UserResponse, "userUuid"> & {
+  publicId: string
+  userUuid?: string
 }
 
 export type UserListParams = {
   search?: string
+  query?: string
   status?: UserStatus
   page?: number
   size?: number

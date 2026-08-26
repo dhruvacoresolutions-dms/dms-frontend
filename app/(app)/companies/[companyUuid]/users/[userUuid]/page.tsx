@@ -56,7 +56,7 @@ export default function UserDetailPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">UUID</span>
-                <span className="font-mono">{user.userUuid}</span>
+                <span className="font-mono">{user.publicId ?? user.userUuid}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Username</span>
@@ -68,7 +68,7 @@ export default function UserDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Email</span>
-                <span>{user.email}</span>
+                <span>{user.email ?? "—"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
@@ -76,7 +76,7 @@ export default function UserDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Created</span>
-                <span>{new Date(user.createdAt).toLocaleDateString()}</span>
+                <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</span>
               </div>
             </div>
           </div>

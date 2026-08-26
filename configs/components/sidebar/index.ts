@@ -10,10 +10,17 @@ import {
   KeyRound,
   Lock,
   ShieldCheck,
-  FileCheck,
   Settings,
   ShieldAlert,
 } from "lucide-react"
+
+export const companiesNav: MainNav = [
+  {
+    title: "Companies",
+    url: "/companies",
+    icon: Building2,
+  },
+]
 
 export const mainNav: MainNav = [
   {
@@ -22,33 +29,28 @@ export const mainNav: MainNav = [
     icon: LayoutDashboard,
   },
   {
-    title: "Companies",
-    url: "/companies",
-    icon: Building2,
-  },
-  {
     title: "Organization",
     url: "/organization",
     icon: Users,
     items: [
       {
         title: "Users",
-        url: "/companies/current/users",
+        url: "/users",
         icon: UserCog,
       },
       {
         title: "Employees",
-        url: "/companies/current/employees",
+        url: "/employees",
         icon: Briefcase,
       },
       {
         title: "Designations",
-        url: "/companies/current/designations",
+        url: "/designations",
         icon: ShieldCheck,
       },
       {
         title: "Geographies",
-        url: "/companies/current/geographies",
+        url: "/geographies",
         icon: MapPin,
       },
     ],
@@ -60,24 +62,15 @@ export const mainNav: MainNav = [
     items: [
       {
         title: "Roles",
-        url: "/companies/current/roles",
+        url: "/roles",
         icon: Shield,
       },
       {
         title: "Permission Sets",
-        url: "/companies/current/permission-sets",
+        url: "/permission-sets",
         icon: KeyRound,
       },
-      {
-        title: "Permissions",
-        url: "/permissions",
-        icon: FileCheck,
-      },
-      {
-        title: "Permission Matrix",
-        url: "/permissions/matrix",
-        icon: ShieldCheck,
-      },
+
     ],
   },
   {
@@ -87,12 +80,12 @@ export const mainNav: MainNav = [
     items: [
       {
         title: "Feature Management",
-        url: "/companies/current/features",
+        url: "/features",
         icon: Settings,
       },
       {
         title: "RBAC Audit",
-        url: "/companies/current/audit/rbac",
+        url: "/audit/rbac",
         icon: ShieldAlert,
       },
     ],
@@ -101,7 +94,9 @@ export const mainNav: MainNav = [
 
 const slugify = (value: string) => value.toLowerCase().replace(/\s+/g, "-")
 
-const navEntries = mainNav.flatMap((item) => [
+const allNav = [...companiesNav, ...mainNav]
+
+const navEntries = allNav.flatMap((item) => [
   { url: item.url, title: item.title },
   ...(item.items?.map((sub) => ({ url: sub.url, title: sub.title })) ?? []),
 ])

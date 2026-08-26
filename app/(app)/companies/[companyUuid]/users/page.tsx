@@ -118,13 +118,15 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {users.map((user) => {
+                  const uid = user.userUuid ?? user.publicId
+                  return (
                   <TableRow
-                    key={user.userUuid}
+                    key={uid}
                     className="cursor-pointer"
                     onClick={() =>
                       router.push(
-                        `/companies/${companyUuid}/users/${user.userUuid}`
+                        `/companies/${companyUuid}/users/${uid}`
                       )
                     }
                   >
@@ -134,7 +136,7 @@ export default function UsersPage() {
                     <TableCell className="font-medium">
                       {user.displayName}
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.email ?? "—"}</TableCell>
                     <TableCell>
                       <StatusBadge status={user.status} />
                     </TableCell>
@@ -150,7 +152,7 @@ export default function UsersPage() {
                           <DropdownMenuItem
                             onClick={() =>
                               router.push(
-                                `/companies/${companyUuid}/users/${user.userUuid}`
+                                `/companies/${companyUuid}/users/${uid}`
                               )
                             }
                           >
@@ -160,7 +162,7 @@ export default function UsersPage() {
                           <DropdownMenuItem
                             onClick={() =>
                               router.push(
-                                `/companies/${companyUuid}/users/${user.userUuid}/edit`
+                                `/companies/${companyUuid}/users/${uid}/edit`
                               )
                             }
                           >
@@ -171,7 +173,7 @@ export default function UsersPage() {
                           <DropdownMenuItem
                             onClick={() =>
                               setStatusToggle({
-                                userUuid: user.userUuid,
+                                userUuid: uid,
                                 currentStatus: user.status,
                               })
                             }
@@ -192,7 +194,8 @@ export default function UsersPage() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
           </div>

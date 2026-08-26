@@ -53,7 +53,7 @@ export default function EditUserPage() {
     if (user) {
       reset({
         displayName: user.displayName,
-        email: user.email,
+        email: user.email ?? "",
       })
     }
   }, [user, reset])

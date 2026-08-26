@@ -15,3 +15,8 @@ export function clearSessionCookie() {
 
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; samesite=lax`
 }
+
+export function hasSessionCookie(): boolean {
+  if (typeof document === "undefined") return false
+  return document.cookie.split("; ").some((c) => c.startsWith(`${SESSION_COOKIE}=`) && c.split("=")[1])
+}

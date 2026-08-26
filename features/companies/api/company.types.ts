@@ -69,7 +69,7 @@ export type CreateAddressRequest = {
 }
 
 export type FeatureEntitlementRequest = {
-  features: string[]
+  enabledFeatures: string[]
 }
 
 export type PageResponse<T> = {
@@ -82,6 +82,7 @@ export type PageResponse<T> = {
 
 export type CompanyListParams = {
   search?: string
+  query?: string
   page?: number
   size?: number
 }

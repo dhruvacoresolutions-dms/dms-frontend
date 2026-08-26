@@ -109,7 +109,7 @@ export default function FeaturesPage() {
         isLoading={updateMutation.isPending}
         onConfirm={() => {
           updateMutation.mutate(
-            { features: Array.from(selected) },
+            { enabledFeatures: Array.from(selected) },
             {
               onSuccess: () => { toast.success("Features updated"); setHasChanges(false) },
               onError: (error) => { toast.error(getApiErrorMessage(error, "Failed")) },

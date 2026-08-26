@@ -7,6 +7,7 @@ import { PanelLeftIcon } from "lucide-react"
 import { HeaderUserMenu } from "./user-menu"
 import { ServerStatus } from "@/components/server-status"
 import { useNavigationStore } from "@/stores/navigation-store"
+import { SidebarBreadcrumbs } from "@/components/sidebar/breadcrumbs"
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar()
@@ -24,6 +25,7 @@ export function SiteHeader() {
             <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
           </>
         )}
+        <SidebarBreadcrumbs />
         <div className="ml-auto flex items-center gap-2">
           <ServerStatus />
           <HeaderUserMenu />

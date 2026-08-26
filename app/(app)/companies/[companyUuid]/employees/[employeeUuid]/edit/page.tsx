@@ -39,7 +39,7 @@ export default function EditEmployeePage() {
 
   useEffect(() => {
     if (employee) {
-      reset({ firstName: employee.firstName, lastName: employee.lastName, email: employee.email, phone: employee.phone ?? "" })
+      reset({ firstName: employee.firstName, lastName: employee.lastName, email: employee.email ?? "", phone: employee.mobile ?? "" })
     }
   }, [employee, reset])
 

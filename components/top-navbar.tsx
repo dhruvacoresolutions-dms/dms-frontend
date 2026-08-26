@@ -10,20 +10,21 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
-import { mainNav } from "@/configs/components/sidebar"
+import { companiesNav, mainNav } from "@/configs/components/sidebar"
+import { useAuthStore } from "@/stores/auth-store"
 import { cn } from "@/lib/utils"
 
 function normalizePath(pathname: string) {
   return pathname.replace(/^\/companies\/[^/]+/, "/companies/current")
 }
 
-function getAllUrls(): string[] {
-  return mainNav.flatMap((i) => [i.url, ...(i.items?.map((s) => s.url) ?? [])]).filter((u) => u !== "#")
+function getAllUrls(nav: typeof mainNav): string[] {
+  return nav.flatMap((i) => [i.url, ...(i.items?.map((s) => s.url) ?? [])]).filter((u) => u !== "#")
 }
 
-function getActiveUrl(pathname: string): string | null {
+function getActiveUrl(pathname: string, nav: typeof mainNav): string | null {
   const n = normalizePath(pathname)
-  const urls = getAllUrls()
+  const urls = getAllUrls(nav)
   let best: string | null = null
   for (const url of urls) {
     if (n === url || n.startsWith(url + "/")) {
@@ -35,7 +36,11 @@ function getActiveUrl(pathname: string): string | null {
 
 export function TopNavBar() {
   const pathname = usePathname()
-  const activeUrl = getActiveUrl(pathname)
+  const isPlatformAdmin = useAuthStore(
+    (s) => s.session?.user?.roles.includes("PLATFORM_ADMINISTRATOR") ?? false
+  )
+  const visibleNav = isPlatformAdmin ? companiesNav : mainNav
+  const activeUrl = getActiveUrl(pathname, visibleNav)
 
   return (
     <nav
@@ -48,7 +53,7 @@ export function TopNavBar() {
       <div className="flex h-full w-full items-center overflow-x-auto px-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <NavigationMenu className="max-w-none flex-1 justify-start">
           <NavigationMenuList className="flex-nowrap gap-0.5">
-            {mainNav.map((item) => {
+            {visibleNav.map((item) => {
               const hasChildren = !!item.items?.length
               const directActive = activeUrl === item.url
 
