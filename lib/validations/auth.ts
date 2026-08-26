@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { passwordSchema } from "./password"
 
 export const loginSchema = z.object({
   username: z
@@ -22,11 +23,7 @@ export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 
 export const resetPasswordSchema = z
   .object({
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Must contain an uppercase letter")
-      .regex(/[0-9]/, "Must contain a number"),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -39,14 +36,7 @@ export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(12, "Password must be at least 12 characters")
-      .max(128, "Password must not exceed 128 characters")
-      .regex(/[A-Z]/, "Must contain an uppercase letter")
-      .regex(/[a-z]/, "Must contain a lowercase letter")
-      .regex(/[0-9]/, "Must contain a number")
-      .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
+    newPassword: passwordSchema,
     confirmPassword: z.string().min(1, "Confirm password is required"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {

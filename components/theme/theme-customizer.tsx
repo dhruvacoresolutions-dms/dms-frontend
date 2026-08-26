@@ -28,6 +28,8 @@ import {
   useNavigationStore,
   type NavigationLayout,
 } from "@/stores/navigation-store"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
 import { ThemePreview } from "./theme-preview"
 
@@ -120,47 +122,37 @@ export function ThemeCustomizer({
 
           <section className="space-y-3">
             <h3 className="text-sm font-semibold">Navigation</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <label
+            <RadioGroup
+              value={layout}
+              onValueChange={(v) => setLayout(v as NavigationLayout)}
+              className="grid grid-cols-2 gap-2"
+            >
+              <Label
+                htmlFor="nav-sidebar"
                 className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/10",
                   layout === "sidebar"
-                    ? "border-primary bg-primary/10 text-foreground"
+                    ? "border-primary bg-primary/10"
                     : "border-input bg-background hover:bg-muted"
                 )}
               >
-                <input
-                  type="radio"
-                  name="navigation-layout"
-                  value="sidebar"
-                  checked={layout === "sidebar"}
-                  onChange={() => setLayout("sidebar")}
-                  className="size-4 accent-primary"
-                />
+                <RadioGroupItem value="sidebar" id="nav-sidebar" />
                 Sidebar
-              </label>
-              <label
+              </Label>
+              <Label
+                htmlFor="nav-topnav"
                 className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/10",
                   layout === "topnav"
-                    ? "border-primary bg-primary/10 text-foreground"
+                    ? "border-primary bg-primary/10"
                     : "border-input bg-background hover:bg-muted"
                 )}
               >
-                <input
-                  type="radio"
-                  name="navigation-layout"
-                  value="topnav"
-                  checked={layout === "topnav"}
-                  onChange={() => setLayout("topnav")}
-                  className="size-4 accent-primary"
-                />
+                <RadioGroupItem value="topnav" id="nav-topnav" />
                 Top Navbar
-              </label>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Choose navigation layout
-            </p>
+              </Label>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">Choose navigation layout</p>
           </section>
 
           <Separator />

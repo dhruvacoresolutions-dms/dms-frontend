@@ -100,6 +100,7 @@ export function ChangePasswordForm() {
             placeholder="Enter a new password"
             autoComplete="new-password"
             aria-invalid={!!errors.newPassword}
+            showRequirements
             {...register("newPassword")}
           />
           <FieldError errors={[errors.newPassword]} />

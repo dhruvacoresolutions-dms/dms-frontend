@@ -3,6 +3,7 @@ import type { ApiSuccessResponse } from "@/lib/api-client"
 import type {
   CompanySummaryResponse,
   CreateCompanyRequest,
+  CreateCompanyResponse,
   AddressResponse,
   CreateAddressRequest,
   FeatureEntitlementRequest,
@@ -28,7 +29,7 @@ export async function getCompany(companyUuid: string) {
 
 export async function createCompany(input: CreateCompanyRequest) {
   const { data } = await apiClient.post<
-    ApiSuccessResponse<CompanySummaryResponse>
+    ApiSuccessResponse<CreateCompanyResponse>
   >("/v1/companies", input)
   return data.data
 }

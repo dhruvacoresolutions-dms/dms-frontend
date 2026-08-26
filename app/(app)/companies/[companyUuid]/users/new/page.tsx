@@ -17,6 +17,7 @@ import { PasswordInput } from "@/components/auth/PasswordInput"
 import { PageHeader } from "@/components/common/PageHeader"
 import { useCreateUser } from "@/features/users/hooks/use-create-user"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { passwordSchema } from "@/lib/validations/password"
 
 const userSchema = z.object({
   username: z
@@ -29,14 +30,7 @@ const userSchema = z.object({
     ),
   displayName: z.string().min(1, "Display name is required"),
   email: z.string().email("Enter a valid email address"),
-  password: z
-    .string()
-    .min(12, "Password must be at least 12 characters")
-    .max(128, "Password must not exceed 128 characters")
-    .regex(/[A-Z]/, "Must contain an uppercase letter")
-    .regex(/[a-z]/, "Must contain a lowercase letter")
-    .regex(/[0-9]/, "Must contain a number")
-    .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
+  password: passwordSchema,
 })
 
 type UserFormValues = z.infer<typeof userSchema>
@@ -120,6 +114,7 @@ export default function NewUserPage() {
                 id="password"
                 placeholder="Minimum 12 characters"
                 aria-invalid={!!errors.password}
+                showRequirements
                 {...register("password")}
               />
               <FieldError errors={[errors.password]} />
