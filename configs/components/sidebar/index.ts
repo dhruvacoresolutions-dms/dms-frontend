@@ -10,6 +10,7 @@ import {
   KeyRound,
   Lock,
   ShieldCheck,
+  FileCheck,
   Settings,
   ShieldAlert,
 } from "lucide-react"
@@ -70,7 +71,16 @@ export const mainNav: MainNav = [
         url: "/permission-sets",
         icon: KeyRound,
       },
-
+      {
+        title: "Permissions",
+        url: "/permissions",
+        icon: FileCheck,
+      },
+      {
+        title: "Permission Matrix",
+        url: "/permissions/matrix",
+        icon: ShieldCheck,
+      },
     ],
   },
   {
