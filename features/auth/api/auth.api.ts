@@ -16,6 +16,7 @@ export async function loginUser(values: LoginValues): Promise<AuthSession> {
     {
       username: values.username,
       password: values.password,
+      channel: "ADMIN_WEB",
     }
   )
   return data.data
@@ -29,8 +30,10 @@ export async function getCurrentUser() {
 }
 
 export async function getCurrentAccess(): Promise<EffectiveAccess> {
+  const companyUuid = (await import("@/stores/auth-store")).useAuthStore.getState().session?.user?.companyUuid
   const { data } = await apiClient.get<ApiSuccessResponse<EffectiveAccess>>(
-    "/v1/me/access"
+    "/v1/me/access",
+    companyUuid ? { headers: { "X-Company-Context": companyUuid } } : undefined
   )
   return data.data
 }

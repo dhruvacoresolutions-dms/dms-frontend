@@ -49,6 +49,7 @@ const designationSchema = z.object({
     .max(50)
     .regex(/^[A-Za-z0-9_-]+$/, "Invalid code format"),
   name: z.string().min(1, "Name is required"),
+  hierarchyLevel: z.coerce.number().int().min(1, "Hierarchy level required"),
   description: z.string().optional(),
 })
 
@@ -66,7 +67,7 @@ export default function DesignationsPage() {
   } | null>(null)
 
   const { data, isLoading, error, refetch } = useDesignations(companyUuid, {
-    search: search || undefined,
+    query: search || undefined,
     page,
     size: 20,
   })
@@ -81,7 +82,7 @@ export default function DesignationsPage() {
     formState: { errors },
   } = useForm<DesignationFormValues>({
     resolver: zodResolver(designationSchema),
-    defaultValues: { code: "", name: "", description: "" },
+    defaultValues: { code: "", name: "", hierarchyLevel: 10, description: "" },
   })
 
   const designations = data?.content ?? []
@@ -134,6 +135,16 @@ export default function DesignationsPage() {
                       {...register("name")}
                     />
                     <FieldError errors={[errors.name]} />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Hierarchy Level</FieldLabel>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 10"
+                      aria-invalid={!!errors.hierarchyLevel}
+                      {...register("hierarchyLevel", { valueAsNumber: true })}
+                    />
+                    <FieldError errors={[errors.hierarchyLevel]} />
                   </Field>
                   <Field>
                     <FieldLabel>Description</FieldLabel>
@@ -195,7 +206,7 @@ export default function DesignationsPage() {
               </TableHeader>
               <TableBody>
                 {designations.map((d) => (
-                  <TableRow key={d.designationUuid}>
+                  <TableRow key={d.publicId ?? d.designationUuid}>
                     <TableCell className="font-mono text-sm">{d.code}</TableCell>
                     <TableCell className="font-medium">{d.name}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -213,7 +224,7 @@ export default function DesignationsPage() {
                           <DropdownMenuItem
                             onClick={() =>
                               setStatusToggle({
-                                uuid: d.designationUuid,
+                                uuid: d.publicId ?? d.designationUuid,
                                 currentStatus: d.status,
                               })
                             }

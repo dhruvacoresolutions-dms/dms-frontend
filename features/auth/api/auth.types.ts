@@ -8,7 +8,9 @@ export type User = {
   displayName: string
   companyUuid: string | null
   companyCode: string | null
+  context?: "PLATFORM" | "COMPANY"
   roles: string[]
+  mustChangePassword?: boolean
 }
 
 export type AuthSession = {

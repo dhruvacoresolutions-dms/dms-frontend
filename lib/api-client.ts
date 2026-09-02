@@ -15,12 +15,19 @@ const PUBLIC_PATHS = [
   "/v1/auth/reset-password",
 ]
 
+const COMPANY_CONTEXT_EXCLUDE = ["/v1/permissions", "/v1/permissions/matrix"]
+
 function isPublicPath(url: string | undefined) {
   if (!url) {
     return false
   }
 
   return PUBLIC_PATHS.some((path) => url.includes(path))
+}
+
+function isCompanyContextExcluded(url: string | undefined) {
+  if (!url) return false
+  return COMPANY_CONTEXT_EXCLUDE.some((path) => url.includes(path))
 }
 
 apiClient.interceptors.request.use((config) => {
@@ -31,7 +38,7 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
 
-  if (companyUuid && !config.headers["X-Company-Context"]) {
+  if (companyUuid && !config.headers["X-Company-Context"] && !isCompanyContextExcluded(config.url)) {
     config.headers["X-Company-Context"] = companyUuid
   }
 

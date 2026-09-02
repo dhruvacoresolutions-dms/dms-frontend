@@ -4,7 +4,6 @@ import React, { ReactNode } from "react"
 import { SidebarInset, SidebarProvider } from "../ui/sidebar"
 import { SiteHeader } from "../site-header/site-header"
 import { AppSidebar } from "./app-sidebar"
-import { SidebarBreadcrumbs } from "./breadcrumbs"
 import { TopNavBar } from "@/components/top-navbar"
 import { useNavigationStore } from "@/stores/navigation-store"
 
@@ -23,7 +22,6 @@ const SidebarLayout = ({ children }: Props) => {
           {!isTopNav && <AppSidebar />}
           <SidebarInset>
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto rounded-md bg-muted/50 p-4">
-              <SidebarBreadcrumbs />
               {children}
             </div>
           </SidebarInset>

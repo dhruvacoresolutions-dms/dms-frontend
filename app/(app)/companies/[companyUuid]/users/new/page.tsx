@@ -13,11 +13,9 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { PasswordInput } from "@/components/auth/PasswordInput"
 import { PageHeader } from "@/components/common/PageHeader"
 import { useCreateUser } from "@/features/users/hooks/use-create-user"
 import { getApiErrorMessage } from "@/lib/api/api-error"
-import { passwordSchema } from "@/lib/validations/password"
 
 const userSchema = z.object({
   username: z
@@ -30,7 +28,6 @@ const userSchema = z.object({
     ),
   displayName: z.string().min(1, "Display name is required"),
   email: z.string().email("Enter a valid email address"),
-  password: passwordSchema,
 })
 
 type UserFormValues = z.infer<typeof userSchema>
@@ -51,7 +48,6 @@ export default function NewUserPage() {
       username: "",
       displayName: "",
       email: "",
-      password: "",
     },
   })
 
@@ -107,17 +103,6 @@ export default function NewUserPage() {
                 {...register("email")}
               />
               <FieldError errors={[errors.email]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
-              <PasswordInput
-                id="password"
-                placeholder="Minimum 12 characters"
-                aria-invalid={!!errors.password}
-                showRequirements
-                {...register("password")}
-              />
-              <FieldError errors={[errors.password]} />
             </Field>
           </FieldGroup>
         </div>

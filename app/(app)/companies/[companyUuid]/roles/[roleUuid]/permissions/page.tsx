@@ -6,13 +6,11 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { useRole } from "@/features/roles/hooks/use-role"
 import { useUpdateRolePermissions } from "@/features/roles/hooks/use-update-role-permissions"
-import { usePermissionMatrix } from "@/features/permissions/hooks/use-permission-matrix"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -22,11 +20,10 @@ export default function RolePermissionsPage() {
   const roleUuid = params.roleUuid
 
   const { data: role, isLoading: roleLoading } = useRole(companyUuid, roleUuid)
-  const { data: matrix, isLoading: matrixLoading } = usePermissionMatrix()
   const updateMutation = useUpdateRolePermissions(companyUuid, roleUuid)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [search, setSearch] = useState("")
+  const [inputCode, setInputCode] = useState("")
   const [hasChanges, setHasChanges] = useState(false)
   const [didInit, setDidInit] = useState(false)
 
@@ -35,39 +32,28 @@ export default function RolePermissionsPage() {
     setSelected(new Set(role.permissions))
   }
 
-  const togglePermission = (code: string) => {
+  const addCode = () => {
+    const code = inputCode.trim()
+    if (!code) return
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(code)) next.delete(code)
-      else next.add(code)
+      next.add(code)
+      return next
+    })
+    setInputCode("")
+    setHasChanges(true)
+  }
+
+  const removeCode = (code: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.delete(code)
       return next
     })
     setHasChanges(true)
   }
 
-  const toggleModule = (codes: string[]) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      const allSelected = codes.every((c) => next.has(c))
-      for (const c of codes) {
-        if (allSelected) next.delete(c)
-        else next.add(c)
-      }
-      return next
-    })
-    setHasChanges(true)
-  }
-
-  if (roleLoading || matrixLoading) return <LoadingState />
-
-  const filteredMatrix =
-    matrix?.filter((m) =>
-      !search || m.moduleCode.toLowerCase().includes(search.toLowerCase()) ||
-      m.resources.some((r) =>
-        r.resourceCode.toLowerCase().includes(search.toLowerCase()) ||
-        r.actions.some((a) => a.permissionCode.toLowerCase().includes(search.toLowerCase()))
-      )
-    ) ?? []
+  if (roleLoading) return <LoadingState />
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -98,56 +84,28 @@ export default function RolePermissionsPage() {
       />
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Input placeholder="Search permissions..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="relative flex-1 max-w-sm flex gap-2">
+          <Input placeholder="Add permission code..." value={inputCode} onChange={(e) => setInputCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCode())} />
+          <Button variant="secondary" onClick={addCode}>Add</Button>
         </div>
         <Badge variant="secondary">{selected.size} selected</Badge>
         {hasChanges && <Badge variant="outline" className="text-amber-600">Unsaved changes</Badge>}
       </div>
 
-      <div className="space-y-6">
-        {filteredMatrix.map((module) => {
-          const allCodes = module.resources.flatMap((r) => r.actions.map((a) => a.permissionCode))
-          const allSelected = allCodes.length > 0 && allCodes.every((c) => selected.has(c))
-
-          return (
-            <div key={module.moduleCode} className="rounded-lg border p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={() => toggleModule(allCodes)}
-                />
-                <h3 className="font-semibold capitalize">{module.moduleName}</h3>
-                <Badge variant="secondary" className="text-xs">{allCodes.length} permissions</Badge>
-              </div>
-              <div className="space-y-3 pl-8">
-                {module.resources.map((resource) => (
-                  <div key={resource.resourceCode} className="space-y-2">
-                    <p className="text-sm font-medium">{resource.resourceName}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {resource.actions.map((action) => (
-                        <label
-                          key={action.permissionCode}
-                          className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
-                            selected.has(action.permissionCode)
-                              ? "bg-primary/10 border-primary"
-                              : "hover:bg-muted"
-                          }`}
-                        >
-                          <Checkbox
-                            checked={selected.has(action.permissionCode)}
-                            onCheckedChange={() => togglePermission(action.permissionCode)}
-                          />
-                          <span className="capitalize">{action.action}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
+      <div className="rounded-lg border p-4">
+        {selected.size === 0 ? (
+          <p className="text-sm text-muted-foreground">No permissions selected. Add codes above.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {Array.from(selected).map((code) => (
+              <Badge key={code} variant="secondary" className="gap-1">
+                {code}
+                <button onClick={() => removeCode(code)} className="ml-1 text-xs hover:text-destructive">×</button>
+              </Badge>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground mt-3">Permission list API removed. Enter permission codes manually.</p>
       </div>
     </div>
   )

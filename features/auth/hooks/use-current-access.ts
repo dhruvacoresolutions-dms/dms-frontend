@@ -6,12 +6,19 @@ import { authKeys } from "../api/auth-keys"
 import { useAuthStore } from "@/stores/auth-store"
 
 export function useCurrentAccess() {
-  const session = useAuthStore((state) => state.session)
+  const companyUuid = useAuthStore((state) => state.session?.user?.companyUuid)
+  const hasToken = useAuthStore((state) => !!state.session?.accessToken)
 
   return useQuery({
-    queryKey: authKeys.access(),
+    queryKey: authKeys.access(companyUuid),
     queryFn: getCurrentAccess,
-    enabled: !!session?.accessToken && !!session?.user?.companyUuid,
-    staleTime: 5 * 60 * 1000,
+    enabled: hasToken && !!companyUuid,
+    // Access is session-scoped and already derived from login — cache it for the whole session.
+    // Route changes in TopBar/SiteHeader must NOT trigger a refetch.
+    staleTime: Infinity,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 }

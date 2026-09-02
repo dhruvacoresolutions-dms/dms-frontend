@@ -43,6 +43,7 @@ export type GeographyResponse = {
 
 export type GeographyListParams = {
   search?: string
+  query?: string
   type?: GeographyType
   parentUuid?: string
   status?: GeographyStatus

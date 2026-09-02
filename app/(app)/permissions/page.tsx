@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ShieldCheck, Search } from "lucide-react"
+import { ShieldCheck, Search, ShieldAlert } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -17,10 +17,13 @@ import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { usePermissions } from "@/features/permissions/hooks/use-permissions"
+import { getApiError } from "@/lib/api/api-error"
 
 export default function PermissionsPage() {
   const [search, setSearch] = useState("")
   const { data: permissions, isLoading, error, refetch } = usePermissions()
+  const apiError = getApiError(error)
+  const isForbidden = apiError?.code === "ACCESS_DENIED" || apiError?.code === "FORBIDDEN" || (error as unknown as { response?: { status: number } })?.response?.status === 403
 
   const filtered = permissions?.filter(
     (p) =>
@@ -51,7 +54,15 @@ export default function PermissionsPage() {
       {isLoading ? (
         <TableSkeleton rows={10} />
       ) : error ? (
-        <ErrorState onRetry={refetch} />
+        isForbidden ? (
+          <EmptyState
+            icon={ShieldAlert}
+            title="Access denied"
+            description="You need PERMISSION_VIEW permission to view permissions. Please login as Platform Administrator (superadmin) or contact your administrator."
+          />
+        ) : (
+          <ErrorState message={apiError?.message ?? "Failed to load permissions"} onRetry={refetch} />
+        )
       ) : !filtered || filtered.length === 0 ? (
         <EmptyState icon={ShieldCheck} title="No permissions found" description="No permissions match your search." />
       ) : (

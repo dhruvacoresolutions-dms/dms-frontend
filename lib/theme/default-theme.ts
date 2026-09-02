@@ -2,19 +2,35 @@ import type { ThemeConfig } from "./types"
 
 export const DEFAULT_THEME: ThemeConfig = {
   topbar: { background: "#ffffff" },
-  sidebar: { background: "#f8fafc" },
-  primary: { color: "#1d283a" },
+  sidebar: { background: "#fafafa" },
+  primary: { color: "#4338ca" },
   charts: {
-    chart1: "#e76e50",
-    chart2: "#2a9d90",
-    chart3: "#274754",
-    chart4: "#e8c468",
-    chart5: "#f4a462",
+    chart1: "#a5b4fc",
+    chart2: "#6366f1",
+    chart3: "#4f46e5",
+    chart4: "#4338ca",
+    chart5: "#3730a3",
   },
 }
 
 export const THEME_PRESETS: { id: string; name: string; theme: ThemeConfig }[] = [
-  { id: "default", name: "Slate", theme: DEFAULT_THEME },
+  { id: "default", name: "Indigo", theme: DEFAULT_THEME },
+  {
+    id: "slate",
+    name: "Slate",
+    theme: {
+      topbar: { background: "#ffffff" },
+      sidebar: { background: "#f8fafc" },
+      primary: { color: "#1d283a" },
+      charts: {
+        chart1: "#e76e50",
+        chart2: "#2a9d90",
+        chart3: "#274754",
+        chart4: "#e8c468",
+        chart5: "#f4a462",
+      },
+    },
+  },
   {
     id: "ocean",
     name: "Ocean",
