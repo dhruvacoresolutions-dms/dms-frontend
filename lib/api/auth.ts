@@ -18,6 +18,7 @@ export async function loginUser(values: LoginValues): Promise<AuthSession> {
     {
       username: values.username,
       password: values.password,
+      channel: "ADMIN_WEB",
     }
   )
   return data.data
