@@ -138,9 +138,10 @@ export default function CompaniesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation()
                               router.push(`/companies/${company.publicId}`)
-                            }
+                            }}
                           >
                             <Eye className="mr-2 size-4" />
                             View Details
