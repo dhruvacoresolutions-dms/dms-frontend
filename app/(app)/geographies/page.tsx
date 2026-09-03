@@ -369,11 +369,11 @@ export default function GeographiesPage() {
                     <TableCell><Badge variant="secondary">{g.type}</Badge></TableCell>
                     <TableCell>{g.parentName ?? "-"}</TableCell>
                     <TableCell><StatusBadge status={g.status} /></TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setStatusToggle({ uuid: g.geographyUuid, currentStatus: g.status })}>
+                        <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatusToggle({ uuid: g.geographyUuid, currentStatus: g.status }) }}>
                             {g.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" /> Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
                           </DropdownMenuItem>
                         </DropdownMenuContent>

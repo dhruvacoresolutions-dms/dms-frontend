@@ -158,25 +158,25 @@ export default function RolesPage() {
                     )}
                   </TableCell>
                   <TableCell><StatusBadge status={role.status} /></TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="cursor-pointer">
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/companies/${companyUuid}/roles/${role.publicId}`)}>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/companies/${companyUuid}/roles/${role.publicId}`) }}>
                           <Eye className="mr-2 size-4" /> View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/companies/${companyUuid}/roles/${role.publicId}/edit`)}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/companies/${companyUuid}/roles/${role.publicId}/edit`) }}>
                           <Edit className="mr-2 size-4" /> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/companies/${companyUuid}/roles/${role.publicId}/permissions`)}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/companies/${companyUuid}/roles/${role.publicId}/permissions`) }}>
                           <Key className="mr-2 size-4" /> Manage Permissions
                         </DropdownMenuItem>
                         {!role.systemDefined && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setDeleteTarget({ uuid: role.publicId, name: role.name })}>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteTarget({ uuid: role.publicId, name: role.name }) }}>
                               <Trash2 className="mr-2 size-4 text-destructive" /> Delete
                             </DropdownMenuItem>
                           </>

@@ -214,19 +214,20 @@ export default function DesignationsPage() {
                     <TableCell>
                       <StatusBadge status={d.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
+                        <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="cursor-pointer">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenuItem
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setStatusToggle({
                                 uuid: d.publicId ?? d.designationUuid,
                                 currentStatus: d.status,
                               })
-                            }
+                            }}
                           >
                             {d.status === "ACTIVE" ? (
                               <>

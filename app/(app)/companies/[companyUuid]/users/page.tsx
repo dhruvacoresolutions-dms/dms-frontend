@@ -140,7 +140,7 @@ export default function UsersPage() {
                     <TableCell>
                       <StatusBadge status={user.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           onClick={(e) => e.stopPropagation()}
@@ -148,35 +148,34 @@ export default function UsersPage() {
                         >
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenuItem
-                            onClick={() =>
-                              router.push(
-                                `/companies/${companyUuid}/users/${uid}`
-                              )
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/companies/${companyUuid}/users/${uid}`)
+                            }}
                           >
                             <Eye className="mr-2 size-4" />
                             View
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              router.push(
-                                `/companies/${companyUuid}/users/${uid}/edit`
-                              )
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/companies/${companyUuid}/users/${uid}/edit`)
+                            }}
                           >
                             <Edit className="mr-2 size-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setStatusToggle({
                                 userUuid: uid,
                                 currentStatus: user.status,
                               })
-                            }
+                            }}
                           >
                             {user.status === "ACTIVE" ? (
                               <>

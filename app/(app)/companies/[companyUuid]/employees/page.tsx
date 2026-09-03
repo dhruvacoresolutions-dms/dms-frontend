@@ -119,20 +119,20 @@ export default function EmployeesPage() {
                     <TableCell>{emp.email}</TableCell>
                     <TableCell>{emp.designationName ?? "-"}</TableCell>
                     <TableCell><StatusBadge status={emp.status} /></TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="cursor-pointer">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/companies/${companyUuid}/employees/${emp.employeeUuid}`)}>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/companies/${companyUuid}/employees/${emp.employeeUuid}`) }}>
                             <Eye className="mr-2 size-4" /> View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push(`/companies/${companyUuid}/employees/${emp.employeeUuid}/edit`)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/companies/${companyUuid}/employees/${emp.employeeUuid}/edit`) }}>
                             <Edit className="mr-2 size-4" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setStatusToggle({ employeeUuid: emp.employeeUuid, currentStatus: emp.status })}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatusToggle({ employeeUuid: emp.employeeUuid, currentStatus: emp.status }) }}>
                             {emp.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" /> Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
