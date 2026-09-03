@@ -128,7 +128,7 @@ export default function CompaniesPage() {
                     <TableCell>
                       <StatusBadge status={company.status} />
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           onClick={(e) => e.stopPropagation()}
@@ -136,12 +136,11 @@ export default function CompaniesPage() {
                         >
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            onClick={() =>
                               router.push(`/companies/${company.publicId}`)
-                            }}
+                            }
                           >
                             <Eye className="mr-2 size-4" />
                             View Details
