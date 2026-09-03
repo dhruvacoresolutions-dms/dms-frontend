@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
-import { useForm } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { PageHeader } from "@/components/common/PageHeader"
 import { useCreateEmployee } from "@/features/employees/hooks/use-create-employee"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { DesignationCombobox } from "@/features/designations/components/DesignationCombobox"
 
 const employeeSchema = z.object({
   employeeCode: z.string().min(1, "Code is required").max(50),
@@ -19,6 +20,7 @@ const employeeSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Enter a valid email"),
   phone: z.string().optional(),
+  designationUuid: z.string().optional(),
 })
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>
@@ -28,9 +30,9 @@ export default function NewEmployeePage() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const createMutation = useCreateEmployee(companyUuid)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<EmployeeFormValues>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
-    defaultValues: { employeeCode: "", firstName: "", lastName: "", email: "", phone: "" },
+    defaultValues: { employeeCode: "", firstName: "", lastName: "", email: "", phone: "", designationUuid: undefined },
   })
 
   return (
@@ -38,12 +40,16 @@ export default function NewEmployeePage() {
       <PageHeader title="Create Employee" description="Add a new employee" />
       <form
         className="max-w-lg space-y-6"
-        onSubmit={handleSubmit((values) =>
-          createMutation.mutate(values, {
+        onSubmit={handleSubmit((values) => {
+          const payload = {
+            ...values,
+            designationUuid: values.designationUuid || undefined,
+          }
+          createMutation.mutate(payload, {
             onSuccess: () => { toast.success("Employee created"); router.push(`/employees`) },
             onError: (error) => { toast.error(getApiErrorMessage(error, "Failed to create employee")) },
           })
-        )}
+        })}
       >
         <div className="rounded-lg border p-6 space-y-4">
           <FieldGroup>
@@ -72,6 +78,22 @@ export default function NewEmployeePage() {
             <Field>
               <FieldLabel>Phone</FieldLabel>
               <Input placeholder="Phone number (optional)" {...register("phone")} />
+            </Field>
+            <Field>
+              <FieldLabel>Designation</FieldLabel>
+              <Controller
+                control={control}
+                name="designationUuid"
+                render={({ field }) => (
+                  <DesignationCombobox
+                    companyUuid={companyUuid}
+                    value={field.value ?? null}
+                    onValueChange={(v) => field.onChange(v ?? undefined)}
+                    placeholder="Search designation..."
+                  />
+                )}
+              />
+              <FieldError errors={[errors.designationUuid]} />
             </Field>
           </FieldGroup>
         </div>
