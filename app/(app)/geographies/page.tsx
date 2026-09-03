@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Plus, Search, MoreHorizontal, ToggleLeft, ToggleRight, MapPin, ChevronsUpDown, Check } from "lucide-react"
+import { Plus, MoreHorizontal, ToggleLeft, ToggleRight, MapPin, ChevronsUpDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/common/SearchInput"
 import {
   Table,
   TableBody,
@@ -337,10 +338,11 @@ export default function GeographiesPage() {
       />
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search geographies..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(0) }} className="pl-9" />
-        </div>
+        <SearchInput
+          placeholder="Search geographies..."
+          defaultValue={search}
+          onChange={(v) => { setSearch(v); setPage(0) }}
+        />
       </div>
 
       {isLoading ? <TableSkeleton rows={5} /> : error ? (

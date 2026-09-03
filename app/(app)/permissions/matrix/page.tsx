@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ShieldCheck, Search, ShieldAlert } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { ShieldCheck, ShieldAlert } from "lucide-react"
+import { SearchInput } from "@/components/common/SearchInput"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
@@ -35,15 +35,11 @@ export default function PermissionMatrixPage() {
       <PageHeader title="Permission Matrix" description="Visual overview of all permissions organized by module and resource" />
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search modules, resources, permissions..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search modules, resources, permissions..."
+          defaultValue={search}
+          onChange={(v) => setSearch(v)}
+        />
       </div>
 
       {isLoading ? (
