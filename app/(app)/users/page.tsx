@@ -150,33 +150,32 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() =>
-                              router.push(
-                                `/users/${uid}`
-                              )
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/users/${uid}`)
+                            }}
                           >
                             <Eye className="mr-2 size-4" />
                             View
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              router.push(
-                                `/users/${uid}/edit`
-                              )
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/users/${uid}/edit`)
+                            }}
                           >
                             <Edit className="mr-2 size-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setStatusToggle({
                                 userUuid: uid,
                                 currentStatus: user.status,
                               })
-                            }
+                            }}
                           >
                             {user.status === "ACTIVE" ? (
                               <>

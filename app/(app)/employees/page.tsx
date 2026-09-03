@@ -125,14 +125,14 @@ export default function EmployeesPage() {
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/employees/${emp.employeeUuid}`)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/employees/${emp.employeeUuid}`) }}>
                             <Eye className="mr-2 size-4" /> View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push(`/employees/${emp.employeeUuid}/edit`)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/employees/${emp.employeeUuid}/edit`) }}>
                             <Edit className="mr-2 size-4" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setStatusToggle({ employeeUuid: emp.employeeUuid, currentStatus: emp.status })}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatusToggle({ employeeUuid: emp.employeeUuid, currentStatus: emp.status }) }}>
                             {emp.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" /> Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
