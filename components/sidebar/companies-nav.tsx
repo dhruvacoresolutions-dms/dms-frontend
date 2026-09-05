@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   SidebarGroup,
@@ -26,7 +27,7 @@ export function CompaniesNav() {
               <SidebarMenuButton
                 tooltip={item.title}
                 isActive={isActive}
-                render={<a href={item.url} />}
+                render={<Link href={item.url} />}
               >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
