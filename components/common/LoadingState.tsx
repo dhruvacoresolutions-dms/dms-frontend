@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 export function LoadingState({
@@ -25,7 +26,7 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-12 rounded-md bg-muted animate-pulse" />
+        <Skeleton key={i} className="h-12" />
       ))}
     </div>
   )
@@ -33,10 +34,10 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-lg border p-6 space-y-3">
-      <div className="h-4 w-1/3 bg-muted animate-pulse rounded" />
-      <div className="h-3 w-2/3 bg-muted animate-pulse rounded" />
-      <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+    <div className="space-y-3 rounded-lg border p-6">
+      <Skeleton className="h-4 w-1/3" />
+      <Skeleton className="h-3 w-2/3" />
+      <Skeleton className="h-3 w-1/2" />
     </div>
   )
 }
