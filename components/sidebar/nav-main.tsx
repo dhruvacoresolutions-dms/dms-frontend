@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import {
@@ -95,7 +96,7 @@ export function NavMain({ items }: { items: MainNav }) {
                 <SidebarMenuButton
                   tooltip={item.title}
                   isActive={activeUrl === item.url}
-                  render={<a href={item.url} />}
+                  render={<Link href={item.url} />}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -116,7 +117,7 @@ export function NavMain({ items }: { items: MainNav }) {
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton
                             isActive={activeUrl === subItem.url}
-                            render={<a href={subItem.url} />}
+                            render={<Link href={subItem.url} />}
                           >
                             <span>{subItem.title}</span>
                           </SidebarMenuSubButton>

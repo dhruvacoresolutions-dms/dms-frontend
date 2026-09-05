@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { ChevronRightIcon } from "lucide-react"
@@ -102,7 +103,7 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
                     <SidebarMenuButton
                       tooltip={item.title}
                       isActive={active}
-                      render={<a href={item.url} />}
+                      render={<Link href={item.url} />}
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
@@ -123,7 +124,7 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
                             <SidebarMenuSubItem key={sub.title}>
                               <SidebarMenuSubButton
                                 isActive={activeUrl === sub.url}
-                                render={<a href={sub.url} />}
+                                render={<Link href={sub.url} />}
                               >
                                 <span>{sub.title}</span>
                               </SidebarMenuSubButton>
