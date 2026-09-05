@@ -71,6 +71,8 @@ export function ThemeCustomizer({
     THEME_PRESETS.find((p) => JSON.stringify(p.theme) === JSON.stringify(theme))
       ?.id ?? ""
 
+  const selectedPreset = THEME_PRESETS.find((p) => p.id === currentPreset) ?? null
+
   return (
     <Sheet
       open={open}
@@ -166,7 +168,17 @@ export function ThemeCustomizer({
               }}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a preset" />
+                {selectedPreset ? (
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="size-3 rounded-full"
+                      style={{ backgroundColor: selectedPreset.theme.primary.color }}
+                    />
+                    {selectedPreset.name}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Select a preset</span>
+                )}
               </SelectTrigger>
               <SelectContent>
                 {THEME_PRESETS.map((p) => (
