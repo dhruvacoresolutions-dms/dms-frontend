@@ -3,9 +3,10 @@
 import * as React from "react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
+import { NavGroups } from "@/components/sidebar/nav-groups"
 import { CompaniesNav } from "@/components/sidebar/companies-nav"
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar"
-import { mainNav } from "@/configs/components/sidebar"
+import { mainNav, navGroups } from "@/configs/components/sidebar"
 import { useAuthStore } from "@/stores/auth-store"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -21,7 +22,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     >
       <SidebarContent>
         {isPlatformAdmin && <CompaniesNav />}
-        {!isPlatformAdmin && <NavMain items={mainNav} />}
+        {!isPlatformAdmin && (
+          <>
+            <NavMain items={mainNav} />
+            <NavGroups groups={navGroups} />
+          </>
+        )}
       </SidebarContent>
     </Sidebar>
   )
