@@ -11,4 +11,10 @@ export const employeeKeys = {
     [...employeeKeys.details(companyUuid), employeeUuid] as const,
   geographies: (companyUuid: string, employeeUuid: string) =>
     [...employeeKeys.detail(companyUuid, employeeUuid), "geographies"] as const,
+  imports: (companyUuid: string) =>
+    [...employeeKeys.all(companyUuid), "imports"] as const,
+  importDetail: (companyUuid: string, importJobUuid: string) =>
+    [...employeeKeys.imports(companyUuid), importJobUuid] as const,
+  importRows: (companyUuid: string, importJobUuid: string) =>
+    [...employeeKeys.importDetail(companyUuid, importJobUuid), "rows"] as const,
 } as const

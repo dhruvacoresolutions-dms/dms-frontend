@@ -113,11 +113,11 @@ export async function getGeographyImportTemplate(
 export async function uploadGeographyImport(companyUuid: string, file: File) {
   const resolved = companyHeader(companyUuid)
   const form = new FormData()
-  form.append("file", file)
+  form.append("file", file, file.name)
   const { data } = await apiClient.post<
     ApiSuccessResponse<{ importJobUuid?: string; publicId?: string } & Record<string, unknown>>
   >(`${baseUrl(companyUuid)}/imports`, form, {
-    headers: { "X-Company-Context": resolved, "Content-Type": "multipart/form-data" },
+    headers: { "X-Company-Context": resolved },
   })
   return data.data
 }

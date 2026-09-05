@@ -179,7 +179,7 @@ export default function EmployeesPage() {
         }}
       />
 
-      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} onUploadComplete={() => refetch()} />
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
     </div>
   )
 }

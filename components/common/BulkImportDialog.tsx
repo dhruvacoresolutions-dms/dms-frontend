@@ -59,7 +59,7 @@ export type BulkImportDialogProps = {
   dropzoneLabel?: string
   /** Dropzone description, e.g. "CSV or Excel up to 10 MB" */
   dropzoneDescription?: string
-  /** Accepted file extensions, default ".csv,.xlsx,.xls" */
+  /** Accepted file extensions, default ".csv,.xlsx" */
   accept?: string
   /** Base filename without extension, e.g. "employee-import-template" */
   templateFileName?: string
@@ -78,8 +78,8 @@ export function BulkImportDialog({
   title,
   description,
   dropzoneLabel = "Drop file here",
-  dropzoneDescription = "CSV or Excel up to 10 MB",
-  accept = ".csv,.xlsx,.xls",
+  dropzoneDescription = "CSV or XLSX up to 10 MB",
+  accept = ".csv,.xlsx",
   templateFileName = "import-template",
   getTemplate,
   uploadFn,
@@ -105,88 +105,84 @@ export function BulkImportDialog({
     onOpenChange(nextOpen)
   }
 
-  const startSimulatedUpload = React.useCallback((files: File[]) => {
+  const handleFileSelect = React.useCallback((files: File[]) => {
     if (files.length === 0) return
-    const next: UploadItem[] = files.map((f) => ({
-      file: f,
-      progress: 0,
-      state: "idle" as const,
-    }))
-    setItems(next)
+    // enforce single-file: only first file is considered, store as idle until user clicks Upload
+    const file = files[0]
+    if (!file) return
+    // clear any previous timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    setItems([
+      {
+        file,
+        progress: 0,
+        state: "idle" as const,
+      },
+    ])
+  }, [])
+
+  const startSimulatedUpload = React.useCallback(() => {
+    // transition idle/error -> uploading with simulated progress; expects items already set
+    setItems((prev) => prev.map((it) => ({ ...it, state: "uploading" as const, progress: 0 })))
 
     if (timerRef.current) clearInterval(timerRef.current)
 
-    setTimeout(() => {
-      setItems((prev) => prev.map((it) => ({ ...it, state: "uploading" as const })))
-
-      timerRef.current = setInterval(() => {
-        setItems((prev) => {
-          const updated = prev.map((item) => {
-            if (item.state === "uploading") {
-              const inc = Math.floor(Math.random() * 18) + 8
-              const nextProgress = Math.min(100, item.progress + inc)
-              if (nextProgress >= 100) {
-                if (Math.random() < 0.15) {
-                  return { ...item, progress: 100, state: "error" as const }
-                }
-                return { ...item, progress: 100, state: "processing" as const }
+    // idle -> uploading already done, start interval for progress
+    timerRef.current = setInterval(() => {
+      setItems((prev) => {
+        const updated = prev.map((item) => {
+          if (item.state === "uploading") {
+            const inc = Math.floor(Math.random() * 18) + 8
+            const nextProgress = Math.min(100, item.progress + inc)
+            if (nextProgress >= 100) {
+              if (Math.random() < 0.15) {
+                return { ...item, progress: 100, state: "error" as const }
               }
-              return {
-                ...item,
-                progress: nextProgress,
-                state: "uploading" as const,
-              }
+              return { ...item, progress: 100, state: "processing" as const }
             }
-            if (item.state === "processing") {
-              return item
+            return {
+              ...item,
+              progress: nextProgress,
+              state: "uploading" as const,
             }
+          }
+          if (item.state === "processing") {
             return item
-          })
-          return updated
+          }
+          return item
         })
-      }, 280)
-    }, 600)
+        return updated
+      })
+    }, 280)
   }, [])
 
-  const startRealUpload = React.useCallback(
-    async (files: File[]) => {
-      if (!uploadFn) {
-        startSimulatedUpload(files)
-        return
-      }
-      const next: UploadItem[] = files.map((f) => ({
-        file: f,
-        progress: 30,
-        state: "uploading" as const,
-      }))
-      setItems(next)
-      for (let idx = 0; idx < files.length; idx++) {
-        const file = files[idx]
-        try {
-          setItems((prev) =>
-            prev.map((it, i) => (i === idx ? { ...it, progress: 60, state: "processing" as const } : it))
-          )
-          await uploadFn(file)
-          // keep processing briefly for UX
-          await new Promise((r) => setTimeout(r, 600))
-          setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 100, state: "done" as const } : it)))
-          toast.success(`${file.name} uploaded`)
-        } catch (error) {
-          setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 100, state: "error" as const } : it)))
-          toast.error(getApiErrorMessage(error, `Failed to upload ${file.name}`))
-        }
-      }
-    },
-    [uploadFn, startSimulatedUpload]
-  )
-
-  const startUpload = (files: File[]) => {
-    if (uploadFn) {
-      void startRealUpload(files)
-    } else {
-      startSimulatedUpload(files)
+  const startRealUpload = React.useCallback(async () => {
+    if (!uploadFn) {
+      startSimulatedUpload()
+      return
     }
-  }
+    // upload the single stored file; keep idx 0 for state updates
+    const current = items[0]
+    if (!current) return
+    const file = current.file
+    const idx = 0
+    // move to uploading then processing
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 30, state: "uploading" as const } : it)))
+    try {
+      setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 60, state: "processing" as const } : it)))
+      await uploadFn(file)
+      // keep processing briefly for UX
+      await new Promise((r) => setTimeout(r, 600))
+      setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 100, state: "done" as const } : it)))
+      toast.success(`${file.name} uploaded`)
+    } catch (error) {
+      setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 100, state: "error" as const } : it)))
+      toast.error(getApiErrorMessage(error, `Failed to upload ${file.name}`))
+    }
+  }, [uploadFn, startSimulatedUpload, items])
 
   // processing -> done after delay (for simulated flow)
   React.useEffect(() => {
@@ -220,8 +216,21 @@ export function BulkImportDialog({
     const item = items[index]
     if (!item) return
     if (uploadFn) {
-      setItems((prev) => prev.filter((_, i) => i !== index))
-      void startRealUpload([item.file])
+      const file = item.file
+      // reset to single file uploading and retry immediately
+      setItems([{ file, progress: 30, state: "uploading" as const }])
+      void (async () => {
+        try {
+          setItems((prev) => prev.map((it) => ({ ...it, progress: 60, state: "processing" as const })))
+          await uploadFn(file)
+          await new Promise((r) => setTimeout(r, 600))
+          setItems((prev) => prev.map((it) => ({ ...it, progress: 100, state: "done" as const })))
+          toast.success(`${file.name} uploaded`)
+        } catch (error) {
+          setItems((prev) => prev.map((it) => ({ ...it, progress: 100, state: "error" as const })))
+          toast.error(getApiErrorMessage(error, `Failed to upload ${file.name}`))
+        }
+      })()
       return
     }
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, state: "uploading" as const, progress: 0 } : it)))
@@ -269,6 +278,22 @@ export function BulkImportDialog({
   const isUploading = items.some((i) => i.state === "uploading" || i.state === "processing")
   const isDone = items.length > 0 && items.every((i) => i.state === "done")
 
+  const handleUploadClick = React.useCallback(() => {
+    if (isDone) {
+      onUploadComplete?.(items.map((i) => i.file))
+      handleOpenChange(false)
+      return
+    }
+    if (items.length === 0 || isUploading) return
+    const hasIdleOrError = items.some((it) => it.state === "idle" || it.state === "error")
+    if (!hasIdleOrError) return
+    if (uploadFn) {
+      void startRealUpload()
+    } else {
+      startSimulatedUpload()
+    }
+  }, [items, isDone, isUploading, uploadFn, startRealUpload, startSimulatedUpload, onUploadComplete, handleOpenChange])
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -278,14 +303,17 @@ export function BulkImportDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <Dropzone
-            accept={accept}
-            multiple={false}
-            maxSize={maxSize}
-            onChange={startUpload}
-            label={dropzoneLabel}
-            description={dropzoneDescription}
-          />
+          {items.length === 0 ? (
+            <Dropzone
+              accept={accept}
+              multiple={false}
+              maxFiles={1}
+              maxSize={maxSize}
+              onChange={handleFileSelect}
+              label={dropzoneLabel}
+              description={dropzoneDescription}
+            />
+          ) : null}
 
           {items.length > 0 && (
             <div className="flex w-full flex-col gap-2">
@@ -377,15 +405,7 @@ export function BulkImportDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {isDone ? "Close" : "Cancel"}
           </Button>
-          <Button
-            disabled={items.length === 0 || isUploading}
-            onClick={() => {
-              if (isDone) {
-                onUploadComplete?.(items.map((i) => i.file))
-                handleOpenChange(false)
-              }
-            }}
-          >
+          <Button disabled={items.length === 0 || isUploading} onClick={handleUploadClick}>
             {isUploading ? "Uploading..." : isDone ? "Done" : "Upload"}
           </Button>
         </DialogFooter>
