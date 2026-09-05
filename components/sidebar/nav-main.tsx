@@ -18,7 +18,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { ChevronRightIcon } from "lucide-react"
+import { ChevronRightIcon, LayoutDashboard } from "lucide-react"
 import type { MainNav } from "@/types/components/sidebar"
 
 function normalizePath(pathname: string) {
@@ -66,8 +66,11 @@ export function NavMain({ items }: { items: MainNav }) {
   }
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>DMS</SidebarGroupLabel>
+    <SidebarGroup className="pt-2">
+      <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-primary [&>svg]:text-primary">
+        <LayoutDashboard className="size-3.5" />
+        DMS
+      </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
           const hasChildren = !!item.items?.length

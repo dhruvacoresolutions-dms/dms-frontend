@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { DynamicThemeProvider } from "@/components/theme/dynamic-theme-provider"
+import { ThemeInitScript } from "@/components/theme/theme-init-script"
 import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { QueryProvider } from "@/components/providers/query-provider"
@@ -31,6 +32,9 @@ export default function RootLayout({
         inter.variable
       )}
     >
+      <head>
+        <ThemeInitScript />
+      </head>
       <body>
         <QueryProvider>
           <ThemeProvider>

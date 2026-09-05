@@ -14,8 +14,10 @@ export function CompaniesNav() {
   const pathname = usePathname()
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+    <SidebarGroup className="pt-2">
+      <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-primary">
+        Platform
+      </SidebarGroupLabel>
       <SidebarMenu>
         {companiesNav.map((item) => {
           const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`)

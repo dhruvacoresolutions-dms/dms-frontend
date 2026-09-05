@@ -9,3 +9,9 @@ export type SidebarNavItem = {
 }
 
 export type MainNav = SidebarNavItem[]
+
+export type NavGroup = {
+  label: string
+  icon?: LucideIcon
+  items: SidebarNavItem[]
+}
