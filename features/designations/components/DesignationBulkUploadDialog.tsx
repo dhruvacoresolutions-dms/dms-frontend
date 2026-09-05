@@ -22,9 +22,10 @@ export function DesignationBulkUploadDialog({
       onOpenChange={onOpenChange}
       onUploadComplete={onUploadComplete}
       title="Bulk upload designations"
-      description="Upload a CSV or Excel file to import designations in bulk. You can track progress below."
+      description="Upload a CSV or XLSX file to import designations in bulk. You can track progress below."
       dropzoneLabel="Drop designation file here"
-      dropzoneDescription="CSV or Excel up to 10 MB"
+      dropzoneDescription="CSV or XLSX up to 10 MB"
+      accept=".csv,.xlsx"
       templateFileName="designation-import-template"
       getTemplate={(format) => getDesignationImportTemplate(companyUuid, format)}
       uploadFn={(file) => uploadDesignationImport(companyUuid, file)}

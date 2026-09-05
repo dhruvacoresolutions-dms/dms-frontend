@@ -42,6 +42,13 @@ apiClient.interceptors.request.use((config) => {
     config.headers["X-Company-Context"] = companyUuid
   }
 
+  // For FormData, let browser set correct multipart boundary – remove default JSON content-type
+  if (config.data instanceof FormData) {
+    // axios in browser will set correct Content-Type with boundary automatically
+    delete (config.headers as Record<string, unknown>)["Content-Type"]
+    delete (config.headers as Record<string, unknown>)["content-type"]
+  }
+
   return config
 })
 

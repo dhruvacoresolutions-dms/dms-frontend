@@ -22,9 +22,10 @@ export function GeographyBulkUploadDialog({
       onOpenChange={onOpenChange}
       onUploadComplete={onUploadComplete}
       title="Bulk upload geographies"
-      description="Upload a CSV or Excel file to import geographies in bulk. You can track progress below."
+      description="Upload a CSV or XLSX file to import geographies in bulk. You can track progress below."
       dropzoneLabel="Drop geography file here"
-      dropzoneDescription="CSV or Excel up to 10 MB"
+      dropzoneDescription="CSV or XLSX up to 10 MB"
+      accept=".csv,.xlsx"
       templateFileName="geography-import-template"
       getTemplate={(format) => getGeographyImportTemplate(companyUuid, format)}
       uploadFn={(file) => uploadGeographyImport(companyUuid, file)}

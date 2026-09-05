@@ -22,8 +22,13 @@ function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)
 }
 
-function normalizeDesignation(raw: DesignationResponse & { publicId?: string; designationUuid?: string }): DesignationResponse {
-  const publicId = (raw as unknown as { publicId: string }).publicId ?? raw.designationUuid ?? ""
+function normalizeDesignation(
+  raw: DesignationResponse & { publicId?: string; designationUuid?: string }
+): DesignationResponse {
+  const publicId =
+    (raw as unknown as { publicId: string }).publicId ??
+    raw.designationUuid ??
+    ""
   return {
     ...raw,
     publicId,
@@ -36,8 +41,11 @@ export async function getDesignations(
   params?: DesignationListParams
 ) {
   const resolved = companyHeader(companyUuid)
-  const queryParams = params ? { ...params, query: params.query ?? params.search } : params
-  if (queryParams && "search" in queryParams) delete (queryParams as Record<string, unknown>).search
+  const queryParams = params
+    ? { ...params, query: params.query ?? params.search }
+    : params
+  if (queryParams && "search" in queryParams)
+    delete (queryParams as Record<string, unknown>).search
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<DesignationResponse>>
   >(baseUrl(companyUuid), {
@@ -51,7 +59,10 @@ export async function getDesignations(
   } as PageResponse<DesignationResponse>
 }
 
-export async function getDesignation(companyUuid: string, designationUuid: string) {
+export async function getDesignation(
+  companyUuid: string,
+  designationUuid: string
+) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<ApiSuccessResponse<DesignationResponse>>(
     `${baseUrl(companyUuid)}/${designationUuid}`,
@@ -65,11 +76,9 @@ export async function createDesignation(
   input: CreateDesignationRequest
 ) {
   const resolved = companyHeader(companyUuid)
-  const { data } = await apiClient.post<ApiSuccessResponse<DesignationResponse>>(
-    baseUrl(companyUuid),
-    input,
-    { headers: { "X-Company-Context": resolved } }
-  )
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<DesignationResponse>
+  >(baseUrl(companyUuid), input, { headers: { "X-Company-Context": resolved } })
   return normalizeDesignation(data.data)
 }
 
@@ -93,11 +102,11 @@ export async function updateDesignationStatus(
   input: UpdateDesignationStatusRequest
 ) {
   const resolved = companyHeader(companyUuid)
-  const { data } = await apiClient.patch<ApiSuccessResponse<DesignationResponse>>(
-    `${baseUrl(companyUuid)}/${designationUuid}/status`,
-    input,
-    { headers: { "X-Company-Context": resolved } }
-  )
+  const { data } = await apiClient.patch<
+    ApiSuccessResponse<DesignationResponse>
+  >(`${baseUrl(companyUuid)}/${designationUuid}/status`, input, {
+    headers: { "X-Company-Context": resolved },
+  })
   return normalizeDesignation(data.data)
 }
 
@@ -122,11 +131,15 @@ export async function getDesignationImportTemplate(
 export async function uploadDesignationImport(companyUuid: string, file: File) {
   const resolved = companyHeader(companyUuid)
   const form = new FormData()
-  form.append("file", file)
+  form.append("file", file, file.name)
   const { data } = await apiClient.post<
-    ApiSuccessResponse<{ importJobUuid?: string; publicId?: string } & Record<string, unknown>>
+    ApiSuccessResponse<
+      { importJobUuid?: string; publicId?: string } & Record<string, unknown>
+    >
   >(`${baseUrl(companyUuid)}/imports`, form, {
-    headers: { "X-Company-Context": resolved, "Content-Type": "multipart/form-data" },
+    headers: {
+      "X-Company-Context": resolved,
+    },
   })
   return data.data
 }

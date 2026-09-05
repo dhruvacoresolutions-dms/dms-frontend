@@ -43,8 +43,16 @@ export async function getEmployees(
   params?: EmployeeListParams
 ) {
   const resolved = companyHeader(companyUuid)
-  const queryParams = params ? { ...params, query: (params as Record<string, unknown>).query ?? (params as Record<string, unknown>).search } as EmployeeListParams : params
-  if (queryParams && "search" in (queryParams as Record<string, unknown>)) delete (queryParams as Record<string, unknown>).search
+  const queryParams = params
+    ? ({
+        ...params,
+        query:
+          (params as Record<string, unknown>).query ??
+          (params as Record<string, unknown>).search,
+      } as EmployeeListParams)
+    : params
+  if (queryParams && "search" in (queryParams as Record<string, unknown>))
+    delete (queryParams as Record<string, unknown>).search
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<EmployeeResponse>>
   >(baseUrl(companyUuid), {
@@ -161,7 +169,10 @@ export async function removeEmployeeGeography(
 
 // ── Bulk Import ────────────────────────────────────────────────────────────
 
-export async function getEmployeeImportTemplate(companyUuid: string, format?: "csv" | "xlsx") {
+export async function getEmployeeImportTemplate(
+  companyUuid: string,
+  format?: "csv" | "xlsx"
+) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/template`,
@@ -174,18 +185,21 @@ export async function getEmployeeImportTemplate(companyUuid: string, format?: "c
   return data
 }
 
-export async function uploadEmployeeImport(
-  companyUuid: string,
-  file: File
-) {
+export async function uploadEmployeeImport(companyUuid: string, file: File) {
   const resolved = companyHeader(companyUuid)
   const form = new FormData()
-  form.append("file", file)
+  form.append("file", file, file.name)
   const { data } = await apiClient.post<
     ApiSuccessResponse<EmployeeImportJobResponse>
-  >(`${baseUrl(companyUuid).replace("/employees", "/employee-imports")}`, form, {
-    headers: { "X-Company-Context": resolved, "Content-Type": "multipart/form-data" },
-  })
+  >(
+    `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}`,
+    form,
+    {
+      headers: {
+        "X-Company-Context": resolved,
+      },
+    }
+  )
   return data.data
 }
 

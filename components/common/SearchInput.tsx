@@ -33,6 +33,11 @@ export function SearchInput({
   const initial = value ?? defaultValue
   const [innerValue, setInnerValue] = useState<string>(initial)
   const isFirstRender = useRef(true)
+  const onChangeRef = useRef(onChange)
+
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   const debouncedValue = useDebounce(innerValue, debounceMs)
 
@@ -41,8 +46,8 @@ export function SearchInput({
       isFirstRender.current = false
       return
     }
-    onChange?.(debouncedValue)
-  }, [debouncedValue, onChange])
+    onChangeRef.current?.(debouncedValue)
+  }, [debouncedValue])
 
   return (
     <InputGroup className={cn("max-w-sm flex-1", className)}>
