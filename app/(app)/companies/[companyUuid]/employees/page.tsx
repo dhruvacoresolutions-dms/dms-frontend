@@ -3,9 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight } from "lucide-react"
+import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
+import { BulkUploadDialog } from "@/features/employees/components/BulkUploadDialog"
 import {
   Table,
   TableBody,
@@ -42,6 +43,7 @@ export default function EmployeesPage() {
     employeeUuid: string
     currentStatus: string
   } | null>(null)
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const { data, isLoading, error, refetch } = useEmployees(companyUuid, {
     search: search || undefined,
@@ -59,10 +61,16 @@ export default function EmployeesPage() {
         title="Employees"
         description="Manage company employees"
         action={
-          <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />}>
-            <Plus className="mr-2 size-4" />
-            Create Employee
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="mr-2 size-4" />
+              Bulk Upload
+            </Button>
+            <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />}>
+              <Plus className="mr-2 size-4" />
+              Create Employee
+            </Button>
+          </div>
         }
       />
 
@@ -170,6 +178,8 @@ export default function EmployeesPage() {
           )
         }}
       />
+
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} onUploadComplete={() => refetch()} />
     </div>
   )
 }

@@ -91,3 +91,33 @@ export async function updateGeographyStatus(
   })
   return data.data
 }
+
+// ── Bulk Import ────────────────────────────────────────────────────────────
+
+export async function getGeographyImportTemplate(
+  companyUuid: string,
+  format?: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${baseUrl(companyUuid)}/imports/template`,
+    {
+      headers: { "X-Company-Context": resolved },
+      params: format ? { format } : undefined,
+      responseType: "blob",
+    }
+  )
+  return data
+}
+
+export async function uploadGeographyImport(companyUuid: string, file: File) {
+  const resolved = companyHeader(companyUuid)
+  const form = new FormData()
+  form.append("file", file)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{ importJobUuid?: string; publicId?: string } & Record<string, unknown>>
+  >(`${baseUrl(companyUuid)}/imports`, form, {
+    headers: { "X-Company-Context": resolved, "Content-Type": "multipart/form-data" },
+  })
+  return data.data
+}
