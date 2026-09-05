@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import {
@@ -19,8 +20,12 @@ function normalizePath(pathname: string) {
   return pathname.replace(/^\/companies\/[^/]+/, "/companies/current")
 }
 
-function collectUrlsRecursive(items: import("@/types/components/sidebar").SidebarNavItem[]): string[] {
-  return items.flatMap((i) => [i.url, ...collectUrlsRecursive(i.items ?? [])]).filter((u) => u !== "#")
+function collectUrlsRecursive(
+  items: import("@/types/components/sidebar").SidebarNavItem[]
+): string[] {
+  return items
+    .flatMap((i) => [i.url, ...collectUrlsRecursive(i.items ?? [])])
+    .filter((u) => u !== "#")
 }
 
 function getAllUrls(nav: MainNav, groups: NavGroup[] = []): string[] {
@@ -29,7 +34,11 @@ function getAllUrls(nav: MainNav, groups: NavGroup[] = []): string[] {
   return [...navUrls, ...groupUrls]
 }
 
-function getActiveUrl(pathname: string, nav: MainNav, groups: NavGroup[] = []): string | null {
+function getActiveUrl(
+  pathname: string,
+  nav: MainNav,
+  groups: NavGroup[] = []
+): string | null {
   const n = normalizePath(pathname)
   const urls = getAllUrls(nav, groups)
   let best: string | null = null
@@ -54,11 +63,11 @@ export function TopNavBar() {
     <nav
       className={cn(
         "sticky top-(--header-height) z-40 flex h-11 w-full items-center border-b",
-        "bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)] border-[var(--sidebar-border)]",
+        "border-[var(--sidebar-border)] bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)]",
         "overflow-hidden"
       )}
     >
-      <div className="flex h-full w-full items-center overflow-x-auto px-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-full w-full [scrollbar-width:none] scrollbar-none items-center overflow-x-auto px-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <NavigationMenu className="max-w-none flex-1 justify-start">
           <NavigationMenuList className="flex-nowrap gap-0.5">
             {visibleNav.map((item) => {
@@ -69,12 +78,13 @@ export function TopNavBar() {
                 return (
                   <NavigationMenuItem key={item.title}>
                     <NavigationMenuLink
+                      render={<Link href={item.url} />}
                       href={item.url}
                       className={cn(
                         "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium transition-colors",
                         directActive
                           ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
-                          : "hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)] text-[var(--sidebar-foreground)]"
+                          : "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]"
                       )}
                     >
                       {item.icon && <item.icon className="size-4" />}
@@ -102,6 +112,7 @@ export function TopNavBar() {
                         return (
                           <li key={sub.title}>
                             <NavigationMenuLink
+                              render={<Link href={sub.url} />}
                               href={sub.url}
                               className={cn(
                                 "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm",
@@ -123,17 +134,24 @@ export function TopNavBar() {
             })}
             {/* Grouped navigation — Primary/Sales/Inventory/Master/Financial/Reports — supports children like MainNav */}
             {visibleGroups.map((group) => {
-              const isGroupActive = group.items.some(function check(i): boolean {
-                if (activeUrl === i.url || (i.url !== "#" && activeUrl?.startsWith(i.url + "/")) ) return true
-                return i.items?.some(check) ?? false
-              })
+              const isGroupActive = group.items.some(
+                function check(i): boolean {
+                  if (
+                    activeUrl === i.url ||
+                    (i.url !== "#" && activeUrl?.startsWith(i.url + "/"))
+                  )
+                    return true
+                  return i.items?.some(check) ?? false
+                }
+              )
               return (
                 <NavigationMenuItem key={group.label}>
                   <NavigationMenuTrigger
                     className={cn(
                       "h-8 gap-1.5 rounded-md px-2.5 text-sm",
                       "bg-transparent text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)] data-[state=open]:bg-[var(--sidebar-hover)]",
-                      isGroupActive && "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
+                      isGroupActive &&
+                        "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
                     )}
                   >
                     {group.icon && <group.icon className="size-4" />}
@@ -148,6 +166,7 @@ export function TopNavBar() {
                           return (
                             <li key={sub.title}>
                               <NavigationMenuLink
+                                render={<Link href={sub.url} />}
                                 href={sub.url}
                                 className={cn(
                                   "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm",
@@ -165,12 +184,15 @@ export function TopNavBar() {
                         // Nested sub-items (rare) — render with indent
                         return (
                           <li key={sub.title} className="grid gap-1">
-                            <div className="px-2.5 py-1 text-xs font-medium text-muted-foreground">{sub.title}</div>
+                            <div className="px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                              {sub.title}
+                            </div>
                             {sub.items!.map((nested) => {
                               const nestedActive = activeUrl === nested.url
                               return (
                                 <NavigationMenuLink
                                   key={nested.title}
+                                  render={<Link href={nested.url} />}
                                   href={nested.url}
                                   className={cn(
                                     "ml-2 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm",
@@ -179,7 +201,9 @@ export function TopNavBar() {
                                       : "hover:bg-muted"
                                   )}
                                 >
-                                  {nested.icon && <nested.icon className="size-4" />}
+                                  {nested.icon && (
+                                    <nested.icon className="size-4" />
+                                  )}
                                   {nested.title}
                                 </NavigationMenuLink>
                               )
