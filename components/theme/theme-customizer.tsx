@@ -31,7 +31,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
-import { ThemePreview } from "./theme-preview"
 
 export function ThemeCustomizer({
   open,
@@ -94,8 +93,6 @@ export function ThemeCustomizer({
         </SheetHeader>
 
         <div className="flex-1 space-y-6 overflow-y-auto p-4">
-          <ThemePreview config={theme} />
-
           <section className="space-y-3">
             <h3 className="text-sm font-semibold">Appearance</h3>
             <Select
@@ -152,7 +149,9 @@ export function ThemeCustomizer({
                 Top Navbar
               </Label>
             </RadioGroup>
-            <p className="text-xs text-muted-foreground">Choose navigation layout</p>
+            <p className="text-xs text-muted-foreground">
+              Choose navigation layout
+            </p>
           </section>
 
           <Separator />
