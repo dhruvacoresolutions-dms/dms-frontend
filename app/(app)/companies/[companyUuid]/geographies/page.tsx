@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Plus, Search, MoreHorizontal, ToggleLeft, ToggleRight, MapPin, ChevronsUpDown, Check } from "lucide-react"
+import { Plus, MoreHorizontal, ToggleLeft, ToggleRight, MapPin, ChevronsUpDown, Check, Upload } from "lucide-react"
 import { useParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/common/SearchInput"
 import {
   Table,
   TableBody,
@@ -54,6 +55,7 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { useGeographies } from "@/features/geographies/hooks/use-geographies"
 import { useCreateGeography } from "@/features/geographies/hooks/use-create-geography"
 import { useUpdateGeographyStatus } from "@/features/geographies/hooks/use-update-geography-status"
+import { GeographyBulkUploadDialog } from "@/features/geographies/components/GeographyBulkUploadDialog"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -103,6 +105,7 @@ export default function GeographiesPage() {
   const [page, setPage] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
   const [parentOpen, setParentOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [statusToggle, setStatusToggle] = useState<{ uuid: string; currentStatus: string } | null>(null)
 
   const { data, isLoading, error, refetch } = useGeographies(companyUuid, {
@@ -183,10 +186,15 @@ export default function GeographiesPage() {
         title="Geographies"
         description="Manage geographical hierarchy"
         action={
-          <Dialog open={createOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="mr-2 size-4" /> Create Geography
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="mr-2 size-4" />
+              Bulk Upload
+            </Button>
+            <Dialog open={createOpen} onOpenChange={handleOpenChange}>
+              <DialogTrigger render={<Button />}>
+                <Plus className="mr-2 size-4" /> Create Geography
+              </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create Geography</DialogTitle>
@@ -323,14 +331,16 @@ export default function GeographiesPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search geographies..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(0) }} className="pl-9" />
-        </div>
+        <SearchInput
+          placeholder="Search geographies..."
+          defaultValue={search}
+          onChange={(v) => { setSearch(v); setPage(0) }}
+        />
       </div>
 
       {isLoading ? <TableSkeleton rows={5} /> : error ? (
@@ -404,6 +414,13 @@ export default function GeographiesPage() {
             }
           )
         }}
+      />
+
+      <GeographyBulkUploadDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        companyUuid={companyUuid}
+        onUploadComplete={() => refetch()}
       />
     </div>
   )

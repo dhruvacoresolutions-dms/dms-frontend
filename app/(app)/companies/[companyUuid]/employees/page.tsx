@@ -3,9 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { Briefcase, Plus, Search, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight } from "lucide-react"
+import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/common/SearchInput"
+import { BulkUploadDialog } from "@/features/employees/components/BulkUploadDialog"
 import {
   Table,
   TableBody,
@@ -42,6 +43,7 @@ export default function EmployeesPage() {
     employeeUuid: string
     currentStatus: string
   } | null>(null)
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const { data, isLoading, error, refetch } = useEmployees(companyUuid, {
     search: search || undefined,
@@ -59,23 +61,25 @@ export default function EmployeesPage() {
         title="Employees"
         description="Manage company employees"
         action={
-          <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />}>
-            <Plus className="mr-2 size-4" />
-            Create Employee
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="mr-2 size-4" />
+              Bulk Upload
+            </Button>
+            <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />}>
+              <Plus className="mr-2 size-4" />
+              Create Employee
+            </Button>
+          </div>
         }
       />
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search employees..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search employees..."
+          defaultValue={search}
+          onChange={(v) => { setSearch(v); setPage(0) }}
+        />
       </div>
 
       {isLoading ? <TableSkeleton rows={5} /> : error ? (
@@ -174,6 +178,8 @@ export default function EmployeesPage() {
           )
         }}
       />
+
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} onUploadComplete={() => refetch()} />
     </div>
   )
 }

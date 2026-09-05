@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { useAuthStore } from "@/stores/auth-store"
-import { Plus, Search, MoreHorizontal, ToggleLeft, ToggleRight } from "lucide-react"
+import { Plus, MoreHorizontal, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/common/SearchInput"
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { useDesignations } from "@/features/designations/hooks/use-designations"
 import { useCreateDesignation } from "@/features/designations/hooks/use-create-designation"
 import { useUpdateDesignationStatus } from "@/features/designations/hooks/use-update-designation-status"
+import { DesignationBulkUploadDialog } from "@/features/designations/components/DesignationBulkUploadDialog"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -60,6 +62,7 @@ export default function DesignationsPage() {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [statusToggle, setStatusToggle] = useState<{
     uuid: string
     currentStatus: string
@@ -93,10 +96,15 @@ export default function DesignationsPage() {
         title="Designations"
         description="Manage job designations"
         action={
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger render={<Button />}>
-              <Plus className="mr-2 size-4" /> Create Designation
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="mr-2 size-4" />
+              Bulk Upload
+            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger render={<Button />}>
+                <Plus className="mr-2 size-4" /> Create Designation
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create Designation</DialogTitle>
@@ -161,22 +169,19 @@ export default function DesignationsPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search designations..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(0)
-            }}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search designations..."
+          defaultValue={search}
+          onChange={(v) => {
+            setSearch(v)
+            setPage(0)
+          }}
+        />
       </div>
 
       {isLoading ? (
@@ -302,6 +307,13 @@ export default function DesignationsPage() {
             }
           )
         }}
+      />
+
+      <DesignationBulkUploadDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        companyUuid={companyUuid}
+        onUploadComplete={() => refetch()}
       />
     </div>
   )

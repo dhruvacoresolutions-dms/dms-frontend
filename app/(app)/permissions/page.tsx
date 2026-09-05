@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ShieldCheck, Search, ShieldAlert } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { ShieldCheck, ShieldAlert } from "lucide-react"
+import { SearchInput } from "@/components/common/SearchInput"
 import {
   Table,
   TableBody,
@@ -40,15 +40,11 @@ export default function PermissionsPage() {
       <PageHeader title="Permissions" description="View all system permissions" />
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search permissions..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search permissions..."
+          defaultValue={search}
+          onChange={(v) => setSearch(v)}
+        />
       </div>
 
       {isLoading ? (

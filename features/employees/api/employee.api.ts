@@ -161,12 +161,13 @@ export async function removeEmployeeGeography(
 
 // ── Bulk Import ────────────────────────────────────────────────────────────
 
-export async function getEmployeeImportTemplate(companyUuid: string) {
+export async function getEmployeeImportTemplate(companyUuid: string, format?: "csv" | "xlsx") {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/template`,
     {
       headers: { "X-Company-Context": resolved },
+      params: format ? { format } : undefined,
       responseType: "blob",
     }
   )

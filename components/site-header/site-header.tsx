@@ -5,7 +5,6 @@ import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
 import { PanelLeftIcon } from "lucide-react"
 import { HeaderUserMenu } from "./user-menu"
-import { ServerStatus } from "@/components/server-status"
 import { useNavigationStore } from "@/stores/navigation-store"
 import { SidebarBreadcrumbs } from "@/components/sidebar/breadcrumbs"
 
@@ -27,7 +26,6 @@ export function SiteHeader() {
         )}
         <SidebarBreadcrumbs />
         <div className="ml-auto flex items-center gap-2">
-          <ServerStatus />
           <HeaderUserMenu />
         </div>
       </div>
