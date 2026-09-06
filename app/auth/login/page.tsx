@@ -1,5 +1,5 @@
-import { LoginForm } from "@/components/auth/LoginForm"
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout"
+import { LoginForm } from "@/components/auth/LoginForm"
 
 export default async function LoginPage({
   searchParams,
