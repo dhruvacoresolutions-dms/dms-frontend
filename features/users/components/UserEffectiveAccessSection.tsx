@@ -104,7 +104,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
       {access.scopes.length > 0 && (
         <div className="rounded-lg border p-6 space-y-4">
           <h3 className="text-lg font-semibold">Scopes</h3>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">

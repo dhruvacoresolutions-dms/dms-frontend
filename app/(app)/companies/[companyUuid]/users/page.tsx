@@ -102,7 +102,7 @@ export default function UsersPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

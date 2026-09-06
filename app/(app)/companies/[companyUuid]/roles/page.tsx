@@ -124,7 +124,7 @@ export default function RolesPage() {
       ) : !roles || roles.length === 0 ? (
         <EmptyState icon={Shield} title="No roles found" description="Create a role to get started." />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

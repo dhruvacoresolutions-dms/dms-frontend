@@ -62,7 +62,7 @@ export default function PermissionsPage() {
       ) : !filtered || filtered.length === 0 ? (
         <EmptyState icon={ShieldCheck} title="No permissions found" description="No permissions match your search." />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

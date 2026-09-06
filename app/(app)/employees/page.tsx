@@ -99,7 +99,7 @@ export default function EmployeesPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

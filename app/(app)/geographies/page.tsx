@@ -359,7 +359,7 @@ export default function GeographiesPage() {
         <EmptyState icon={MapPin} title="No geographies found" description={search ? "Try a different search." : "Create a geography to get started."} />
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

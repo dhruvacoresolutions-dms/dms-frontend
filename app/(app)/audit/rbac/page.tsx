@@ -42,7 +42,7 @@ export default function RBACAuditPage() {
         <EmptyState icon={ShieldAlert} title="No audit events" description="No RBAC events have been recorded yet." />
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

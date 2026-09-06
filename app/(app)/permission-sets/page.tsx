@@ -124,7 +124,7 @@ export default function PermissionSetsPage() {
       ) : !sets || sets.length === 0 ? (
         <EmptyState icon={KeyRound} title="No permission sets found" description="Create a permission set to get started." />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
