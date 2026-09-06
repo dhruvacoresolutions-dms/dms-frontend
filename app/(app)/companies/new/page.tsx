@@ -190,6 +190,7 @@ export default function NewCompanyPage() {
   const router = useRouter()
   const createCompanyMutation = useCreateCompany()
   const [currentStep, setCurrentStep] = useState(0)
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(() => new Set([0]))
   const [successData, setSuccessData] = useState<CreateCompanyResponse | null>(null)
   const [copiedField, setCopiedField] = useState<"username" | "password" | null>(null)
 
@@ -200,10 +201,11 @@ export default function NewCompanyPage() {
     control,
     trigger,
     getValues,
-    formState: { errors },
+    clearErrors,
+    formState: { errors, touchedFields },
   } = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
-    mode: "onBlur",
+    mode: "onTouched",
     defaultValues: {
       companyCode: "",
       companyName: "",
@@ -282,13 +284,22 @@ export default function NewCompanyPage() {
     const fields = STEP_FIELDS[currentStep]
     const valid = await trigger(fields, { shouldFocus: true })
     if (valid) {
-      setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1))
+      const next = Math.min(currentStep + 1, STEPS.length - 1)
+      setVisitedSteps((prev) => new Set([...prev, next]))
+      setCurrentStep(next)
+      // Clear any premature errors for the destination step (zodResolver may have set them)
+      // so step 3 doesn't show validations immediately on entry
+      requestAnimationFrame(() => clearErrors(STEP_FIELDS[next]))
     } else {
+      // mark current step as visited so errors become visible, but don't mark next
+      setVisitedSteps((prev) => new Set([...prev, currentStep]))
       toast.error("Please fix the errors before continuing")
     }
   }
 
-  const handleBack = () => setCurrentStep((s) => Math.max(s - 1, 0))
+  const handleBack = () => {
+    setCurrentStep((s) => Math.max(s - 1, 0))
+  }
 
   const handleStepClick = async (index: number) => {
     if (index === currentStep) return
@@ -297,15 +308,19 @@ export default function NewCompanyPage() {
       setCurrentStep(index)
       return
     }
-    // going forward: validate all intermediate steps
+    // going forward: validate all intermediate steps - only those steps, never the destination step
     for (let i = currentStep; i < index; i++) {
       const valid = await trigger(STEP_FIELDS[i], { shouldFocus: true })
       if (!valid) {
+        setVisitedSteps((prev) => new Set([...prev, i]))
         toast.error(`Please complete step ${i + 1} before continuing`)
         return
       }
+      setVisitedSteps((prev) => new Set([...prev, i + 1]))
     }
+    setVisitedSteps((prev) => new Set([...prev, index]))
     setCurrentStep(index)
+    requestAnimationFrame(() => clearErrors(STEP_FIELDS[index]))
   }
 
   const onSubmit = (values: CompanyFormValues) => {
@@ -355,9 +370,9 @@ export default function NewCompanyPage() {
     })
   }
 
-  // Derive which steps have errors for stepper error state
+  // Derive which steps have errors for stepper error state - only for visited steps, so entering step 3 doesn't immediately show errors
   const errorSteps = STEPS.map((_, idx) =>
-    STEP_FIELDS[idx].some((field) => !!errors[field])
+    visitedSteps.has(idx) && STEP_FIELDS[idx].some((field) => !!errors[field as keyof typeof errors])
   )
     .map((hasError, idx) => (hasError ? idx : -1))
     .filter((v) => v !== -1)

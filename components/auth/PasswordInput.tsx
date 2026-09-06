@@ -22,12 +22,11 @@ export function PasswordInput({
   ...props
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false)
-  const [internalValue, setInternalValue] = useState(
-    () => (typeof defaultValue === "string" ? defaultValue : "")
+  const [internalValue, setInternalValue] = useState(() =>
+    typeof defaultValue === "string" ? defaultValue : ""
   )
 
-  const currentValue =
-    typeof value === "string" ? value : internalValue
+  const currentValue = typeof value === "string" ? value : internalValue
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (value === undefined) {
@@ -41,7 +40,7 @@ export function PasswordInput({
       <div className="relative">
         <Input
           type={visible ? "text" : "password"}
-          className="pr-9"
+          className="h-[52px] pr-9 text-[15px]"
           value={value}
           defaultValue={defaultValue}
           onChange={handleChange}
@@ -68,7 +67,9 @@ export function PasswordInput({
                 key={req.label}
                 className={cn(
                   "flex items-center gap-1.5 text-xs",
-                  passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                  passed
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-muted-foreground"
                 )}
               >
                 {passed ? (
@@ -100,10 +101,16 @@ export function PasswordRequirements({ value }: { value: string }) {
             key={req.label}
             className={cn(
               "flex items-center gap-1.5 text-xs",
-              passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+              passed
+                ? "text-green-600 dark:text-green-400"
+                : "text-muted-foreground"
             )}
           >
-            {passed ? <Check className="size-3.5 shrink-0" /> : <X className="size-3.5 shrink-0 opacity-60" />}
+            {passed ? (
+              <Check className="size-3.5 shrink-0" />
+            ) : (
+              <X className="size-3.5 shrink-0 opacity-60" />
+            )}
             {req.label}
           </li>
         )
