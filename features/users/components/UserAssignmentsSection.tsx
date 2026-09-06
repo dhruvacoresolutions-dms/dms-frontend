@@ -149,7 +149,7 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
         {!roleAssignments.data || roleAssignments.data.length === 0 ? (
           <EmptyState title="No roles assigned" description="Assign a role to this user." />
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -263,7 +263,7 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
             description="Assign a permission set to this user."
           />
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

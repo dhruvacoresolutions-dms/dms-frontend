@@ -84,7 +84,11 @@ export default function CompaniesPage() {
           }
         >
           {!search && (
-            <Button nativeButton={false} render={<Link href="/companies/new" />} className="mt-2">
+            <Button
+              nativeButton={false}
+              render={<Link href="/companies/new" />}
+              className="mt-2"
+            >
               <Plus className="mr-2 size-4" />
               Create Company
             </Button>
@@ -92,7 +96,7 @@ export default function CompaniesPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

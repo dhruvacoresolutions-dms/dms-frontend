@@ -106,7 +106,7 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
       {!geographies.data || geographies.data.length === 0 ? (
         <EmptyState icon={MapPin} title="No geographies assigned" description="Assign a geography to this employee." />
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

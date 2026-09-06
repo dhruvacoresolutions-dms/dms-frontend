@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { Toaster } from "sonner"
+import { AutoHideScrollbar } from "@/components/auto-hide-scrollbar"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -36,6 +37,7 @@ export default function RootLayout({
         <ThemeInitScript />
       </head>
       <body>
+        <AutoHideScrollbar />
         <QueryProvider>
           <ThemeProvider>
             <DynamicThemeProvider>

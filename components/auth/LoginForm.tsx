@@ -37,7 +37,7 @@ export function LoginForm({ redirect }: { redirect?: string }) {
 
   return (
     <form
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-7"
       onSubmit={handleSubmit((values) =>
         loginMutation.mutate(values, {
           onSuccess: (session) => {
@@ -78,11 +78,11 @@ export function LoginForm({ redirect }: { redirect?: string }) {
         })
       )}
     >
-      <div className="flex flex-col items-center gap-1 text-center">
-        <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="text-sm text-balance text-muted-foreground">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+        <h6 className="text-[15px] text-balance text-muted-foreground">
           Enter your credentials to access your account
-        </p>
+        </h6>
       </div>
 
       <FieldGroup>
@@ -95,6 +95,7 @@ export function LoginForm({ redirect }: { redirect?: string }) {
             autoComplete="username"
             autoFocus
             aria-invalid={!!errors.username}
+            className="h-[52px] text-[15px]"
             {...register("username")}
           />
           <FieldError errors={[errors.username]} />
@@ -123,7 +124,7 @@ export function LoginForm({ redirect }: { redirect?: string }) {
         <Field>
           <Button
             type="submit"
-            className="w-full"
+            className="h-[52px] w-full text-[15px] font-medium"
             disabled={loginMutation.isPending}
           >
             {loginMutation.isPending ? "Logging in..." : "Login"}

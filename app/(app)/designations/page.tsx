@@ -197,7 +197,7 @@ export default function DesignationsPage() {
         />
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
