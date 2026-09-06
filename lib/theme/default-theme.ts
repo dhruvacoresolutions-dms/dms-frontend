@@ -227,7 +227,7 @@ export const THEME_PRESETS: { id: string; name: string; theme: ThemeConfig }[] =
 export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
   "ocean-blue": {
     light: {
-      "--background": "oklch(0.99 0.01 250)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 250)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 250)",
@@ -297,7 +297,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "emerald-forest": {
     light: {
-      "--background": "oklch(0.99 0.01 160)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 160)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 160)",
@@ -367,7 +367,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "violet-dusk": {
     light: {
-      "--background": "oklch(0.99 0.01 295)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 295)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 295)",
@@ -437,7 +437,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "sunset-orange": {
     light: {
-      "--background": "oklch(0.99 0.01 45)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 45)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 45)",
@@ -507,7 +507,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "rose-blush": {
     light: {
-      "--background": "oklch(0.99 0.01 10)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 10)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 10)",
@@ -577,7 +577,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "amber-gold": {
     light: {
-      "--background": "oklch(0.99 0.01 75)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 75)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 75)",
@@ -647,7 +647,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "teal-lagoon": {
     light: {
-      "--background": "oklch(0.99 0.01 195)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 195)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 195)",
@@ -717,7 +717,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "slate-mono": {
     light: {
-      "--background": "oklch(0.99 0.003 250)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 250)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 250)",
@@ -787,7 +787,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "crimson-red": {
     light: {
-      "--background": "oklch(0.99 0.01 25)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 25)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 25)",
@@ -857,7 +857,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "indigo-night": {
     light: {
-      "--background": "oklch(0.99 0.01 275)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 275)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 275)",
@@ -927,7 +927,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "lime-zest": {
     light: {
-      "--background": "oklch(0.99 0.01 130)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 130)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 130)",
@@ -997,7 +997,7 @@ export const PRESET_CSS_VARS: Record<string, { light: Record<string, string>; da
   },
   "fuchsia-pop": {
     light: {
-      "--background": "oklch(0.99 0.01 330)",
+      "--background": "oklch(1 0 0)",
       "--foreground": "oklch(0.22 0.03 330)",
       "--card": "oklch(1 0 0)",
       "--card-foreground": "oklch(0.22 0.03 330)",

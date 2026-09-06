@@ -36,8 +36,12 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
   // - Non-admin may not access /companies; redirect to /dashboard
   useEffect(() => {
     if (!session) return
-    const isCompaniesRoute = pathname === "/companies" || pathname.startsWith("/companies/")
-    const isAllowedForAdmin = isCompaniesRoute || pathname.startsWith("/profile") || pathname.startsWith("/auth")
+    const isCompaniesRoute =
+      pathname === "/companies" || pathname.startsWith("/companies/")
+    const isAllowedForAdmin =
+      isCompaniesRoute ||
+      pathname.startsWith("/profile") ||
+      pathname.startsWith("/auth")
     if (isPlatformAdmin && !isAllowedForAdmin) {
       // Allow dashboard? Spec says only Companies visible for admin, so redirect even dashboard to companies
       router.replace("/companies")
