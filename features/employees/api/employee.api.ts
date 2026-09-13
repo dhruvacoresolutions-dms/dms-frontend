@@ -13,6 +13,9 @@ import type {
   EnableEmployeeLoginRequest,
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
+  EmployeeImportJobStatusResponse,
+  EmployeeGeographyImportUploadResponse,
+  EmployeeGeographyImportJobResponse,
 } from "./employee.types"
 import type { PageResponse } from "@/features/companies/api/company.types"
 
@@ -43,16 +46,16 @@ export async function getEmployees(
   params?: EmployeeListParams
 ) {
   const resolved = companyHeader(companyUuid)
+  // Backend expects `search` (not `query`) plus `status` / `designationUuid`
   const queryParams = params
-    ? ({
-        ...params,
-        query:
-          (params as Record<string, unknown>).query ??
-          (params as Record<string, unknown>).search,
-      } as EmployeeListParams)
+    ? {
+        search: params.search ?? params.query ?? undefined,
+        status: params.status,
+        designationUuid: params.designationUuid,
+        page: params.page,
+        size: params.size,
+      }
     : params
-  if (queryParams && "search" in (queryParams as Record<string, unknown>))
-    delete (queryParams as Record<string, unknown>).search
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<EmployeeResponse>>
   >(baseUrl(companyUuid), {
@@ -217,6 +220,17 @@ export async function getEmployeeImportJob(
   return data.data
 }
 
+export async function getEmployeeImportJobStatus(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<EmployeeImportJobStatusResponse>
+  >(
+    `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${jobUuid}`,
+    { headers: { "X-Company-Context": resolved } }
+  )
+  return data.data
+}
+
 export async function getEmployeeImportRows(
   companyUuid: string,
   importJobUuid: string,
@@ -239,6 +253,60 @@ export async function getEmployeeImportResultsCsv(
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${importJobUuid}/results.csv`,
+    { headers: { "X-Company-Context": resolved }, responseType: "blob" }
+  )
+  return data
+}
+
+// ── Employee Geography Import ─────────────────────────────────────────────
+
+const employeeGeographyImportBaseUrl = (companyUuid: string) =>
+  `/v1/companies/${resolveCompanyUuid(companyUuid)}/employee-geography-imports`
+
+export async function getEmployeeGeographyImportTemplate(
+  companyUuid: string,
+  format?: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${employeeGeographyImportBaseUrl(companyUuid)}/template`,
+    {
+      headers: { "X-Company-Context": resolved },
+      params: format ? { format } : undefined,
+      responseType: "blob",
+    }
+  )
+  return data
+}
+
+export async function uploadEmployeeGeographyImport(companyUuid: string, file: File) {
+  const resolved = companyHeader(companyUuid)
+  const form = new FormData()
+  form.append("file", file, file.name)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<EmployeeGeographyImportUploadResponse>
+  >(employeeGeographyImportBaseUrl(companyUuid), form, {
+    headers: {
+      "X-Company-Context": resolved,
+    },
+  })
+  return data.data
+}
+
+export async function getEmployeeGeographyImportJob(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<EmployeeGeographyImportJobResponse>
+  >(`${employeeGeographyImportBaseUrl(companyUuid)}/${jobUuid}`, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function getEmployeeGeographyImportResultsCsv(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${employeeGeographyImportBaseUrl(companyUuid)}/${jobUuid}/results.csv`,
     { headers: { "X-Company-Context": resolved }, responseType: "blob" }
   )
   return data

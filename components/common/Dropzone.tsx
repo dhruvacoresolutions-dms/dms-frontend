@@ -309,9 +309,9 @@ export function Dropzone({
             )}
           </div>
         </div>
-      ) : (
+      ) : placeholder ? (
         <p className="text-xs text-muted-foreground">{placeholder}</p>
-      )}
+      ) : null}
 
       {displayError && (
         <p className="flex items-center gap-1.5 text-xs text-destructive">

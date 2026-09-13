@@ -52,6 +52,7 @@ export type EmployeeListParams = {
   search?: string
   query?: string
   status?: EmployeeStatus
+  designationUuid?: string
   page?: number
   size?: number
 }
@@ -99,4 +100,37 @@ export type EmployeeImportRowResponse = {
   status: string
   errors?: string[]
   employeeCode?: string
+}
+
+export type EmployeeImportJobDiagnostic = {
+  sheet?: string
+  rowNumber: number
+  entityKey?: string
+  field?: string
+  rejectedValue?: string
+  errorCode?: string
+  reason?: string
+}
+
+export type EmployeeImportJobStatusResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: EmployeeImportJobDiagnostic[]
+}
+
+export type EmployeeGeographyImportUploadResponse = {
+  jobUuid: string
+  status: string
+}
+
+export type EmployeeGeographyImportJobResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: EmployeeImportJobDiagnostic[]
 }

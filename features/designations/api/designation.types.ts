@@ -36,3 +36,22 @@ export type DesignationListParams = {
   page?: number
   size?: number
 }
+
+export type DesignationImportJobDiagnostic = {
+  sheet?: string
+  rowNumber: number
+  entityKey?: string
+  field?: string
+  rejectedValue?: string
+  errorCode?: string
+  reason?: string
+}
+
+export type DesignationImportJobResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: DesignationImportJobDiagnostic[]
+}

@@ -7,6 +7,7 @@ import type {
   UpdateGeographyRequest,
   UpdateGeographyStatusRequest,
   GeographyListParams,
+  GeographyImportJobResponse,
 } from "./geography.types"
 import type { PageResponse } from "@/features/companies/api/company.types"
 
@@ -120,4 +121,23 @@ export async function uploadGeographyImport(companyUuid: string, file: File) {
     headers: { "X-Company-Context": resolved },
   })
   return data.data
+}
+
+export async function getGeographyImportJob(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<GeographyImportJobResponse>
+  >(`${baseUrl(companyUuid)}/imports/${jobUuid}`, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function getGeographyImportResultsCsv(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${baseUrl(companyUuid)}/imports/${jobUuid}/results.csv`,
+    { headers: { "X-Company-Context": resolved }, responseType: "blob" }
+  )
+  return data
 }

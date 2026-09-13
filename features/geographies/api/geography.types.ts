@@ -50,3 +50,22 @@ export type GeographyListParams = {
   page?: number
   size?: number
 }
+
+export type GeographyImportJobDiagnostic = {
+  sheet?: string
+  rowNumber: number
+  entityKey?: string
+  field?: string
+  rejectedValue?: string
+  errorCode?: string
+  reason?: string
+}
+
+export type GeographyImportJobResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: GeographyImportJobDiagnostic[]
+}

@@ -9,6 +9,7 @@ import {
   Shield,
   KeyRound,
   Lock,
+  Network,
   ShieldCheck,
   FileCheck,
   Settings,
@@ -85,6 +86,11 @@ export const mainNav: MainNav = [
         title: "Designations",
         url: "/designations",
         icon: ShieldCheck,
+      },
+      {
+        title: "Departments",
+        url: "/departments",
+        icon: Network,
       },
       {
         title: "Geographies",

@@ -1,7 +1,7 @@
 "use client"
 
 import { BulkImportDialog } from "@/components/common/BulkImportDialog"
-import { getDesignationImportTemplate, uploadDesignationImport } from "@/features/designations/api/designation.api"
+import { getDesignationImportTemplate, uploadDesignationImport, getDesignationImportJob, getDesignationImportResultsCsv } from "@/features/designations/api/designation.api"
 
 type DesignationBulkUploadDialogProps = {
   open: boolean
@@ -29,6 +29,8 @@ export function DesignationBulkUploadDialog({
       templateFileName="designation-import-template"
       getTemplate={(format) => getDesignationImportTemplate(companyUuid, format)}
       uploadFn={(file) => uploadDesignationImport(companyUuid, file)}
+      getJobStatus={(jobUuid) => getDesignationImportJob(companyUuid, jobUuid)}
+      getJobResults={(jobUuid) => getDesignationImportResultsCsv(companyUuid, jobUuid)}
     />
   )
 }

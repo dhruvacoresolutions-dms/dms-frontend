@@ -7,6 +7,7 @@ import type {
   UpdateDesignationRequest,
   UpdateDesignationStatusRequest,
   DesignationListParams,
+  DesignationImportJobResponse,
 } from "./designation.types"
 import type { PageResponse } from "@/features/companies/api/company.types"
 
@@ -142,4 +143,23 @@ export async function uploadDesignationImport(companyUuid: string, file: File) {
     },
   })
   return data.data
+}
+
+export async function getDesignationImportJob(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<DesignationImportJobResponse>
+  >(`${baseUrl(companyUuid)}/imports/${jobUuid}`, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function getDesignationImportResultsCsv(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${baseUrl(companyUuid)}/imports/${jobUuid}/results.csv`,
+    { headers: { "X-Company-Context": resolved }, responseType: "blob" }
+  )
+  return data
 }
