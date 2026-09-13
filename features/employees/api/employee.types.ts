@@ -33,8 +33,15 @@ export type UpdateEmployeeRequest = {
   email?: string
   phone?: string
   designationUuid?: string
+  departmentUuid?: string
   reportsToEmployeeUuid?: string | null
   dateOfJoining?: string
+  gender?: EmployeeGender
+  dateOfBirth?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  maritalStatus?: EmployeeMaritalStatus
+  anniversaryDate?: string | null
 }
 
 export type UpdateEmployeeStatusRequest = {
