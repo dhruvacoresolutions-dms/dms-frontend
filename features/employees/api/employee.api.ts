@@ -14,6 +14,7 @@ import type {
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
   EmployeeImportJobStatusResponse,
+  EmployeeImportRowDetailResponse,
   EmployeeGeographyImportUploadResponse,
   EmployeeGeographyImportJobResponse,
 } from "./employee.types"
@@ -242,6 +243,17 @@ export async function getEmployeeImportRows(
   >(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${importJobUuid}/rows`,
     { params, headers: { "X-Company-Context": resolved } }
+  )
+  return data.data
+}
+
+export async function getEmployeeImportFailedRows(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<EmployeeImportRowDetailResponse[]>
+  >(
+    `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${jobUuid}/rows`,
+    { params: { page: 0, size: 100 }, headers: { "X-Company-Context": resolved } }
   )
   return data.data
 }

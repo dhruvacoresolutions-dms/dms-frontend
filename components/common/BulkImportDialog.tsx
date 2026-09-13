@@ -129,6 +129,12 @@ export type BulkImportDialogProps = {
   uploadFn?: (file: File) => Promise<unknown>
   /** Optional status fetcher called with the job uuid right after a successful upload */
   getJobStatus?: (jobUuid: string) => Promise<ImportJobStatus>
+  /**
+   * Optional failed-rows fetcher (already mapped to diagnostics).
+   * Called when the status reports failures but carries no diagnostics
+   * (e.g. employee imports expose row errors via a separate rows API).
+   */
+  getJobFailedRows?: (jobUuid: string) => Promise<ImportJobDiagnostic[]>
   /** Optional results fetcher for the "Download Result" button (same job API + /results.csv) */
   getJobResults?: (jobUuid: string) => Promise<Blob>
   /** Max file size bytes, default 10 MB */
@@ -148,6 +154,7 @@ export function BulkImportDialog({
   getTemplate,
   uploadFn,
   getJobStatus,
+  getJobFailedRows,
   getJobResults,
   maxSize = 10 * 1024 * 1024,
 }: BulkImportDialogProps) {
@@ -241,13 +248,27 @@ export function BulkImportDialog({
       const jobUuid = extractJobUuid(uploadResult)
       if (!jobUuid) return undefined
       try {
-        return { jobUuid, status: await getJobStatus(jobUuid) }
+        let status = await getJobStatus(jobUuid)
+        // status without row details but with failures -> pull failed rows separately
+        if (
+          (status.failedRows ?? 0) > 0 &&
+          (!status.diagnostics || status.diagnostics.length === 0) &&
+          getJobFailedRows
+        ) {
+          try {
+            const rows = await getJobFailedRows(jobUuid)
+            if (rows.length > 0) status = { ...status, diagnostics: rows }
+          } catch {
+            // rows fetch must never fail the upload itself
+          }
+        }
+        return { jobUuid, status }
       } catch {
         // status fetch must never fail the upload itself
         return undefined
       }
     },
-    [getJobStatus]
+    [getJobStatus, getJobFailedRows]
   )
 
   const handleDownloadResults = async (jobUuid: string, fileName: string) => {
@@ -491,11 +512,25 @@ export function BulkImportDialog({
                     </Attachment>
                     {showFailures && (
                       <div className="flex w-full flex-col gap-2 rounded-xl border border-destructive/30 p-2.5">
-                        <p className="text-xs font-medium text-destructive">
-                          {failedCount > 0
-                            ? `${failedCount} row${failedCount > 1 ? "s" : ""} failed`
-                            : "Failed rows"}
-                        </p>
+                        <div className="flex w-full items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-destructive">
+                            {failedCount > 0
+                              ? `${failedCount} row${failedCount > 1 ? "s" : ""} failed`
+                              : "Failed rows"}
+                          </p>
+                          {getJobResults && jobUuid && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadResults(jobUuid, file.name)}
+                              disabled={downloadingResults}
+                              className="h-7 shrink-0 text-xs"
+                            >
+                              {downloadingResults ? <Spinner className="size-3.5" /> : <DownloadIcon className="size-3.5" />}
+                              Download Result
+                            </Button>
+                          )}
+                        </div>
                         {diagnostics.length > 0 && (
                           <ul className="flex max-h-32 w-full flex-col gap-1 overflow-y-auto rounded-md bg-destructive/5 p-2 text-xs text-destructive/90">
                             {diagnostics.map((d, i) => (
@@ -506,18 +541,6 @@ export function BulkImportDialog({
                               </li>
                             ))}
                           </ul>
-                        )}
-                        {getJobResults && jobUuid && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownloadResults(jobUuid, file.name)}
-                            disabled={downloadingResults}
-                            className="h-7 self-start text-xs"
-                          >
-                            {downloadingResults ? <Spinner className="size-3.5" /> : <DownloadIcon className="size-3.5" />}
-                            Download Result
-                          </Button>
                         )}
                       </div>
                     )}
