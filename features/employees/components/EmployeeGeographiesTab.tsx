@@ -10,13 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
 import {
   Table,
   TableBody,
@@ -34,7 +28,6 @@ import {
   useAssignEmployeeGeography,
   useRemoveEmployeeGeography,
 } from "@/features/employees/hooks/use-employee-geographies"
-import { useGeographies } from "@/features/geographies/hooks/use-geographies"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -46,9 +39,9 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
   const [removeTarget, setRemoveTarget] = useState<{ uuid: string; name: string } | null>(null)
 
   const geographies = useEmployeeGeographies(companyUuid, employeeUuid)
-  const allGeographies = useGeographies(companyUuid, { size: 100 })
   const assignMutation = useAssignEmployeeGeography(companyUuid, employeeUuid)
   const removeMutation = useRemoveEmployeeGeography(companyUuid, employeeUuid)
+  const assignedUuids = geographies.data?.map((a) => a.geographyUuid) ?? []
 
   if (geographies.isLoading) return <LoadingState />
   if (geographies.error) return <ErrorState />
@@ -66,20 +59,14 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
               <DialogTitle>Assign Geography</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <Select value={selected} onValueChange={(v) => { if (v !== null) setSelected(v) }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a geography" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allGeographies.data?.content
-                    ?.filter((g) => !geographies.data?.some((a) => a.geographyUuid === g.geographyUuid))
-                    .map((g) => (
-                      <SelectItem key={g.geographyUuid} value={g.geographyUuid}>
-                        {g.name} ({g.code})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <GeographyCombobox
+                companyUuid={companyUuid}
+                value={selected || null}
+                onValueChange={(v) => setSelected(v ?? "")}
+                placeholder="Search geography..."
+                size={100}
+                excludeUuids={assignedUuids}
+              />
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button

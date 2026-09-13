@@ -6,10 +6,10 @@ import { Edit, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/common/PageHeader"
-import { StatusBadge } from "@/components/common/StatusBadge"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { useEmployee } from "@/features/employees/hooks/use-employee"
+import { EmployeeOverview } from "@/features/employees/components/EmployeeOverview"
 import { EmployeeGeographiesTab } from "@/features/employees/components/EmployeeGeographiesTab"
 
 export default function EmployeeDetailPage() {
@@ -25,7 +25,7 @@ export default function EmployeeDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
-        title={`${employee.firstName} ${employee.lastName}`}
+        title={employee.fullName ?? `${employee.firstName} ${employee.lastName}`}
         description={`Code: ${employee.employeeCode}`}
         action={
           <div className="flex gap-2">
@@ -44,19 +44,7 @@ export default function EmployeeDetailPage() {
           <TabsTrigger value="geographies">Geographies</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
-          <div className="rounded-lg border p-6 space-y-3">
-            <h3 className="text-lg font-semibold">Employee Information</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">UUID</span><span className="font-mono">{employee.employeeUuid}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Code</span><span className="font-mono">{employee.employeeCode}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span>{employee.firstName} {employee.lastName}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{employee.email}</span></div>
-              {employee.phone && <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{employee.phone}</span></div>}
-              {employee.designationName && <div className="flex justify-between"><span className="text-muted-foreground">Designation</span><span>{employee.designationName}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Status</span><StatusBadge status={employee.status} /></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span>{new Date(employee.createdAt).toLocaleDateString()}</span></div>
-            </div>
-          </div>
+          <EmployeeOverview employee={employee} />
         </TabsContent>
         <TabsContent value="geographies">
           <EmployeeGeographiesTab companyUuid={companyUuid} employeeUuid={employeeUuid} />

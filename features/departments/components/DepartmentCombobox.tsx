@@ -3,9 +3,9 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
-import { useDesignations } from "../hooks/use-designations"
-import { getDesignation } from "../api/designation.api"
-import type { DesignationResponse } from "../api/designation.types"
+import { useDepartments } from "../hooks/use-departments"
+import { getDepartment } from "../api/department.api"
+import type { DepartmentResponse } from "../api/department.types"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -24,7 +24,7 @@ type Props = {
   value?: string | null
   onValueChange: (
     value: string | null,
-    designation?: DesignationResponse | null
+    department?: DepartmentResponse | null
   ) => void
   placeholder?: string
   disabled?: boolean
@@ -32,11 +32,11 @@ type Props = {
   size?: number
 }
 
-export function DesignationCombobox({
+export function DepartmentCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search designation...",
+  placeholder = "Search department...",
   disabled,
   size = 100,
 }: Props) {
@@ -49,28 +49,27 @@ export function DesignationCombobox({
     return () => clearTimeout(t)
   }, [inputValue])
 
-  const designationsQuery = useDesignations(companyUuid, {
+  const departmentsQuery = useDepartments(companyUuid, {
     query: debouncedQuery || undefined,
     page: 0,
     size,
   })
 
-  const searchResults = designationsQuery.data?.content ?? []
+  const searchResults = departmentsQuery.data?.content ?? []
 
-  // Fetch selected designation if value not in searchResults (to keep label)
+  // Fetch selected department if value not in searchResults (to keep label)
   const selectedInResults = React.useMemo(
-    () =>
-      searchResults.find((d) => (d.designationUuid ?? d.publicId) === value),
+    () => searchResults.find((d) => d.departmentUuid === value),
     [searchResults, value]
   )
 
   const { data: fetchedSelected } = useQuery({
-    queryKey: ["companies", companyUuid, "designations", "detail", value],
-    queryFn: () => getDesignation(companyUuid, value as string),
+    queryKey: ["companies", companyUuid, "departments", "detail", value],
+    queryFn: () => getDepartment(companyUuid, value as string),
     enabled: !!value && !selectedInResults && !!companyUuid,
   })
 
-  const selectedItem: DesignationResponse | null = React.useMemo(() => {
+  const selectedItem: DepartmentResponse | null = React.useMemo(() => {
     if (!value) return null
     if (selectedInResults) return selectedInResults
     if (fetchedSelected) return fetchedSelected
@@ -80,19 +79,13 @@ export function DesignationCombobox({
   const items = React.useMemo(() => {
     if (!selectedItem) return searchResults
     if (
-      searchResults.some(
-        (d) =>
-          (d.designationUuid ?? d.publicId) ===
-          (selectedItem.designationUuid ?? selectedItem.publicId)
-      )
+      searchResults.some((d) => d.departmentUuid === selectedItem.departmentUuid)
     )
       return searchResults
     return [...searchResults, selectedItem]
   }, [searchResults, selectedItem])
 
-  // "Searching…" only while the API call is in flight; the empty message
-  // additionally stays hidden during the debounce so it never flashes mid-typing.
-  const isFetching = designationsQuery.isFetching
+  const isFetching = departmentsQuery.isFetching
 
   const clearSelection = () => {
     onValueChange(null)
@@ -100,8 +93,6 @@ export function DesignationCombobox({
     setDebouncedQuery("")
   }
 
-  // Clear lives inside the trigger (a span, not a nested button) and
-  // stops every pointer/keyboard event so the popup never toggles.
   const stopToggle = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -114,18 +105,16 @@ export function DesignationCombobox({
       disabled={disabled}
       inputValue={inputValue}
       onInputValueChange={(nextValue, details) => {
-        // don't touch the search when selecting via item-press (value already set)
         if (details.reason === "item-press") return
         setInputValue(nextValue)
       }}
-      onValueChange={(next: DesignationResponse | null) => {
-        const uuid = next ? (next.designationUuid ?? next.publicId) : null
+      onValueChange={(next: DepartmentResponse | null) => {
+        const uuid = next ? next.departmentUuid : null
         onValueChange(uuid, next)
-        // clear search after selection to show full list next time
         setInputValue("")
         setDebouncedQuery("")
       }}
-      itemToStringLabel={(item: DesignationResponse | null) => item?.name ?? ""}
+      itemToStringLabel={(item: DepartmentResponse | null) => item?.name ?? ""}
       filter={null}
     >
       <ComboboxTrigger
@@ -147,7 +136,7 @@ export function DesignationCombobox({
           <span
             role="button"
             tabIndex={0}
-            aria-label="Clear designation"
+            aria-label="Clear department"
             onClick={(e) => {
               stopToggle(e)
               clearSelection()
@@ -167,7 +156,7 @@ export function DesignationCombobox({
       </ComboboxTrigger>
       <ComboboxContent>
         <ComboboxInput
-          placeholder="Search designations..."
+          placeholder="Search departments..."
           disabled={disabled}
           showTrigger={false}
           showSearchIcon
@@ -179,14 +168,11 @@ export function DesignationCombobox({
           </div>
         ) : null}
         {!isFetching ? (
-          <ComboboxEmpty>No designations found.</ComboboxEmpty>
+          <ComboboxEmpty>No departments found.</ComboboxEmpty>
         ) : null}
         <ComboboxList>
-          {(item: DesignationResponse) => (
-            <ComboboxItem
-              key={item.designationUuid ?? item.publicId}
-              value={item}
-            >
+          {(item: DepartmentResponse) => (
+            <ComboboxItem key={item.departmentUuid} value={item}>
               <span className="flex flex-col">
                 <span className="font-medium">{item.name}</span>
                 <span className="text-xs text-muted-foreground">

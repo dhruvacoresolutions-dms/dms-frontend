@@ -3,9 +3,9 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
-import { useDesignations } from "../hooks/use-designations"
-import { getDesignation } from "../api/designation.api"
-import type { DesignationResponse } from "../api/designation.types"
+import { useEmployees } from "../hooks/use-employees"
+import { getEmployee } from "../api/employee.api"
+import type { EmployeeResponse } from "../api/employee.types"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -24,53 +24,93 @@ type Props = {
   value?: string | null
   onValueChange: (
     value: string | null,
-    designation?: DesignationResponse | null
+    employee?: EmployeeResponse | null
   ) => void
   placeholder?: string
   disabled?: boolean
-  /** Page size for the options query (use 100 for filter dropdowns) */
+  /** Page size for the options query */
   size?: number
+  /** Exclude this employee uuid from options (e.g. self) */
+  excludeUuid?: string | null
+  /**
+   * When provided, only employees whose `designationUuid` is in this set are
+   * listed. Used to restrict "Reports To" to senior designations
+   * (lower hierarchyLevel number = higher position).
+   * `undefined` = no filtering.
+   */
+  allowedDesignationUuids?: string[] | null
+  /** Message shown when the filtered list is empty */
+  emptyMessage?: string
 }
 
-export function DesignationCombobox({
+function employeeUuidOf(e: EmployeeResponse): string {
+  return e.employeeUuid ?? (e as unknown as { publicId: string }).publicId ?? ""
+}
+
+function employeeLabel(e: EmployeeResponse): string {
+  return `${e.firstName} ${e.lastName}`.trim()
+}
+
+export function EmployeeCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search designation...",
+  placeholder = "Search employee...",
   disabled,
   size = 100,
+  excludeUuid,
+  allowedDesignationUuids,
+  emptyMessage,
 }: Props) {
   const [inputValue, setInputValue] = React.useState("")
 
-  // debounce input -> query param
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
   React.useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(inputValue.trim()), 300)
     return () => clearTimeout(t)
   }, [inputValue])
 
-  const designationsQuery = useDesignations(companyUuid, {
-    query: debouncedQuery || undefined,
+  const employeesQuery = useEmployees(companyUuid, {
+    search: debouncedQuery || undefined,
     page: 0,
     size,
   })
 
-  const searchResults = designationsQuery.data?.content ?? []
-
-  // Fetch selected designation if value not in searchResults (to keep label)
-  const selectedInResults = React.useMemo(
+  const rawResults = employeesQuery.data?.content ?? []
+  const allowedSet = React.useMemo(
     () =>
-      searchResults.find((d) => (d.designationUuid ?? d.publicId) === value),
+      allowedDesignationUuids === undefined
+        ? null
+        : new Set(allowedDesignationUuids ?? []),
+    [allowedDesignationUuids]
+  )
+  const searchResults = React.useMemo(() => {
+    let results = excludeUuid
+      ? rawResults.filter((e) => employeeUuidOf(e) !== excludeUuid)
+      : rawResults
+    // Restrict to senior designations when a filter set is provided.
+    // Employees without a designation can't be verified as senior, so they
+    // are excluded from the filtered list.
+    if (allowedSet) {
+      results = results.filter(
+        (e) => e.designationUuid && allowedSet.has(e.designationUuid)
+      )
+    }
+    return results
+  }, [rawResults, excludeUuid, allowedSet])
+
+  const selectedInResults = React.useMemo(
+    () => searchResults.find((e) => employeeUuidOf(e) === value),
     [searchResults, value]
   )
 
   const { data: fetchedSelected } = useQuery({
-    queryKey: ["companies", companyUuid, "designations", "detail", value],
-    queryFn: () => getDesignation(companyUuid, value as string),
+    queryKey: ["companies", companyUuid, "employees", "detail", value],
+    queryFn: () => getEmployee(companyUuid, value as string),
     enabled: !!value && !selectedInResults && !!companyUuid,
   })
 
-  const selectedItem: DesignationResponse | null = React.useMemo(() => {
+  const selectedItem: EmployeeResponse | null = React.useMemo(() => {
     if (!value) return null
     if (selectedInResults) return selectedInResults
     if (fetchedSelected) return fetchedSelected
@@ -81,18 +121,14 @@ export function DesignationCombobox({
     if (!selectedItem) return searchResults
     if (
       searchResults.some(
-        (d) =>
-          (d.designationUuid ?? d.publicId) ===
-          (selectedItem.designationUuid ?? selectedItem.publicId)
+        (e) => employeeUuidOf(e) === employeeUuidOf(selectedItem)
       )
     )
       return searchResults
     return [...searchResults, selectedItem]
   }, [searchResults, selectedItem])
 
-  // "Searching…" only while the API call is in flight; the empty message
-  // additionally stays hidden during the debounce so it never flashes mid-typing.
-  const isFetching = designationsQuery.isFetching
+  const isFetching = employeesQuery.isFetching
 
   const clearSelection = () => {
     onValueChange(null)
@@ -100,8 +136,6 @@ export function DesignationCombobox({
     setDebouncedQuery("")
   }
 
-  // Clear lives inside the trigger (a span, not a nested button) and
-  // stops every pointer/keyboard event so the popup never toggles.
   const stopToggle = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -114,18 +148,18 @@ export function DesignationCombobox({
       disabled={disabled}
       inputValue={inputValue}
       onInputValueChange={(nextValue, details) => {
-        // don't touch the search when selecting via item-press (value already set)
         if (details.reason === "item-press") return
         setInputValue(nextValue)
       }}
-      onValueChange={(next: DesignationResponse | null) => {
-        const uuid = next ? (next.designationUuid ?? next.publicId) : null
+      onValueChange={(next: EmployeeResponse | null) => {
+        const uuid = next ? employeeUuidOf(next) : null
         onValueChange(uuid, next)
-        // clear search after selection to show full list next time
         setInputValue("")
         setDebouncedQuery("")
       }}
-      itemToStringLabel={(item: DesignationResponse | null) => item?.name ?? ""}
+      itemToStringLabel={(item: EmployeeResponse | null) =>
+        item ? employeeLabel(item) : ""
+      }
       filter={null}
     >
       <ComboboxTrigger
@@ -147,7 +181,7 @@ export function DesignationCombobox({
           <span
             role="button"
             tabIndex={0}
-            aria-label="Clear designation"
+            aria-label="Clear reporting manager"
             onClick={(e) => {
               stopToggle(e)
               clearSelection()
@@ -167,7 +201,7 @@ export function DesignationCombobox({
       </ComboboxTrigger>
       <ComboboxContent>
         <ComboboxInput
-          placeholder="Search designations..."
+          placeholder="Search employees..."
           disabled={disabled}
           showTrigger={false}
           showSearchIcon
@@ -179,18 +213,19 @@ export function DesignationCombobox({
           </div>
         ) : null}
         {!isFetching ? (
-          <ComboboxEmpty>No designations found.</ComboboxEmpty>
+          <ComboboxEmpty>
+            {emptyMessage ?? "No employees found."}
+          </ComboboxEmpty>
         ) : null}
         <ComboboxList>
-          {(item: DesignationResponse) => (
-            <ComboboxItem
-              key={item.designationUuid ?? item.publicId}
-              value={item}
-            >
+          {(item: EmployeeResponse) => (
+            <ComboboxItem key={employeeUuidOf(item)} value={item}>
               <span className="flex flex-col">
-                <span className="font-medium">{item.name}</span>
+                <span className="font-medium">{employeeLabel(item)}</span>
                 <span className="text-xs text-muted-foreground">
-                  {item.code}
+                  {item.designationName
+                    ? `${item.designationName} • ${item.employeeCode}`
+                    : item.employeeCode}
                 </span>
               </span>
             </ComboboxItem>

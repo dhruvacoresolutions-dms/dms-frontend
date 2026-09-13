@@ -1,5 +1,11 @@
 export type EmployeeStatus = "ACTIVE" | "INACTIVE"
 
+export type EmployeeGender = "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY"
+
+export type EmployeeType = "PERMANENT" | "CONTRACT" | "TEMPORARY"
+
+export type EmployeeMaritalStatus = "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED"
+
 export type CreateEmployeeRequest = {
   employeeCode: string
   firstName: string
@@ -8,8 +14,15 @@ export type CreateEmployeeRequest = {
   phone?: string
   email?: string
   designationUuid?: string
+  departmentUuid?: string
   reportsToEmployeeUuid?: string
   dateOfJoining?: string
+  gender?: EmployeeGender
+  dateOfBirth?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  maritalStatus?: EmployeeMaritalStatus
+  anniversaryDate?: string | null
 }
 
 export type UpdateEmployeeRequest = {
@@ -34,6 +47,7 @@ export type EmployeeResponse = {
   employeeCode: string
   firstName: string
   lastName: string
+  fullName?: string | null
   mobile?: string | null
   phone?: string | null
   email?: string | null
@@ -41,9 +55,24 @@ export type EmployeeResponse = {
   userUuid?: string
   username?: string
   designationUuid?: string
+  designationCode?: string | null
   designationName?: string
+  designationHierarchyLevel?: number | null
   reportsToEmployeeUuid?: string | null
+  reportsToEmployeeCode?: string | null
+  reportsToEmployeeName?: string | null
   dateOfJoining?: string | null
+  gender?: EmployeeGender | null
+  dateOfBirth?: string | null
+  employeeType?: EmployeeType | null
+  departmentUuid?: string
+  departmentCode?: string | null
+  departmentName?: string | null
+  maritalStatus?: EmployeeMaritalStatus | null
+  anniversaryDate?: string | null
+  profilePhotoConfigured?: boolean
+  profilePhotoContentType?: string | null
+  profilePhotoSizeBytes?: number | null
   createdAt: string
   updatedAt: string
 }
