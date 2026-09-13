@@ -14,8 +14,8 @@ import type {
   EnableEmployeeLoginRequest,
   BulkEnableEmployeeLoginRequest,
   BulkDisableEmployeeLoginRequest,
-  BulkEnableEmployeeLoginResponse,
-  BulkDisableEmployeeLoginResponse,
+  BulkLoginResultEntry,
+  BulkOperationSummary,
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
   EmployeeImportRowListParams,
@@ -394,17 +394,54 @@ export async function resetEmployeePassword(
   return data.data
 }
 
+/** Normalize the two bulk-operation envelopes the backend may return:
+ * `{total, successful, skipped, failed, results[]}` or legacy
+ * `{succeeded[], failed[]}`. */
+function normalizeBulkResponse(raw: unknown): BulkOperationSummary {
+  const d = (raw ?? {}) as Record<string, unknown>
+  if (Array.isArray(d.results)) {
+    const results = d.results as BulkLoginResultEntry[]
+    const successful =
+      typeof d.successful === "number"
+        ? d.successful
+        : results.filter((r) => r?.status === "SUCCESS").length
+    const failed =
+      typeof d.failed === "number" ? d.failed : results.length - successful
+    return {
+      total: typeof d.total === "number" ? d.total : results.length,
+      successful,
+      skipped: typeof d.skipped === "number" ? d.skipped : 0,
+      failed,
+      results,
+    }
+  }
+  const succeeded = ((d.succeeded ?? []) as BulkLoginResultEntry[]).map(
+    (r) => ({ ...r, status: r.status ?? "SUCCESS" })
+  )
+  const failed = ((d.failed ?? []) as BulkLoginResultEntry[]).map((r) => ({
+    ...r,
+    status: r.status ?? "FAILED",
+  }))
+  return {
+    total: succeeded.length + failed.length,
+    successful: succeeded.length,
+    skipped: 0,
+    failed: failed.length,
+    results: [...succeeded, ...failed],
+  }
+}
+
 export async function bulkEnableEmployeeLogin(
   companyUuid: string,
   input: BulkEnableEmployeeLoginRequest
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.post<
-    ApiSuccessResponse<BulkEnableEmployeeLoginResponse>
+    ApiSuccessResponse<unknown>
   >(`${baseUrl(companyUuid)}/login/bulk-enable`, input, {
     headers: { "X-Company-Context": resolved },
   })
-  return data.data
+  return normalizeBulkResponse(data.data)
 }
 
 export async function bulkDisableEmployeeLogin(
@@ -413,9 +450,9 @@ export async function bulkDisableEmployeeLogin(
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.post<
-    ApiSuccessResponse<BulkDisableEmployeeLoginResponse>
+    ApiSuccessResponse<unknown>
   >(`${baseUrl(companyUuid)}/login/bulk-disable`, input, {
     headers: { "X-Company-Context": resolved },
   })
-  return data.data
+  return normalizeBulkResponse(data.data)
 }

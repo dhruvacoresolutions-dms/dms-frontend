@@ -10,27 +10,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { assignPermissionSet } from "@/features/users/api/user.api"
-import type {
-  BulkEnableEmployeeLoginResponse,
-  EmployeeResponse,
-} from "../api/employee.types"
+import type { BulkOperationSummary, EmployeeResponse } from "../api/employee.types"
 import {
   useBulkDisableEmployeeLogin,
   useBulkEnableEmployeeLogin,
 } from "../hooks/use-bulk-employee-login"
 import { RoleCombobox } from "@/features/roles/components/RoleCombobox"
 import { PermissionSetCombobox } from "@/features/permission-sets/components/PermissionSetCombobox"
+import { BulkLoginCredentialsDialog } from "./BulkLoginCredentialsDialog"
 
 type Props = {
   companyUuid: string
@@ -62,7 +52,7 @@ export function EmployeeBulkActionBar({
   const [permissionSetUuid, setPermissionSetUuid] = React.useState<string>("")
   const [psBusy, setPsBusy] = React.useState(false)
   const [credentials, setCredentials] =
-    React.useState<BulkEnableEmployeeLoginResponse | null>(null)
+    React.useState<BulkOperationSummary | null>(null)
 
   const enableMutation = useBulkEnableEmployeeLogin(companyUuid)
   const disableMutation = useBulkDisableEmployeeLogin(companyUuid)
@@ -84,7 +74,6 @@ export function EmployeeBulkActionBar({
     setPsOpen(false)
     setPermissionSetUuid("")
   }
-
   const handleEnable = () => {
     if (!roleUuid || withoutLogin.length === 0) return
     enableMutation.mutate(
@@ -94,8 +83,7 @@ export function EmployeeBulkActionBar({
       },
       {
         onSuccess: (data) => {
-          const ok = data.succeeded.length
-          const fail = data.failed.length
+          const { successful: ok, failed: fail, skipped } = data
           if (fail === 0) {
             toast.success(`Login enabled for ${ok} ${ok === 1 ? "employee" : "employees"}`)
           } else if (ok === 0) {
@@ -103,9 +91,10 @@ export function EmployeeBulkActionBar({
           } else {
             toast.warning(`Login enabled for ${ok}, failed for ${fail}`)
           }
+          if (skipped > 0) toast.info(`${skipped} skipped by server`)
           closeEnable()
           // Show generated credentials (one-time visible) when present.
-          if (data.succeeded.length > 0) setCredentials(data)
+          if (data.results.length > 0) setCredentials(data)
           onComplete()
         },
         onError: (error) => {
@@ -121,8 +110,7 @@ export function EmployeeBulkActionBar({
       { employeeUuids: withLogin.map(employeeId) },
       {
         onSuccess: (data) => {
-          const ok = data.succeeded.length
-          const fail = data.failed.length
+          const { successful: ok, failed: fail, skipped } = data
           if (fail === 0) {
             toast.success(`Login disabled for ${ok} ${ok === 1 ? "employee" : "employees"}`)
           } else if (ok === 0) {
@@ -130,6 +118,7 @@ export function EmployeeBulkActionBar({
           } else {
             toast.warning(`Login disabled for ${ok}, failed for ${fail}`)
           }
+          if (skipped > 0) toast.info(`${skipped} skipped by server`)
           setDisableOpen(false)
           onComplete()
         },
@@ -257,55 +246,10 @@ export function EmployeeBulkActionBar({
       </Dialog>
 
       {/* ── Generated credentials (one-time view) ── */}
-      <Dialog open={!!credentials} onOpenChange={(next) => !next && setCredentials(null)}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Logins enabled — credentials</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Share these temporary passwords with the employees. They are shown
-            only once.
-          </p>
-          <div className="max-h-80 overflow-y-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Temporary Password</TableHead>
-                  <TableHead>Email Sent</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {credentials?.succeeded.map((s) => (
-                  <TableRow key={s.employeeUuid}>
-                    <TableCell className="font-mono text-sm">
-                      {s.username ?? "—"}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {s.temporaryPassword ?? "—"}
-                    </TableCell>
-                    <TableCell>{s.emailDispatched ? "Yes" : "No"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {(credentials?.failed.length ?? 0) > 0 && (
-            <p className="text-sm text-destructive">
-              {credentials?.failed.length} failed:{" "}
-              {credentials?.failed
-                .map(
-                  (f) =>
-                    `${f.employeeUuid}${f.message ?? f.error ?? f.reason ? ` (${f.message ?? f.error ?? f.reason})` : ""}`
-                )
-                .join(", ")}
-            </p>
-          )}
-          <div className="flex justify-end">
-            <Button onClick={() => setCredentials(null)}>Done</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <BulkLoginCredentialsDialog
+        data={credentials}
+        onClose={() => setCredentials(null)}
+      />
 
       {/* ── Bulk Disable Login ── */}
       <ConfirmDialog

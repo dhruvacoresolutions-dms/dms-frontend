@@ -141,33 +141,31 @@ export type BulkDisableEmployeeLoginRequest = {
   employeeUuids: string[]
 }
 
-export type BulkLoginEnabledItem = {
+export type BulkLoginResultEntry = {
   employeeUuid: string
+  employeeCode?: string
+  employeeName?: string
+  /** "SUCCESS" / "FAILED" / "SKIPPED" */
+  status?: string
+  userUuid?: string
   username?: string
   temporaryPassword?: string
   emailDispatched?: boolean
-}
-
-export type BulkLoginDisabledItem = {
-  employeeUuid: string
-  status?: string
-}
-
-export type BulkLoginFailedItem = {
-  employeeUuid: string
+  errorCode?: string | null
   message?: string
   error?: string
   reason?: string
 }
 
-export type BulkEnableEmployeeLoginResponse = {
-  succeeded: BulkLoginEnabledItem[]
-  failed: BulkLoginFailedItem[]
-}
-
-export type BulkDisableEmployeeLoginResponse = {
-  succeeded: BulkLoginDisabledItem[]
-  failed: BulkLoginFailedItem[]
+/** Normalized bulk-operation envelope. The backend returns
+ * `{total, successful, skipped, failed, results[]}`; legacy
+ * `{succeeded[], failed[]}` payloads are normalized to this shape. */
+export type BulkOperationSummary = {
+  total: number
+  successful: number
+  skipped: number
+  failed: number
+  results: BulkLoginResultEntry[]
 }
 
 export type EmployeeImportJobResponse = {
