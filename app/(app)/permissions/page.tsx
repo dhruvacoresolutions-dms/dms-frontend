@@ -30,9 +30,8 @@ export default function PermissionsPage() {
       !search ||
       p.code.toLowerCase().includes(search.toLowerCase()) ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.moduleCode.toLowerCase().includes(search.toLowerCase()) ||
       p.resourceCode.toLowerCase().includes(search.toLowerCase()) ||
-      p.action.toLowerCase().includes(search.toLowerCase())
+      p.actionCode.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -67,7 +66,7 @@ export default function PermissionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Code</TableHead>
-                <TableHead>Module</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Resource</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Status</TableHead>
@@ -75,11 +74,11 @@ export default function PermissionsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((perm) => (
-                <TableRow key={perm.publicId}>
+                <TableRow key={perm.code}>
                   <TableCell className="font-mono text-sm">{perm.code}</TableCell>
-                  <TableCell><Badge variant="secondary">{perm.moduleCode}</Badge></TableCell>
-                  <TableCell>{perm.resourceCode}</TableCell>
-                  <TableCell><span className="capitalize">{perm.action}</span></TableCell>
+                  <TableCell>{perm.name}</TableCell>
+                  <TableCell><Badge variant="secondary">{perm.resourceCode}</Badge></TableCell>
+                  <TableCell><span className="capitalize">{perm.actionCode}</span></TableCell>
                   <TableCell><Badge variant={perm.status === "ACTIVE" ? "default" : "outline"}>{perm.status}</Badge></TableCell>
                 </TableRow>
               ))}

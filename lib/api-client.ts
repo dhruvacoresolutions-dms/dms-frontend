@@ -15,7 +15,9 @@ const PUBLIC_PATHS = [
   "/api/v1/auth/reset-password",
 ]
 
-const COMPANY_CONTEXT_EXCLUDE = ["/api/v1/permissions", "/api/v1/permissions/matrix"]
+// All APIs (including /api/v1/permissions and /api/v1/permissions/matrix)
+// require X-Company-Context — nothing is excluded.
+const COMPANY_CONTEXT_EXCLUDE: string[] = []
 
 function isPublicPath(url: string | undefined) {
   if (!url) {
