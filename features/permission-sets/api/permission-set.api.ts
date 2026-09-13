@@ -3,6 +3,7 @@ import type { ApiSuccessResponse } from "@/lib/api-client"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
   PermissionSetResponse,
+  PermissionSetListParams,
   CreatePermissionSetRequest,
   UpdatePermissionSetRequest,
   PermissionCodesRequest,
@@ -14,17 +15,21 @@ function resolveCompanyUuid(companyUuid: string): string {
 }
 
 const baseUrl = (companyUuid: string) =>
-  `/v1/companies/${resolveCompanyUuid(companyUuid)}/permission-sets`
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/permission-sets`
 
 function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)
 }
 
-export async function getPermissionSets(companyUuid: string) {
+export async function getPermissionSets(
+  companyUuid: string,
+  params?: PermissionSetListParams
+) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<PermissionSetResponse[]>
   >(baseUrl(companyUuid), {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data

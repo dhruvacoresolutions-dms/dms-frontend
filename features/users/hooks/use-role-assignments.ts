@@ -7,12 +7,19 @@ import {
   removeRoleAssignment,
 } from "../api/user.api"
 import { userKeys } from "../api/user-keys"
-import type { CreateRoleAssignmentRequest } from "../api/user.types"
+import type {
+  CreateRoleAssignmentRequest,
+  AccessAssignmentListParams,
+} from "../api/user.types"
 
-export function useRoleAssignments(companyUuid: string, userUuid: string) {
+export function useRoleAssignments(
+  companyUuid: string,
+  userUuid: string,
+  params?: AccessAssignmentListParams
+) {
   return useQuery({
-    queryKey: userKeys.roleAssignments(companyUuid, userUuid),
-    queryFn: () => getRoleAssignments(companyUuid, userUuid),
+    queryKey: userKeys.roleAssignments(companyUuid, userUuid, params),
+    queryFn: () => getRoleAssignments(companyUuid, userUuid, params),
     enabled: !!companyUuid && !!userUuid,
   })
 }

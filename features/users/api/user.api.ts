@@ -12,6 +12,7 @@ import type {
   CreateRoleAssignmentRequest,
   PermissionSetAssignmentRequest,
   UserListParams,
+  AccessAssignmentListParams,
 } from "./user.types"
 import type { PageResponse } from "@/features/companies/api/company.types"
 
@@ -21,7 +22,7 @@ function resolveCompanyUuid(companyUuid: string): string {
 }
 
 const baseUrl = (companyUuid: string) =>
-  `/v1/companies/${resolveCompanyUuid(companyUuid)}/users`
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/users`
 
 function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)
@@ -125,12 +126,14 @@ export async function getUserEffectiveAccess(
 
 export async function getRoleAssignments(
   companyUuid: string,
-  userUuid: string
+  userUuid: string,
+  params?: AccessAssignmentListParams
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<AccessAssignmentResponse[]>
   >(`${baseUrl(companyUuid)}/${userUuid}/role-assignments`, {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data
@@ -165,12 +168,14 @@ export async function removeRoleAssignment(
 
 export async function getPermissionSetAssignments(
   companyUuid: string,
-  userUuid: string
+  userUuid: string,
+  params?: AccessAssignmentListParams
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<AccessAssignmentResponse[]>
   >(`${baseUrl(companyUuid)}/${userUuid}/permission-set-assignments`, {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data

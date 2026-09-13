@@ -57,6 +57,18 @@ export type EmployeeListParams = {
   size?: number
 }
 
+/** Query params for listing an employee's geography assignments. */
+export type EmployeeGeographyListParams = {
+  search?: string
+}
+
+/** Query params for listing employee import rows. */
+export type EmployeeImportRowListParams = {
+  search?: string
+  page?: number
+  size?: number
+}
+
 export type EmployeeGeographyResponse = {
   assignmentUuid: string
   employeeUuid: string

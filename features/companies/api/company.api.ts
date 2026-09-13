@@ -10,6 +10,7 @@ import type {
   FeatureEntitlementRequest,
   PageResponse,
   CompanyListParams,
+  CompanyAddressListParams,
 } from "./company.types"
 
 function resolveCompanyUuid(companyUuid: string): string {
@@ -20,7 +21,7 @@ function resolveCompanyUuid(companyUuid: string): string {
 export async function getCompanies(params?: CompanyListParams) {
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<CompanySummaryResponse>>
-  >("/v1/companies", { params })
+  >("/api/v1/companies", { params })
   return data.data
 }
 
@@ -28,7 +29,7 @@ export async function getCompany(companyUuid: string) {
   const resolved = resolveCompanyUuid(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<CompanySummaryResponse>
-  >(`/v1/companies/${resolved}`, {
+  >(`/api/v1/companies/${resolved}`, {
     headers: { "X-Company-Context": resolved },
   })
   return data.data
@@ -37,15 +38,19 @@ export async function getCompany(companyUuid: string) {
 export async function createCompany(input: CreateCompanyRequest) {
   const { data } = await apiClient.post<
     ApiSuccessResponse<CreateCompanyResponse>
-  >("/v1/companies", input)
+  >("/api/v1/companies", input)
   return data.data
 }
 
-export async function getCompanyAddresses(companyUuid: string) {
+export async function getCompanyAddresses(
+  companyUuid: string,
+  params?: CompanyAddressListParams
+) {
   const resolved = resolveCompanyUuid(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<AddressResponse[]>
-  >(`/v1/companies/${resolved}/addresses`, {
+  >(`/api/v1/companies/${resolved}/addresses`, {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data
@@ -58,7 +63,7 @@ export async function addCompanyAddress(
   const resolved = resolveCompanyUuid(companyUuid)
   const { data } = await apiClient.post<
     ApiSuccessResponse<AddressResponse>
-  >(`/v1/companies/${resolved}/addresses`, input, {
+  >(`/api/v1/companies/${resolved}/addresses`, input, {
     headers: { "X-Company-Context": resolved },
   })
   return data.data
@@ -71,7 +76,7 @@ export async function updateCompanyFeatures(
   const resolved = resolveCompanyUuid(companyUuid)
   const { data } = await apiClient.put<
     ApiSuccessResponse<CompanySummaryResponse>
-  >(`/v1/companies/${resolved}/features`, input, {
+  >(`/api/v1/companies/${resolved}/features`, input, {
     headers: { "X-Company-Context": resolved },
   })
   return data.data

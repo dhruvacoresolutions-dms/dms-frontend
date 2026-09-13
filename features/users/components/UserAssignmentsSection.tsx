@@ -100,7 +100,10 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
                           )
                       )
                       .map((role) => (
-                        <SelectItem key={role.publicId} value={role.publicId}>
+                        <SelectItem
+                          key={role.roleUuid}
+                          value={role.roleUuid}
+                        >
                           {role.name}
                         </SelectItem>
                       ))}

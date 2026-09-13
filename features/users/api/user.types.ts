@@ -43,6 +43,11 @@ export type UserListParams = {
   size?: number
 }
 
+/** Query params for listing a user's role / permission-set assignments. */
+export type AccessAssignmentListParams = {
+  search?: string
+}
+
 export type EffectiveAccessResponse = {
   userPublicId: string
   companyPublicId: string

@@ -7,15 +7,19 @@ import {
   removePermissionSetAssignment,
 } from "../api/user.api"
 import { userKeys } from "../api/user-keys"
-import type { PermissionSetAssignmentRequest } from "../api/user.types"
+import type {
+  PermissionSetAssignmentRequest,
+  AccessAssignmentListParams,
+} from "../api/user.types"
 
 export function usePermissionSetAssignments(
   companyUuid: string,
-  userUuid: string
+  userUuid: string,
+  params?: AccessAssignmentListParams
 ) {
   return useQuery({
-    queryKey: userKeys.permissionSetAssignments(companyUuid, userUuid),
-    queryFn: () => getPermissionSetAssignments(companyUuid, userUuid),
+    queryKey: userKeys.permissionSetAssignments(companyUuid, userUuid, params),
+    queryFn: () => getPermissionSetAssignments(companyUuid, userUuid, params),
     enabled: !!companyUuid && !!userUuid,
   })
 }

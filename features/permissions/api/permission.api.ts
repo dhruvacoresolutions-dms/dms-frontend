@@ -9,13 +9,13 @@ import type {
 export async function getPermissions(params?: PermissionListParams) {
   const { data } = await apiClient.get<
     ApiSuccessResponse<PermissionResponse[]>
-  >("/v1/permissions", { params })
+  >("/api/v1/permissions", { params })
   return data.data
 }
 
 export async function getPermissionMatrix() {
   const { data } = await apiClient.get<
     ApiSuccessResponse<PermissionModuleResponse[]>
-  >("/v1/permissions/matrix")
+  >("/api/v1/permissions/matrix")
   return data.data
 }

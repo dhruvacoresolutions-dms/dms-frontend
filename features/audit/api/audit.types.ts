@@ -8,6 +8,7 @@ export type AuditEventResponse = {
 }
 
 export type AuditListParams = {
+  search?: string
   page?: number
   size?: number
 }
