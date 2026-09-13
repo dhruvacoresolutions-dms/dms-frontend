@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatModuleLabel } from "@/features/permissions/utils/permission.utils"
 import { groupPermissionsByPrefix } from "../utils/permission-set.utils"
 
 type PermissionSetPermissionsCardProps = {
@@ -30,7 +31,9 @@ export function PermissionSetPermissionsCard({
           <div className="space-y-4">
             {Object.entries(grouped).map(([prefix, codes]) => (
               <div key={prefix} className="space-y-2">
-                <h4 className="text-sm font-medium capitalize">{prefix}</h4>
+                <h4 className="text-sm font-medium">
+                  {formatModuleLabel(prefix)}
+                </h4>
                 <div className="flex flex-wrap gap-1">
                   {codes.map((code) => (
                     <Badge

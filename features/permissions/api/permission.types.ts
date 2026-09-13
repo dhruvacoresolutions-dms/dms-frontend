@@ -1,11 +1,12 @@
 /**
  * BE: GET /api/v1/permissions → `data: [{ code, name, resourceCode, actionCode, status }]`.
+ * Note: some catalog entries arrive without `actionCode` — treat it as optional.
  */
 export type PermissionResponse = {
   code: string
   name: string
   resourceCode: string
-  actionCode: string
+  actionCode?: string
   status: string
   /** Legacy fields (pre-BE-contract) — optional for backwards compat. */
   publicId?: string

@@ -14,11 +14,14 @@ export function getPermissionSetId(
   return set.permissionSetUuid ?? set.publicId ?? ""
 }
 
-/** Canonical permission list — BE detail uses `permissionCodes`. */
+/**
+ * Canonical permission list — BE detail uses `permissionCodes`, with a
+ * fallback to a legacy `permissions` key since real responses vary.
+ */
 export function getPermissionSetPermissions(
   set: PermissionSetDetail
 ): string[] {
-  return set.permissionCodes ?? []
+  return set.permissionCodes ?? set.permissions ?? []
 }
 
 /** Group `SCOPE.RESOURCE.ACTION`-style codes by their first segment for display. */

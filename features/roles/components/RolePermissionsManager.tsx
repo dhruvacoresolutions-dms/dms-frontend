@@ -3,17 +3,16 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { TableSkeleton } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { usePermissions } from "@/features/permissions/hooks/use-permissions"
+import { PermissionMatrixPicker } from "@/features/permissions/components/PermissionMatrixPicker"
 import { useUpdateRolePermissions } from "../hooks/use-update-role-permissions"
 import { getRoleErrorMessage, getRolePermissions } from "../utils/role.utils"
 import type { RoleDetail } from "../api/role.types"
-import { RolePermissionGroup } from "./RolePermissionGroup"
 
 type RolePermissionsManagerProps = {
   companyUuid: string
@@ -83,23 +82,6 @@ export function RolePermissionsManager({
       />
     )
 
-  const query = search.trim().toLowerCase()
-  const filtered = allPermissions.filter(
-    (p) =>
-      !query ||
-      p.code.toLowerCase().includes(query) ||
-      p.name.toLowerCase().includes(query) ||
-      p.resourceCode.toLowerCase().includes(query) ||
-      p.actionCode.toLowerCase().includes(query)
-  )
-
-  const grouped = new Map<string, typeof allPermissions>()
-  for (const perm of filtered) {
-    const list = grouped.get(perm.resourceCode) ?? []
-    list.push(perm)
-    grouped.set(perm.resourceCode, list)
-  }
-
   // Assigned codes missing from the catalog (e.g. stale) — keep visible so
   // saving doesn't silently drop them.
   const catalogCodes = new Set(allPermissions.map((p) => p.code))
@@ -108,12 +90,6 @@ export function RolePermissionsManager({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search permissions by code, name, or resource..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm flex-1"
-        />
         <Badge variant="secondary">{selected.size} selected</Badge>
         {hasChanges && (
           <Badge variant="outline" className="text-amber-600">
@@ -166,25 +142,14 @@ export function RolePermissionsManager({
         </Card>
       )}
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          title="No permissions match"
-          description="Try a different search."
-        />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {Array.from(grouped.entries()).map(([resourceCode, perms]) => (
-            <RolePermissionGroup
-              key={resourceCode}
-              resourceCode={resourceCode}
-              permissions={perms}
-              selected={selected}
-              onToggle={toggle}
-              onToggleAll={toggleAll}
-            />
-          ))}
-        </div>
-      )}
+      <PermissionMatrixPicker
+        permissions={allPermissions}
+        selected={selected}
+        onToggle={toggle}
+        onToggleAll={toggleAll}
+        search={search}
+        onSearchChange={setSearch}
+      />
     </div>
   )
 }

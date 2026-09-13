@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { PermissionModuleResponse } from "../api/permission.types"
+import { formatModuleLabel } from "../utils/permission.utils"
 
 type PermissionMatrixTableProps = {
   matrix: PermissionModuleResponse[]
@@ -45,8 +46,8 @@ export function PermissionMatrixTable({ matrix }: PermissionMatrixTableProps) {
               <TableRow key={module.moduleCode} className="align-top">
                 <TableCell>
                   <p className="font-medium">{module.moduleName}</p>
-                  <Badge variant="outline" className="mt-1 font-mono text-[10px]">
-                    {module.moduleCode}
+                  <Badge variant="outline" className="mt-1 text-[10px]">
+                    {formatModuleLabel(module.moduleCode)}
                   </Badge>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {codes.length} permission(s) · {module.resources.length}{" "}

@@ -47,7 +47,9 @@ export type PermissionSetDetail = {
   name: string
   description?: string
   status: PermissionSetStatus
-  permissionCodes: string[]
+  permissionCodes?: string[]
+  /** Legacy/alternate key some BE responses use — accepted as fallback. */
+  permissions?: string[]
 }
 
 /** BE: PUT /permission-sets/{permissionSetUuid} success — `data: { permissionSetUuid, code, name }`. */

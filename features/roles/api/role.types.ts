@@ -48,7 +48,9 @@ export type RoleDetail = {
   name: string
   description?: string
   status: RoleStatus
-  permissionCodes: string[]
+  permissionCodes?: string[]
+  /** Legacy/alternate key some BE responses use — accepted as fallback. */
+  permissions?: string[]
 }
 
 /** BE: PUT /roles/{roleUuid} success — `data: { roleUuid, name, status }`. */

@@ -9,9 +9,12 @@ export function getRoleId(
   return role.roleUuid ?? role.publicId ?? ""
 }
 
-/** Canonical permission list — BE detail uses `permissionCodes`. */
+/**
+ * Canonical permission list — BE detail uses `permissionCodes`, with a
+ * fallback to a legacy `permissions` key since real responses vary.
+ */
 export function getRolePermissions(role: RoleDetail): string[] {
-  return role.permissionCodes ?? []
+  return role.permissionCodes ?? role.permissions ?? []
 }
 
 /** Group `SCOPE.RESOURCE.ACTION`-style codes by their first segment for display. */
