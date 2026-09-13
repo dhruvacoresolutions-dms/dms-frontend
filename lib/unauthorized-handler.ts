@@ -35,6 +35,6 @@ export function handleUnauthorized() {
 
   redirecting = true
 
-  const loginUrl = `/auth/login?redirect=${encodeURIComponent(pathname)}`
-  window.location.assign(loginUrl)
+  // Fresh login every time: never resume the page the user left off
+  window.location.assign("/auth/login")
 }
