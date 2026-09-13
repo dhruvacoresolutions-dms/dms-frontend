@@ -49,10 +49,13 @@ export async function getEmployees(
   params?: EmployeeListParams
 ) {
   const resolved = companyHeader(companyUuid)
-  // Backend expects `search` (not `query`) plus `status` / `designationUuid`
+  // Backend expects `search` (not `query`) plus `status` / `designationUuid`.
+  // `query` is also sent for endpoints that honor that name instead.
+  const term = params?.search ?? params?.query
   const queryParams = params
     ? {
-        search: params.search ?? params.query ?? undefined,
+        search: term,
+        query: term,
         status: params.status,
         designationUuid: params.designationUuid,
         page: params.page,

@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { Plus, Trash2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -29,13 +31,14 @@ import {
   useRemoveEmployeeGeography,
 } from "@/features/employees/hooks/use-employee-geographies"
 import { toast } from "sonner"
-import { getApiErrorMessage } from "@/lib/api/api-error"
+import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 
 type Props = { companyUuid: string; employeeUuid: string }
 
 export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string>("")
+  const [primaryAssignment, setPrimaryAssignment] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<{ uuid: string; name: string } | null>(null)
 
   const geographies = useEmployeeGeographies(companyUuid, employeeUuid)
@@ -50,7 +53,16 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Assigned Geographies</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next)
+            if (!next) {
+              setSelected("")
+              setPrimaryAssignment(false)
+            }
+          }}
+        >
           <DialogTrigger render={<Button size="sm" />}>
             <Plus className="mr-2 size-4" /> Assign Geography
           </DialogTrigger>
@@ -67,6 +79,16 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
                 size={100}
                 excludeUuids={assignedUuids}
               />
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="primary-assignment"
+                  checked={primaryAssignment}
+                  onCheckedChange={(checked) =>
+                    setPrimaryAssignment(checked === true)
+                  }
+                />
+                <Label htmlFor="primary-assignment">Set as primary</Label>
+              </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button
@@ -74,10 +96,23 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
                   onClick={() => {
                     if (!selected) return
                     assignMutation.mutate(
-                      { geographyUuid: selected },
+                      { geographyUuid: selected, primaryAssignment },
                       {
-                        onSuccess: () => { toast.success("Geography assigned"); setOpen(false); setSelected("") },
-                        onError: (error) => { toast.error(getApiErrorMessage(error, "Failed")) },
+                        onSuccess: () => { toast.success("Geography assigned"); setOpen(false); setSelected(""); setPrimaryAssignment(false) },
+                        onError: (error) => {
+                          // Backend returns 409 EMPLOYEE_GEOGRAPHY_ALREADY_ASSIGNED
+                          // if it was assigned elsewhere; surface its message
+                          // and reset so the (refreshed) list is accurate.
+                          if (getApiError(error)?.code === "EMPLOYEE_GEOGRAPHY_ALREADY_ASSIGNED") {
+                            toast.error(getApiErrorMessage(error, "This geography is already assigned to the employee"))
+                            geographies.refetch()
+                            setOpen(false)
+                            setSelected("")
+                            setPrimaryAssignment(false)
+                            return
+                          }
+                          toast.error(getApiErrorMessage(error, "Failed"))
+                        },
                       }
                     )
                   }}
