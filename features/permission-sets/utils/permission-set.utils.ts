@@ -52,16 +52,3 @@ export function getPermissionSetErrorMessage(
   if (fieldError) return `${fieldError.field}: ${fieldError.message}`
   return fallback
 }
-
-/** Route helpers so `/permission-sets` and `/companies/[companyUuid]/permission-sets` share components. */
-export function getPermissionSetsBasePath(companyUuid: string | null): string {
-  if (!companyUuid || companyUuid === "current") return "/permission-sets"
-  return `/companies/${companyUuid}/permission-sets`
-}
-
-export function getPermissionSetDetailPath(
-  companyUuid: string | null,
-  setUuid: string
-): string {
-  return `${getPermissionSetsBasePath(companyUuid)}/${setUuid}`
-}

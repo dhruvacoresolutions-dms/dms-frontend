@@ -3,9 +3,9 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
-import { useDesignations } from "../hooks/use-designations"
-import { getDesignation } from "../api/designation.api"
-import type { DesignationResponse } from "../api/designation.types"
+import { useGeographies } from "../hooks/use-geographies"
+import { getGeography } from "../api/geography.api"
+import type { GeographyResponse } from "../api/geography.types"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -24,21 +24,24 @@ type Props = {
   value?: string | null
   onValueChange: (
     value: string | null,
-    designation?: DesignationResponse | null
+    geography?: GeographyResponse | null
   ) => void
   placeholder?: string
   disabled?: boolean
-  /** Page size for the options query (use 100 for filter dropdowns) */
+  /** Page size for the options query */
   size?: number
+  /** Geography uuids to hide from options (e.g. already assigned) */
+  excludeUuids?: string[]
 }
 
-export function DesignationCombobox({
+export function GeographyCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search designation...",
+  placeholder = "Search geography...",
   disabled,
   size = 100,
+  excludeUuids,
 }: Props) {
   const [inputValue, setInputValue] = React.useState("")
 
@@ -49,28 +52,32 @@ export function DesignationCombobox({
     return () => clearTimeout(t)
   }, [inputValue])
 
-  const designationsQuery = useDesignations(companyUuid, {
+  const geographiesQuery = useGeographies(companyUuid, {
     query: debouncedQuery || undefined,
     page: 0,
     size,
   })
 
-  const searchResults = designationsQuery.data?.content ?? []
+  const rawResults = geographiesQuery.data?.content ?? []
+  const searchResults = React.useMemo(() => {
+    if (!excludeUuids || excludeUuids.length === 0) return rawResults
+    const excluded = new Set(excludeUuids)
+    return rawResults.filter((g) => !excluded.has(g.geographyUuid))
+  }, [rawResults, excludeUuids])
 
-  // Fetch selected designation if value not in searchResults (to keep label)
+  // Fetch selected geography if value not in searchResults (to keep label)
   const selectedInResults = React.useMemo(
-    () =>
-      searchResults.find((d) => (d.designationUuid ?? d.publicId) === value),
+    () => searchResults.find((g) => g.geographyUuid === value),
     [searchResults, value]
   )
 
   const { data: fetchedSelected } = useQuery({
-    queryKey: ["companies", companyUuid, "designations", "detail", value],
-    queryFn: () => getDesignation(companyUuid, value as string),
+    queryKey: ["companies", companyUuid, "geographies", "detail", value],
+    queryFn: () => getGeography(companyUuid, value as string),
     enabled: !!value && !selectedInResults && !!companyUuid,
   })
 
-  const selectedItem: DesignationResponse | null = React.useMemo(() => {
+  const selectedItem: GeographyResponse | null = React.useMemo(() => {
     if (!value) return null
     if (selectedInResults) return selectedInResults
     if (fetchedSelected) return fetchedSelected
@@ -79,20 +86,12 @@ export function DesignationCombobox({
 
   const items = React.useMemo(() => {
     if (!selectedItem) return searchResults
-    if (
-      searchResults.some(
-        (d) =>
-          (d.designationUuid ?? d.publicId) ===
-          (selectedItem.designationUuid ?? selectedItem.publicId)
-      )
-    )
+    if (searchResults.some((g) => g.geographyUuid === selectedItem.geographyUuid))
       return searchResults
     return [...searchResults, selectedItem]
   }, [searchResults, selectedItem])
 
-  // "Searching…" only while the API call is in flight; the empty message
-  // additionally stays hidden during the debounce so it never flashes mid-typing.
-  const isFetching = designationsQuery.isFetching
+  const isFetching = geographiesQuery.isFetching
 
   const clearSelection = () => {
     onValueChange(null)
@@ -100,8 +99,6 @@ export function DesignationCombobox({
     setDebouncedQuery("")
   }
 
-  // Clear lives inside the trigger (a span, not a nested button) and
-  // stops every pointer/keyboard event so the popup never toggles.
   const stopToggle = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -114,18 +111,16 @@ export function DesignationCombobox({
       disabled={disabled}
       inputValue={inputValue}
       onInputValueChange={(nextValue, details) => {
-        // don't touch the search when selecting via item-press (value already set)
         if (details.reason === "item-press") return
         setInputValue(nextValue)
       }}
-      onValueChange={(next: DesignationResponse | null) => {
-        const uuid = next ? (next.designationUuid ?? next.publicId) : null
+      onValueChange={(next: GeographyResponse | null) => {
+        const uuid = next ? next.geographyUuid : null
         onValueChange(uuid, next)
-        // clear search after selection to show full list next time
         setInputValue("")
         setDebouncedQuery("")
       }}
-      itemToStringLabel={(item: DesignationResponse | null) => item?.name ?? ""}
+      itemToStringLabel={(item: GeographyResponse | null) => item?.name ?? ""}
       filter={null}
     >
       <ComboboxTrigger
@@ -147,7 +142,7 @@ export function DesignationCombobox({
           <span
             role="button"
             tabIndex={0}
-            aria-label="Clear designation"
+            aria-label="Clear geography"
             onClick={(e) => {
               stopToggle(e)
               clearSelection()
@@ -167,7 +162,7 @@ export function DesignationCombobox({
       </ComboboxTrigger>
       <ComboboxContent>
         <ComboboxInput
-          placeholder="Search designations..."
+          placeholder="Search geographies..."
           disabled={disabled}
           showTrigger={false}
           showSearchIcon
@@ -179,18 +174,15 @@ export function DesignationCombobox({
           </div>
         ) : null}
         {!isFetching ? (
-          <ComboboxEmpty>No designations found.</ComboboxEmpty>
+          <ComboboxEmpty>No geographies found.</ComboboxEmpty>
         ) : null}
         <ComboboxList>
-          {(item: DesignationResponse) => (
-            <ComboboxItem
-              key={item.designationUuid ?? item.publicId}
-              value={item}
-            >
+          {(item: GeographyResponse) => (
+            <ComboboxItem key={item.geographyUuid} value={item}>
               <span className="flex flex-col">
                 <span className="font-medium">{item.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {item.code}
+                  {item.code} • {item.type}
                 </span>
               </span>
             </ComboboxItem>

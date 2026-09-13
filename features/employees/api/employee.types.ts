@@ -1,5 +1,11 @@
 export type EmployeeStatus = "ACTIVE" | "INACTIVE"
 
+export type EmployeeGender = "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY"
+
+export type EmployeeType = "PERMANENT" | "CONTRACT" | "TEMPORARY"
+
+export type EmployeeMaritalStatus = "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED"
+
 export type CreateEmployeeRequest = {
   employeeCode: string
   firstName: string
@@ -8,8 +14,15 @@ export type CreateEmployeeRequest = {
   phone?: string
   email?: string
   designationUuid?: string
+  departmentUuid?: string
   reportsToEmployeeUuid?: string
   dateOfJoining?: string
+  gender?: EmployeeGender
+  dateOfBirth?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  maritalStatus?: EmployeeMaritalStatus
+  anniversaryDate?: string | null
 }
 
 export type UpdateEmployeeRequest = {
@@ -20,8 +33,15 @@ export type UpdateEmployeeRequest = {
   email?: string
   phone?: string
   designationUuid?: string
+  departmentUuid?: string
   reportsToEmployeeUuid?: string | null
   dateOfJoining?: string
+  gender?: EmployeeGender
+  dateOfBirth?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  maritalStatus?: EmployeeMaritalStatus
+  anniversaryDate?: string | null
 }
 
 export type UpdateEmployeeStatusRequest = {
@@ -34,6 +54,7 @@ export type EmployeeResponse = {
   employeeCode: string
   firstName: string
   lastName: string
+  fullName?: string | null
   mobile?: string | null
   phone?: string | null
   email?: string | null
@@ -41,9 +62,24 @@ export type EmployeeResponse = {
   userUuid?: string
   username?: string
   designationUuid?: string
+  designationCode?: string | null
   designationName?: string
+  designationHierarchyLevel?: number | null
   reportsToEmployeeUuid?: string | null
+  reportsToEmployeeCode?: string | null
+  reportsToEmployeeName?: string | null
   dateOfJoining?: string | null
+  gender?: EmployeeGender | null
+  dateOfBirth?: string | null
+  employeeType?: EmployeeType | null
+  departmentUuid?: string
+  departmentCode?: string | null
+  departmentName?: string | null
+  maritalStatus?: EmployeeMaritalStatus | null
+  anniversaryDate?: string | null
+  profilePhotoConfigured?: boolean
+  profilePhotoContentType?: string | null
+  profilePhotoSizeBytes?: number | null
   createdAt: string
   updatedAt: string
 }
@@ -94,6 +130,42 @@ export type EmployeeLoginStatusResponse = {
 
 export type EnableEmployeeLoginRequest = {
   roleUuid: string
+}
+
+export type BulkEnableEmployeeLoginRequest = {
+  employeeUuids: string[]
+  roleUuid: string
+}
+
+export type BulkDisableEmployeeLoginRequest = {
+  employeeUuids: string[]
+}
+
+export type BulkLoginResultEntry = {
+  employeeUuid: string
+  employeeCode?: string
+  employeeName?: string
+  /** "SUCCESS" / "FAILED" / "SKIPPED" */
+  status?: string
+  userUuid?: string
+  username?: string
+  temporaryPassword?: string
+  emailDispatched?: boolean
+  errorCode?: string | null
+  message?: string
+  error?: string
+  reason?: string
+}
+
+/** Normalized bulk-operation envelope. The backend returns
+ * `{total, successful, skipped, failed, results[]}`; legacy
+ * `{succeeded[], failed[]}` payloads are normalized to this shape. */
+export type BulkOperationSummary = {
+  total: number
+  successful: number
+  skipped: number
+  failed: number
+  results: BulkLoginResultEntry[]
 }
 
 export type EmployeeImportJobResponse = {

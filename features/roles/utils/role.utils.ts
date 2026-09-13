@@ -45,16 +45,3 @@ export function getRoleErrorMessage(
   if (fieldError) return `${fieldError.field}: ${fieldError.message}`
   return fallback
 }
-
-/** Route helpers so `/roles` and `/companies/[companyUuid]/roles` share components. */
-export function getRolesBasePath(companyUuid: string | null): string {
-  if (!companyUuid || companyUuid === "current") return "/roles"
-  return `/companies/${companyUuid}/roles`
-}
-
-export function getRoleDetailPath(
-  companyUuid: string | null,
-  roleUuid: string
-): string {
-  return `${getRolesBasePath(companyUuid)}/${roleUuid}`
-}

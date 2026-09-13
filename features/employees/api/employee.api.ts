@@ -12,6 +12,10 @@ import type {
   AssignEmployeeGeographyRequest,
   EmployeeLoginStatusResponse,
   EnableEmployeeLoginRequest,
+  BulkEnableEmployeeLoginRequest,
+  BulkDisableEmployeeLoginRequest,
+  BulkLoginResultEntry,
+  BulkOperationSummary,
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
   EmployeeImportRowListParams,
@@ -49,10 +53,13 @@ export async function getEmployees(
   params?: EmployeeListParams
 ) {
   const resolved = companyHeader(companyUuid)
-  // Backend expects `search` (not `query`) plus `status` / `designationUuid`
+  // Backend expects `search` (not `query`) plus `status` / `designationUuid`.
+  // `query` is also sent for endpoints that honor that name instead.
+  const term = params?.search ?? params?.query
   const queryParams = params
     ? {
-        search: params.search ?? params.query ?? undefined,
+        search: term,
+        query: term,
         status: params.status,
         designationUuid: params.designationUuid,
         page: params.page,
@@ -385,4 +392,67 @@ export async function resetEmployeePassword(
     headers: { "X-Company-Context": resolved },
   })
   return data.data
+}
+
+/** Normalize the two bulk-operation envelopes the backend may return:
+ * `{total, successful, skipped, failed, results[]}` or legacy
+ * `{succeeded[], failed[]}`. */
+function normalizeBulkResponse(raw: unknown): BulkOperationSummary {
+  const d = (raw ?? {}) as Record<string, unknown>
+  if (Array.isArray(d.results)) {
+    const results = d.results as BulkLoginResultEntry[]
+    const successful =
+      typeof d.successful === "number"
+        ? d.successful
+        : results.filter((r) => r?.status === "SUCCESS").length
+    const failed =
+      typeof d.failed === "number" ? d.failed : results.length - successful
+    return {
+      total: typeof d.total === "number" ? d.total : results.length,
+      successful,
+      skipped: typeof d.skipped === "number" ? d.skipped : 0,
+      failed,
+      results,
+    }
+  }
+  const succeeded = ((d.succeeded ?? []) as BulkLoginResultEntry[]).map(
+    (r) => ({ ...r, status: r.status ?? "SUCCESS" })
+  )
+  const failed = ((d.failed ?? []) as BulkLoginResultEntry[]).map((r) => ({
+    ...r,
+    status: r.status ?? "FAILED",
+  }))
+  return {
+    total: succeeded.length + failed.length,
+    successful: succeeded.length,
+    skipped: 0,
+    failed: failed.length,
+    results: [...succeeded, ...failed],
+  }
+}
+
+export async function bulkEnableEmployeeLogin(
+  companyUuid: string,
+  input: BulkEnableEmployeeLoginRequest
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<unknown>
+  >(`${baseUrl(companyUuid)}/login/bulk-enable`, input, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return normalizeBulkResponse(data.data)
+}
+
+export async function bulkDisableEmployeeLogin(
+  companyUuid: string,
+  input: BulkDisableEmployeeLoginRequest
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<unknown>
+  >(`${baseUrl(companyUuid)}/login/bulk-disable`, input, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return normalizeBulkResponse(data.data)
 }

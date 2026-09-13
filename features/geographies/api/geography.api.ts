@@ -28,8 +28,11 @@ export async function getGeographies(
   params?: GeographyListParams
 ) {
   const resolved = companyHeader(companyUuid)
-  const queryParams = params ? { ...params, query: (params as Record<string, unknown>).query ?? (params as Record<string, unknown>).search } as GeographyListParams : params
-  if (queryParams && "search" in (queryParams as Record<string, unknown>)) delete (queryParams as Record<string, unknown>).search
+  // Send both `query` and `search`: different backend endpoints honor
+  // different names, unknown params are ignored.
+  const rawParams = params as Record<string, unknown> | undefined
+  const term = (rawParams?.query ?? rawParams?.search) as string | undefined
+  const queryParams = params ? { ...params, query: term, search: term } : params
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<GeographyResponse>>
   >(baseUrl(companyUuid), {

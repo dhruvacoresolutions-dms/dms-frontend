@@ -42,11 +42,12 @@ export async function getDesignations(
   params?: DesignationListParams
 ) {
   const resolved = companyHeader(companyUuid)
+  // Send both `query` and `search`: different backend endpoints honor
+  // different names, unknown params are ignored.
+  const term = params?.query ?? params?.search
   const queryParams = params
-    ? { ...params, query: params.query ?? params.search }
+    ? { ...params, query: term, search: term }
     : params
-  if (queryParams && "search" in queryParams)
-    delete (queryParams as Record<string, unknown>).search
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<DesignationResponse>>
   >(baseUrl(companyUuid), {
