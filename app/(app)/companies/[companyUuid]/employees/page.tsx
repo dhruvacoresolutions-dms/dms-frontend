@@ -6,7 +6,9 @@ import { useParams, useRouter } from "next/navigation"
 import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BulkUploadDialog } from "@/features/employees/components/BulkUploadDialog"
+import { EmployeeGeographyBulkUploadDialog } from "@/features/employees/components/EmployeeGeographyBulkUploadDialog"
 import { EmployeeFilters } from "@/features/employees/components/EmployeeFilters"
+import { useHasEmployees } from "@/features/employees/hooks/use-has-employees"
 import type { EmployeeStatus } from "@/features/employees/api/employee.types"
 import {
   Table,
@@ -49,6 +51,8 @@ export default function EmployeesPage() {
     currentStatus: string
   } | null>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [geoBulkOpen, setGeoBulkOpen] = useState(false)
+  const { hasEmployees } = useHasEmployees(companyUuid)
 
   const { data, isLoading, error, refetch } = useEmployees(companyUuid, {
     search: search || undefined,
@@ -78,6 +82,12 @@ export default function EmployeesPage() {
                 Bulk Upload
               </Button>
             </CreationGate>
+            {hasEmployees && (
+              <Button variant="outline" onClick={() => setGeoBulkOpen(true)}>
+                <Upload className="mr-2 size-4" />
+                Geography Upload
+              </Button>
+            )}
             <CreationGate message={creationGate.message}>
               <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />} disabled={creationGate.disabled}>
                 <Plus className="mr-2 size-4" />
@@ -202,6 +212,7 @@ export default function EmployeesPage() {
       />
 
       <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
+      <EmployeeGeographyBulkUploadDialog open={geoBulkOpen} onOpenChange={setGeoBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
     </div>
   )
 }

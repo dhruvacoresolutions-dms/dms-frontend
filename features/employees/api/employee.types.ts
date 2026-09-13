@@ -120,3 +120,17 @@ export type EmployeeImportJobStatusResponse = {
   failedRows?: number
   diagnostics?: EmployeeImportJobDiagnostic[]
 }
+
+export type EmployeeGeographyImportUploadResponse = {
+  jobUuid: string
+  status: string
+}
+
+export type EmployeeGeographyImportJobResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: EmployeeImportJobDiagnostic[]
+}

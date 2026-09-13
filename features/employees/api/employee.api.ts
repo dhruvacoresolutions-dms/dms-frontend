@@ -14,6 +14,8 @@ import type {
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
   EmployeeImportJobStatusResponse,
+  EmployeeGeographyImportUploadResponse,
+  EmployeeGeographyImportJobResponse,
 } from "./employee.types"
 import type { PageResponse } from "@/features/companies/api/company.types"
 
@@ -251,6 +253,60 @@ export async function getEmployeeImportResultsCsv(
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${importJobUuid}/results.csv`,
+    { headers: { "X-Company-Context": resolved }, responseType: "blob" }
+  )
+  return data
+}
+
+// ── Employee Geography Import ─────────────────────────────────────────────
+
+const employeeGeographyImportBaseUrl = (companyUuid: string) =>
+  `/v1/companies/${resolveCompanyUuid(companyUuid)}/employee-geography-imports`
+
+export async function getEmployeeGeographyImportTemplate(
+  companyUuid: string,
+  format?: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${employeeGeographyImportBaseUrl(companyUuid)}/template`,
+    {
+      headers: { "X-Company-Context": resolved },
+      params: format ? { format } : undefined,
+      responseType: "blob",
+    }
+  )
+  return data
+}
+
+export async function uploadEmployeeGeographyImport(companyUuid: string, file: File) {
+  const resolved = companyHeader(companyUuid)
+  const form = new FormData()
+  form.append("file", file, file.name)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<EmployeeGeographyImportUploadResponse>
+  >(employeeGeographyImportBaseUrl(companyUuid), form, {
+    headers: {
+      "X-Company-Context": resolved,
+    },
+  })
+  return data.data
+}
+
+export async function getEmployeeGeographyImportJob(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<EmployeeGeographyImportJobResponse>
+  >(`${employeeGeographyImportBaseUrl(companyUuid)}/${jobUuid}`, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function getEmployeeGeographyImportResultsCsv(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${employeeGeographyImportBaseUrl(companyUuid)}/${jobUuid}/results.csv`,
     { headers: { "X-Company-Context": resolved }, responseType: "blob" }
   )
   return data
