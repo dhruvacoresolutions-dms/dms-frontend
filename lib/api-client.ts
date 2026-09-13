@@ -10,12 +10,12 @@ export const apiClient = axios.create({
 })
 
 const PUBLIC_PATHS = [
-  "/v1/auth/login",
-  "/v1/auth/forgot-password",
-  "/v1/auth/reset-password",
+  "/api/v1/auth/login",
+  "/api/v1/auth/forgot-password",
+  "/api/v1/auth/reset-password",
 ]
 
-const COMPANY_CONTEXT_EXCLUDE = ["/v1/permissions", "/v1/permissions/matrix"]
+const COMPANY_CONTEXT_EXCLUDE = ["/api/v1/permissions", "/api/v1/permissions/matrix"]
 
 function isPublicPath(url: string | undefined) {
   if (!url) {

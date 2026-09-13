@@ -21,7 +21,7 @@ function resolveCompanyUuid(companyUuid: string): string {
 }
 
 const baseUrl = (companyUuid: string) =>
-  `/v1/companies/${resolveCompanyUuid(companyUuid)}/users`
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/users`
 
 function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)

@@ -26,7 +26,7 @@ function resolveCompanyUuid(companyUuid: string): string {
 }
 
 const baseUrl = (companyUuid: string) =>
-  `/v1/companies/${resolveCompanyUuid(companyUuid)}/employees`
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/employees`
 
 function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)
@@ -273,7 +273,7 @@ export async function getEmployeeImportResultsCsv(
 // ── Employee Geography Import ─────────────────────────────────────────────
 
 const employeeGeographyImportBaseUrl = (companyUuid: string) =>
-  `/v1/companies/${resolveCompanyUuid(companyUuid)}/employee-geography-imports`
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/employee-geography-imports`
 
 export async function getEmployeeGeographyImportTemplate(
   companyUuid: string,

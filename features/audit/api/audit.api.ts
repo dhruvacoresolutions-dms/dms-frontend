@@ -16,7 +16,7 @@ export async function getAuditEvents(
   const resolved = resolveCompanyUuid(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<AuditEventResponse>>
-  >(`/v1/companies/${resolved}/rbac-audit-events`, {
+  >(`/api/v1/companies/${resolved}/rbac-audit-events`, {
     params,
     headers: { "X-Company-Context": resolved },
   })
