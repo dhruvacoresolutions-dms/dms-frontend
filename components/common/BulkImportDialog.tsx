@@ -404,7 +404,7 @@ export function BulkImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="p-6 sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -420,6 +420,7 @@ export function BulkImportDialog({
               onChange={handleFileSelect}
               label={dropzoneLabel}
               description={dropzoneDescription}
+              placeholder=""
             />
           ) : null}
 
@@ -551,7 +552,7 @@ export function BulkImportDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="-mx-6 -mb-6">
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {isDone ? "Close" : "Cancel"}
           </Button>
