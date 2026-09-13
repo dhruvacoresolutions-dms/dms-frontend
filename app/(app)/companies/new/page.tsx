@@ -4,15 +4,11 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
 import { toast } from "sonner"
 import {
   Check,
   Copy,
   CheckCircle2,
-  Building2,
-  MapPin,
-  Settings2,
   ArrowLeft,
   ArrowRight,
 } from "lucide-react"
@@ -48,139 +44,16 @@ import { useCreateCompany } from "@/features/companies/hooks/use-create-company"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { extractPanFromGstin, ensurePlus91 } from "@/lib/utils"
 import type { CreateCompanyResponse } from "@/features/companies/api/company.types"
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const FEATURES = [
-  { value: "DMS_CORE", label: "DMS Core", description: "Core document management capabilities" },
-  { value: "GEOGRAPHY_MANAGEMENT", label: "Geography Management", description: "Geography administration capabilities" },
-] as const
-
-const STEPS = [
-  {
-    id: "company-info",
-    title: "Company Information",
-    description: "Basic business details",
-    icon: <Building2 className="size-4" />,
-  },
-  {
-    id: "company-address",
-    title: "Company Address",
-    description: "Primary registered address",
-    icon: <MapPin className="size-4" />,
-  },
-  {
-    id: "rest-info",
-    title: "Rest Information",
-    description: "Contact & configuration",
-    icon: <Settings2 className="size-4" />,
-  },
-] as const
-
-// ---------------------------------------------------------------------------
-// Validation — flattened form schema, transformed to API payload on submit
-// ---------------------------------------------------------------------------
-
-const companySchema = z.object({
-  // Step 1 - Company Information
-  companyCode: z
-    .string()
-    .min(2, "Code must be at least 2 characters")
-    .max(40, "Code must not exceed 40 characters")
-    .regex(/^[A-Za-z0-9_-]+$/, "Code must contain only letters, numbers, hyphens, or underscores"),
-  companyName: z.string().min(1, "Company name is required").max(120, "Company name is too long"),
-  legalName: z.string().max(200, "Legal name is too long").optional().or(z.literal("")),
-  companyType: z.enum(["MANUFACTURER", "DISTRIBUTOR", "DEALER", "RETAILER", "SERVICE_PROVIDER", "OTHER"], {
-    required_error: "Company type is required",
-  }),
-  businessDomain: z.enum(["FMCG", "AUTOMOTIVE"], {
-    required_error: "Business domain is required",
-  }),
-  gstin: z
-    .string()
-    .optional()
-    .or(z.literal(""))
-    .refine((v) => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v), {
-      message: "Invalid GSTIN (e.g. 23ABCDE1234F1Z5)",
-    }),
-  pan: z
-    .string()
-    .optional()
-    .or(z.literal(""))
-    .refine((v) => !v || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v), {
-      message: "Invalid PAN (e.g. ABCDE1234F)",
-    }),
-  cin: z
-    .string()
-    .optional()
-    .or(z.literal(""))
-    .refine((v) => !v || /^[A-Z0-9]{21}$/.test(v), {
-      message: "Invalid CIN (21 alphanumeric characters)",
-    }),
-
-  // Step 2 - Primary Address
-  addressType: z.string().min(1, "Address type is required"),
-  line1: z.string().min(1, "Address line 1 is required"),
-  line2: z.string().optional().or(z.literal("")),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  district: z.string().optional().or(z.literal("")),
-  postalCode: z
-    .string()
-    .min(1, "Postal code is required")
-    .regex(/^\d{5,6}$/, "Postal code must be 5-6 digits"),
-  countryCode: z.string().length(2, "Country code must be exactly 2 characters"),
-
-  // Step 3 - Rest Information
-  contactName: z.string().min(1, "Contact name is required"),
-  contactMobile: z
-    .string()
-    .min(1, "Mobile is required")
-    .regex(/^[6-9]\d{9}$/, "Enter valid 10-digit Indian mobile (starts 6-9)"),
-  contactEmail: z.string().min(1, "Email is required").email("Enter a valid email"),
-  website: z
-    .string()
-    .optional()
-    .or(z.literal(""))
-    .refine((v) => !v || /^https?:\/\/.+\..+/.test(v), {
-      message: "Enter valid URL (e.g. https://example.com)",
-    }),
-  financialYear: z.enum(["APR_MAR", "JAN_DEC", "JUL_JUN"], {
-    required_error: "Financial year is required",
-  }),
-  currency: z.string().min(1, "Currency is required"),
-  timeZone: z.string().min(1, "Time zone is required"),
-  subscriptionPlan: z.enum(["TRIAL", "BASIC", "STANDARD", "PROFESSIONAL", "ENTERPRISE"], {
-    required_error: "Subscription plan is required",
-  }),
-  erpSystem: z.enum(["SAP", "ORACLE", "DYNAMICS", "OTHER", "NONE"], {
-    required_error: "ERP system is required",
-  }),
-  externalCompanyCode: z.string().optional().or(z.literal("")),
-  enabledFeatures: z.array(z.string()).min(1, "At least one feature must be enabled"),
-})
-
-type CompanyFormValues = z.infer<typeof companySchema>
-
-const STEP_FIELDS: Record<number, (keyof CompanyFormValues)[]> = {
-  0: ["companyCode", "companyName", "legalName", "companyType", "businessDomain", "gstin", "pan", "cin"],
-  1: ["addressType", "line1", "line2", "city", "state", "district", "postalCode", "countryCode"],
-  2: [
-    "contactName",
-    "contactMobile",
-    "contactEmail",
-    "website",
-    "financialYear",
-    "currency",
-    "timeZone",
-    "subscriptionPlan",
-    "erpSystem",
-    "externalCompanyCode",
-    "enabledFeatures",
-  ],
-}
+import {
+  COMPANY_CREATE_STEPS,
+  COMPANY_FEATURES,
+  COMPANY_TYPE_OPTIONS,
+} from "@/features/companies/configs/company.config"
+import {
+  STEP_FIELDS,
+  companySchema,
+  type CompanyFormValues,
+} from "@/features/companies/schemas/company.schema"
 
 // ---------------------------------------------------------------------------
 // Page
@@ -284,7 +157,7 @@ export default function NewCompanyPage() {
     const fields = STEP_FIELDS[currentStep]
     const valid = await trigger(fields, { shouldFocus: true })
     if (valid) {
-      const next = Math.min(currentStep + 1, STEPS.length - 1)
+      const next = Math.min(currentStep + 1, COMPANY_CREATE_STEPS.length - 1)
       setVisitedSteps((prev) => new Set([...prev, next]))
       setCurrentStep(next)
       // Clear any premature errors for the destination step (zodResolver may have set them)
@@ -370,8 +243,13 @@ export default function NewCompanyPage() {
     })
   }
 
+  const stepperSteps = COMPANY_CREATE_STEPS.map((s) => ({
+    ...s,
+    icon: <s.icon className="size-4" />,
+  }))
+
   // Derive which steps have errors for stepper error state - only for visited steps, so entering step 3 doesn't immediately show errors
-  const errorSteps = STEPS.map((_, idx) =>
+  const errorSteps = COMPANY_CREATE_STEPS.map((_, idx) =>
     visitedSteps.has(idx) && STEP_FIELDS[idx].some((field) => !!errors[field as keyof typeof errors])
   )
     .map((hasError, idx) => (hasError ? idx : -1))
@@ -388,7 +266,7 @@ export default function NewCompanyPage() {
         {/* Stepper - boxless, airy */}
         <div className="py-2">
           <Stepper
-            steps={STEPS as unknown as { id: string; title: string; description?: string; icon?: React.ReactNode }[]}
+            steps={stepperSteps}
             currentStep={currentStep}
             onStepChange={handleStepClick}
             errorSteps={errorSteps}
@@ -456,15 +334,20 @@ export default function NewCompanyPage() {
                     }}
                   >
                     <SelectTrigger aria-invalid={!!errors.companyType} className="w-full">
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Select type">
+                        {(v: string | null) =>
+                          v
+                            ? (COMPANY_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? v)
+                            : "Select type"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
-                      <SelectItem value="DISTRIBUTOR">Distributor</SelectItem>
-                      <SelectItem value="DEALER">Dealer</SelectItem>
-                      <SelectItem value="RETAILER">Retailer</SelectItem>
-                      <SelectItem value="SERVICE_PROVIDER">Service Provider</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
+                      {COMPANY_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FieldError errors={[errors.companyType]} />
@@ -886,7 +769,7 @@ export default function NewCompanyPage() {
                 <p className="text-sm text-muted-foreground">Select at least one feature to enable for this company.</p>
               </div>
               <div className="grid grid-cols-1 gap-3">
-                {FEATURES.map((feature) => (
+                {COMPANY_FEATURES.map((feature) => (
                   <label
                     key={feature.value}
                     className="flex items-start gap-3 rounded-lg border bg-muted/20 px-3.5 py-3 cursor-pointer transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.06]"
@@ -922,9 +805,9 @@ export default function NewCompanyPage() {
 
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:block">
-              Step {currentStep + 1} of {STEPS.length}
+              Step {currentStep + 1} of {COMPANY_CREATE_STEPS.length}
             </span>
-            {currentStep < STEPS.length - 1 ? (
+            {currentStep < COMPANY_CREATE_STEPS.length - 1 ? (
               <Button type="button" onClick={handleNext}>
                 Next
                 <ArrowRight className="size-4" />

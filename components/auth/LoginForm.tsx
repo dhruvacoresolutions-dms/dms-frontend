@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { setSessionCookie } from "@/lib/session"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 
-export function LoginForm({ redirect }: { redirect?: string }) {
+export function LoginForm() {
   const router = useRouter()
   const setSession = useAuthStore((state) => state.setSession)
   const loginMutation = useLogin()
@@ -51,7 +51,8 @@ export function LoginForm({ redirect }: { redirect?: string }) {
             }
 
             toast.success("Logged in successfully")
-            router.push(redirect ?? "/dashboard")
+            // Fresh login every time: always start at the dashboard
+            router.push("/dashboard")
           },
           onError: (error) => {
             const apiError = getApiError(error)
