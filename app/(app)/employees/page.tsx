@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
 import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { BulkUploadDialog } from "@/features/employees/components/BulkUploadDialog"
 import { EmployeeGeographyBulkUploadDialog } from "@/features/employees/components/EmployeeGeographyBulkUploadDialog"
 import { EmployeeFilters } from "@/features/employees/components/EmployeeFilters"
+import { EmployeeBulkActionBar } from "@/features/employees/components/EmployeeBulkActionBar"
 import { useHasEmployees } from "@/features/employees/hooks/use-has-employees"
-import type { EmployeeStatus } from "@/features/employees/api/employee.types"
+import type { EmployeeResponse, EmployeeStatus } from "@/features/employees/api/employee.types"
 import {
   Table,
   TableBody,
@@ -52,6 +54,7 @@ export default function EmployeesPage() {
   } | null>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [geoBulkOpen, setGeoBulkOpen] = useState(false)
+  const [selected, setSelected] = useState<EmployeeResponse[]>([])
   const { hasEmployees } = useHasEmployees(companyUuid)
 
   const { data, isLoading, error, refetch } = useEmployees(companyUuid, {
@@ -68,6 +71,39 @@ export default function EmployeesPage() {
   const creationGate = useEmployeeCreationGate(companyUuid)
   const employees = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const employeeId = (emp: EmployeeResponse) =>
+    emp.employeeUuid ?? emp.publicId
+  const selectedIds = selected.map(employeeId)
+  const allPageSelected =
+    employees.length > 0 &&
+    employees.every((emp) => selectedIds.includes(employeeId(emp)))
+  const somePageSelected =
+    !allPageSelected &&
+    employees.some((emp) => selectedIds.includes(employeeId(emp)))
+
+  const toggleOne = (emp: EmployeeResponse) =>
+    setSelected((prev) =>
+      prev.some((e) => employeeId(e) === employeeId(emp))
+        ? prev.filter((e) => employeeId(e) !== employeeId(emp))
+        : [...prev, emp]
+    )
+
+  const toggleAllOnPage = () =>
+    setSelected((prev) => {
+      const prevIds = prev.map(employeeId)
+      const allSelected = employees.every((emp) =>
+        prevIds.includes(employeeId(emp))
+      )
+      if (allSelected) {
+        const pageIds = new Set(employees.map(employeeId))
+        return prev.filter((e) => !pageIds.has(employeeId(e)))
+      }
+      return [
+        ...prev,
+        ...employees.filter((emp) => !prevIds.includes(employeeId(emp))),
+      ]
+    })
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -135,6 +171,14 @@ export default function EmployeesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allPageSelected}
+                      indeterminate={somePageSelected}
+                      onCheckedChange={() => toggleAllOnPage()}
+                      aria-label="Select all employees on this page"
+                    />
+                  </TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
@@ -150,6 +194,13 @@ export default function EmployeesPage() {
                     className="cursor-pointer"
                     onClick={() => router.push(`/employees/${emp.employeeUuid}`)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.includes(employeeId(emp))}
+                        onCheckedChange={() => toggleOne(emp)}
+                        aria-label={`Select ${emp.firstName} ${emp.lastName}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono text-sm">{emp.employeeCode}</TableCell>
                     <TableCell className="font-medium">{emp.firstName} {emp.lastName}</TableCell>
                     <TableCell>{emp.email}</TableCell>
@@ -213,6 +264,16 @@ export default function EmployeesPage() {
 
       <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
       <EmployeeGeographyBulkUploadDialog open={geoBulkOpen} onOpenChange={setGeoBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
+
+      <EmployeeBulkActionBar
+        companyUuid={companyUuid}
+        selected={selected}
+        onClear={() => setSelected([])}
+        onComplete={() => {
+          refetch()
+          setSelected([])
+        }}
+      />
     </div>
   )
 }

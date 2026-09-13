@@ -12,6 +12,10 @@ import type {
   AssignEmployeeGeographyRequest,
   EmployeeLoginStatusResponse,
   EnableEmployeeLoginRequest,
+  BulkEnableEmployeeLoginRequest,
+  BulkDisableEmployeeLoginRequest,
+  BulkEnableEmployeeLoginResponse,
+  BulkDisableEmployeeLoginResponse,
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
   EmployeeImportRowListParams,
@@ -385,6 +389,32 @@ export async function resetEmployeePassword(
   const { data } = await apiClient.post<
     ApiSuccessResponse<EmployeeLoginStatusResponse>
   >(`${baseUrl(companyUuid)}/${employeeUuid}/login/reset-password`, undefined, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function bulkEnableEmployeeLogin(
+  companyUuid: string,
+  input: BulkEnableEmployeeLoginRequest
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<BulkEnableEmployeeLoginResponse>
+  >(`${baseUrl(companyUuid)}/login/bulk-enable`, input, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function bulkDisableEmployeeLogin(
+  companyUuid: string,
+  input: BulkDisableEmployeeLoginRequest
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<BulkDisableEmployeeLoginResponse>
+  >(`${baseUrl(companyUuid)}/login/bulk-disable`, input, {
     headers: { "X-Company-Context": resolved },
   })
   return data.data

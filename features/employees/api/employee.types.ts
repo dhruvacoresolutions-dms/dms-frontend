@@ -132,6 +132,44 @@ export type EnableEmployeeLoginRequest = {
   roleUuid: string
 }
 
+export type BulkEnableEmployeeLoginRequest = {
+  employeeUuids: string[]
+  roleUuid: string
+}
+
+export type BulkDisableEmployeeLoginRequest = {
+  employeeUuids: string[]
+}
+
+export type BulkLoginEnabledItem = {
+  employeeUuid: string
+  username?: string
+  temporaryPassword?: string
+  emailDispatched?: boolean
+}
+
+export type BulkLoginDisabledItem = {
+  employeeUuid: string
+  status?: string
+}
+
+export type BulkLoginFailedItem = {
+  employeeUuid: string
+  message?: string
+  error?: string
+  reason?: string
+}
+
+export type BulkEnableEmployeeLoginResponse = {
+  succeeded: BulkLoginEnabledItem[]
+  failed: BulkLoginFailedItem[]
+}
+
+export type BulkDisableEmployeeLoginResponse = {
+  succeeded: BulkLoginDisabledItem[]
+  failed: BulkLoginFailedItem[]
+}
+
 export type EmployeeImportJobResponse = {
   publicId: string
   importJobUuid: string
