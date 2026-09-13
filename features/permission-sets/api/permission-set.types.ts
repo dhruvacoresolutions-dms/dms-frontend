@@ -25,3 +25,9 @@ export type PermissionSetResponse = {
   permissions: string[]
   assignedUserCount: number
 }
+
+/** Query params for listing permission sets. */
+export type PermissionSetListParams = {
+  search?: string
+  status?: PermissionSetStatus
+}

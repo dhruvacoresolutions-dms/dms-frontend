@@ -32,6 +32,7 @@ export type PermissionModuleResponse = {
 }
 
 export type PermissionListParams = {
+  search?: string
   moduleCode?: string
   resourceCode?: string
   action?: string

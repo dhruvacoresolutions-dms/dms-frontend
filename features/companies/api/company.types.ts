@@ -117,3 +117,8 @@ export type CompanyListParams = {
   page?: number
   size?: number
 }
+
+/** Query params for listing a company's addresses. */
+export type CompanyAddressListParams = {
+  search?: string
+}

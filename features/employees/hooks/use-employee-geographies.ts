@@ -7,15 +7,19 @@ import {
   removeEmployeeGeography,
 } from "../api/employee.api"
 import { employeeKeys } from "../api/employee-keys"
-import type { AssignEmployeeGeographyRequest } from "../api/employee.types"
+import type {
+  AssignEmployeeGeographyRequest,
+  EmployeeGeographyListParams,
+} from "../api/employee.types"
 
 export function useEmployeeGeographies(
   companyUuid: string,
-  employeeUuid: string
+  employeeUuid: string,
+  params?: EmployeeGeographyListParams
 ) {
   return useQuery({
-    queryKey: employeeKeys.geographies(companyUuid, employeeUuid),
-    queryFn: () => getEmployeeGeographies(companyUuid, employeeUuid),
+    queryKey: employeeKeys.geographies(companyUuid, employeeUuid, params),
+    queryFn: () => getEmployeeGeographies(companyUuid, employeeUuid, params),
     enabled: !!companyUuid && !!employeeUuid,
   })
 }

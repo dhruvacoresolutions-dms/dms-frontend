@@ -10,6 +10,7 @@ import type {
   FeatureEntitlementRequest,
   PageResponse,
   CompanyListParams,
+  CompanyAddressListParams,
 } from "./company.types"
 
 function resolveCompanyUuid(companyUuid: string): string {
@@ -41,11 +42,15 @@ export async function createCompany(input: CreateCompanyRequest) {
   return data.data
 }
 
-export async function getCompanyAddresses(companyUuid: string) {
+export async function getCompanyAddresses(
+  companyUuid: string,
+  params?: CompanyAddressListParams
+) {
   const resolved = resolveCompanyUuid(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<AddressResponse[]>
   >(`/api/v1/companies/${resolved}/addresses`, {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data

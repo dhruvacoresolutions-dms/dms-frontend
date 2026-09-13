@@ -8,11 +8,13 @@ import type {
   UpdateEmployeeStatusRequest,
   EmployeeListParams,
   EmployeeGeographyResponse,
+  EmployeeGeographyListParams,
   AssignEmployeeGeographyRequest,
   EmployeeLoginStatusResponse,
   EnableEmployeeLoginRequest,
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
+  EmployeeImportRowListParams,
   EmployeeImportJobStatusResponse,
   EmployeeImportRowDetailResponse,
   EmployeeGeographyImportUploadResponse,
@@ -132,12 +134,14 @@ export async function updateEmployeeStatus(
 
 export async function getEmployeeGeographies(
   companyUuid: string,
-  employeeUuid: string
+  employeeUuid: string,
+  params?: EmployeeGeographyListParams
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<EmployeeGeographyResponse[]>
   >(`${baseUrl(companyUuid)}/${employeeUuid}/geographies`, {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data
@@ -235,7 +239,7 @@ export async function getEmployeeImportJobStatus(companyUuid: string, jobUuid: s
 export async function getEmployeeImportRows(
   companyUuid: string,
   importJobUuid: string,
-  params?: { page?: number; size?: number }
+  params?: EmployeeImportRowListParams
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
@@ -247,13 +251,17 @@ export async function getEmployeeImportRows(
   return data.data
 }
 
-export async function getEmployeeImportFailedRows(companyUuid: string, jobUuid: string) {
+export async function getEmployeeImportFailedRows(
+  companyUuid: string,
+  jobUuid: string,
+  params?: Pick<EmployeeImportRowListParams, "search">
+) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<EmployeeImportRowDetailResponse[]>
   >(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${jobUuid}/rows`,
-    { params: { page: 0, size: 100 }, headers: { "X-Company-Context": resolved } }
+    { params: { page: 0, size: 100, ...params }, headers: { "X-Company-Context": resolved } }
   )
   return data.data
 }

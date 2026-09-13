@@ -1,3 +1,5 @@
+import type { AccessAssignmentListParams } from "./user.types"
+
 export const userKeys = {
   all: (companyUuid: string) =>
     ["companies", companyUuid, "users"] as const,
@@ -11,8 +13,16 @@ export const userKeys = {
     [...userKeys.details(companyUuid), userUuid] as const,
   effectiveAccess: (companyUuid: string, userUuid: string) =>
     [...userKeys.detail(companyUuid, userUuid), "effective-access"] as const,
-  roleAssignments: (companyUuid: string, userUuid: string) =>
-    [...userKeys.detail(companyUuid, userUuid), "role-assignments"] as const,
-  permissionSetAssignments: (companyUuid: string, userUuid: string) =>
-    [...userKeys.detail(companyUuid, userUuid), "permission-set-assignments"] as const,
+  roleAssignments: (
+    companyUuid: string,
+    userUuid: string,
+    params?: AccessAssignmentListParams
+  ) =>
+    [...userKeys.detail(companyUuid, userUuid), "role-assignments", params] as const,
+  permissionSetAssignments: (
+    companyUuid: string,
+    userUuid: string,
+    params?: AccessAssignmentListParams
+  ) =>
+    [...userKeys.detail(companyUuid, userUuid), "permission-set-assignments", params] as const,
 } as const

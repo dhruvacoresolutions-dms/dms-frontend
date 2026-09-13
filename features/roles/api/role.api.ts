@@ -7,6 +7,7 @@ import type {
   RoleCreateResponse,
   RoleDetail,
   RoleListItem,
+  RoleListParams,
   RolePermissionsUpdateResponse,
   RoleUpdateResponse,
   UpdateRoleRequest,
@@ -24,12 +25,13 @@ function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)
 }
 
-/** BE: List Roles — GET /roles → `RoleListItem[]`. */
-export async function getRoles(companyUuid: string) {
+/** BE: List Roles — GET /roles → `RoleListItem[]`. Supports `search`. */
+export async function getRoles(companyUuid: string, params?: RoleListParams) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<
     ApiSuccessResponse<RoleListItem[]>
   >(baseUrl(companyUuid), {
+    params,
     headers: { "X-Company-Context": resolved },
   })
   return data.data

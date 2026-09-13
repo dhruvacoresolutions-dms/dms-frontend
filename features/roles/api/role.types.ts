@@ -27,6 +27,12 @@ export type RoleListItem = {
   status: RoleStatus
 }
 
+/** Query params for listing roles. */
+export type RoleListParams = {
+  search?: string
+  status?: RoleStatus
+}
+
 /** BE: POST /roles success — `data: { roleUuid, code, name, status }`. */
 export type RoleCreateResponse = {
   roleUuid: string
