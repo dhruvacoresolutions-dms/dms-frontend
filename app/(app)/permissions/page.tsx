@@ -17,6 +17,7 @@ import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { usePermissions } from "@/features/permissions/hooks/use-permissions"
+import { formatModuleLabel } from "@/features/permissions/utils/permission.utils"
 import { getApiError } from "@/lib/api/api-error"
 
 export default function PermissionsPage() {
@@ -31,7 +32,7 @@ export default function PermissionsPage() {
       p.code.toLowerCase().includes(search.toLowerCase()) ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.resourceCode.toLowerCase().includes(search.toLowerCase()) ||
-      p.actionCode.toLowerCase().includes(search.toLowerCase())
+      (p.actionCode ?? "").toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -77,8 +78,8 @@ export default function PermissionsPage() {
                 <TableRow key={perm.code}>
                   <TableCell className="font-mono text-sm">{perm.code}</TableCell>
                   <TableCell>{perm.name}</TableCell>
-                  <TableCell><Badge variant="secondary">{perm.resourceCode}</Badge></TableCell>
-                  <TableCell><span className="capitalize">{perm.actionCode}</span></TableCell>
+                  <TableCell><Badge variant="secondary">{formatModuleLabel(perm.resourceCode)}</Badge></TableCell>
+                  <TableCell><span className="capitalize">{perm.actionCode ?? "—"}</span></TableCell>
                   <TableCell><Badge variant={perm.status === "ACTIVE" ? "default" : "outline"}>{perm.status}</Badge></TableCell>
                 </TableRow>
               ))}

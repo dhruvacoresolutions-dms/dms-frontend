@@ -10,22 +10,25 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { usePermissions } from "@/features/permissions/hooks/use-permissions"
 import { PermissionMatrixPicker } from "@/features/permissions/components/PermissionMatrixPicker"
-import { useUpdateRolePermissions } from "../hooks/use-update-role-permissions"
-import { getRoleErrorMessage, getRolePermissions } from "../utils/role.utils"
-import type { RoleDetail } from "../api/role.types"
+import { useUpdatePermissionSetPermissions } from "../hooks/use-update-permission-set-permissions"
+import {
+  getPermissionSetErrorMessage,
+  getPermissionSetPermissions,
+} from "../utils/permission-set.utils"
+import type { PermissionSetDetail } from "../api/permission-set.types"
 
-type RolePermissionsManagerProps = {
+type PermissionSetPermissionsManagerProps = {
   companyUuid: string
-  roleUuid: string
-  role: RoleDetail | undefined
+  setUuid: string
+  set: PermissionSetDetail | undefined
 }
 
-export function RolePermissionsManager({
+export function PermissionSetPermissionsManager({
   companyUuid,
-  roleUuid,
-  role,
-}: RolePermissionsManagerProps) {
-  const updateMutation = useUpdateRolePermissions(companyUuid, roleUuid)
+  setUuid,
+  set,
+}: PermissionSetPermissionsManagerProps) {
+  const updateMutation = useUpdatePermissionSetPermissions(companyUuid, setUuid)
   const {
     data: allPermissions,
     isLoading: listLoading,
@@ -37,12 +40,14 @@ export function RolePermissionsManager({
   const [search, setSearch] = useState("")
   const [initializedKey, setInitializedKey] = useState<string | null>(null)
 
-  // Sync local selection when the loaded role changes (render-phase
+  // Sync local selection when the loaded set changes (render-phase
   // adjustment — avoids setState-in-effect cascading renders).
-  const initialCodes = role ? getRolePermissions(role) : []
-  const roleKey = role ? `${role.roleUuid}:${initialCodes.join(",")}` : null
-  if (roleKey !== initializedKey) {
-    setInitializedKey(roleKey)
+  const initialCodes = set ? getPermissionSetPermissions(set) : []
+  const setKey = set
+    ? `${set.permissionSetUuid}:${initialCodes.join(",")}`
+    : null
+  if (setKey !== initializedKey) {
+    setInitializedKey(setKey)
     setSelected(new Set(initialCodes))
   }
 
@@ -50,6 +55,9 @@ export function RolePermissionsManager({
   const hasChanges =
     initialSet.size !== selected.size ||
     Array.from(selected).some((code) => !initialSet.has(code))
+
+  // BE rejects empty permissionCodes with VALIDATION_ERROR.
+  const canSave = hasChanges && selected.size > 0 && !updateMutation.isPending
 
   const toggle = (code: string) => {
     setSelected((prev) => {
@@ -73,7 +81,9 @@ export function RolePermissionsManager({
 
   if (listLoading) return <TableSkeleton rows={6} />
   if (listError)
-    return <ErrorState message="Failed to load permissions" onRetry={refetchList} />
+    return (
+      <ErrorState message="Failed to load permissions" onRetry={refetchList} />
+    )
   if (!allPermissions || allPermissions.length === 0)
     return (
       <EmptyState
@@ -98,7 +108,7 @@ export function RolePermissionsManager({
         )}
         <div className="ml-auto">
           <Button
-            disabled={!hasChanges || updateMutation.isPending}
+            disabled={!canSave}
             onClick={() => {
               updateMutation.mutate(
                 { permissionCodes: Array.from(selected) },
@@ -106,7 +116,10 @@ export function RolePermissionsManager({
                   onSuccess: () => toast.success("Permissions updated"),
                   onError: (error) =>
                     toast.error(
-                      getRoleErrorMessage(error, "Failed to update permissions")
+                      getPermissionSetErrorMessage(
+                        error,
+                        "Failed to update permissions"
+                      )
                     ),
                 }
               )
@@ -125,7 +138,11 @@ export function RolePermissionsManager({
             </p>
             <div className="flex flex-wrap gap-2">
               {orphaned.map((code) => (
-                <Badge key={code} variant="secondary" className="gap-1 font-mono text-xs">
+                <Badge
+                  key={code}
+                  variant="secondary"
+                  className="gap-1 font-mono text-xs"
+                >
                   {code}
                   <button
                     type="button"

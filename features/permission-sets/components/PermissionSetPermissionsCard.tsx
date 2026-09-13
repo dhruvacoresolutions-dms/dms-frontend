@@ -3,15 +3,15 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatModuleLabel } from "@/features/permissions/utils/permission.utils"
-import { groupPermissionsByPrefix } from "../utils/role.utils"
+import { groupPermissionsByPrefix } from "../utils/permission-set.utils"
 
-type RolePermissionsCardProps = {
+type PermissionSetPermissionsCardProps = {
   permissionCodes: string[]
 }
 
-export function RolePermissionsCard({
+export function PermissionSetPermissionsCard({
   permissionCodes,
-}: RolePermissionsCardProps) {
+}: PermissionSetPermissionsCardProps) {
   const grouped = groupPermissionsByPrefix(permissionCodes)
 
   return (
@@ -25,7 +25,7 @@ export function RolePermissionsCard({
       <CardContent>
         {permissionCodes.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No permissions assigned to this role yet.
+            No permissions assigned to this permission set yet.
           </p>
         ) : (
           <div className="space-y-4">
