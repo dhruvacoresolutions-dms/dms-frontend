@@ -30,8 +30,9 @@ import {
   AttachmentAction,
 } from "@/components/ui/attachment"
 import { Spinner } from "@/components/ui/spinner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from "sonner"
-import { getApiErrorMessage } from "@/lib/api/api-error"
+import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B"
@@ -45,6 +46,21 @@ type UploadItem = {
   file: File
   progress: number
   state: "idle" | "uploading" | "processing" | "error" | "done"
+  /** Server-provided error message to show inline in the UI */
+  errorMessage?: string
+  /** Server-provided error code (e.g. UNSUPPORTED_EMPLOYEE_IMPORT_TEMPLATE_VERSION) */
+  errorCode?: string
+}
+
+function isTemplateVersionError(code?: string, message?: string): boolean {
+  const c = (code ?? "").toUpperCase()
+  const m = (message ?? "").toLowerCase()
+  return (
+    (c.includes("UNSUPPORTED") && c.includes("TEMPLATE")) ||
+    c.includes("TEMPLATE_VERSION") ||
+    m.includes("template version") ||
+    m.includes("workbook template")
+  )
 }
 
 export type BulkImportDialogProps = {
@@ -170,7 +186,13 @@ export function BulkImportDialog({
     const file = current.file
     const idx = 0
     // move to uploading then processing
-    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 30, state: "uploading" as const } : it)))
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === idx
+          ? { ...it, progress: 30, state: "uploading" as const, errorMessage: undefined, errorCode: undefined }
+          : it
+      )
+    )
     try {
       setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 60, state: "processing" as const } : it)))
       await uploadFn(file)
@@ -179,8 +201,16 @@ export function BulkImportDialog({
       setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 100, state: "done" as const } : it)))
       toast.success(`${file.name} uploaded`)
     } catch (error) {
-      setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 100, state: "error" as const } : it)))
-      toast.error(getApiErrorMessage(error, `Failed to upload ${file.name}`))
+      const message = getApiErrorMessage(error, `Failed to upload ${file.name}`)
+      const code = getApiError(error)?.code
+      setItems((prev) =>
+        prev.map((it, i) =>
+          i === idx
+            ? { ...it, progress: 100, state: "error" as const, errorMessage: message, errorCode: code }
+            : it
+        )
+      )
+      toast.error(message)
     }
   }, [uploadFn, startSimulatedUpload, items])
 
@@ -227,8 +257,12 @@ export function BulkImportDialog({
           setItems((prev) => prev.map((it) => ({ ...it, progress: 100, state: "done" as const })))
           toast.success(`${file.name} uploaded`)
         } catch (error) {
-          setItems((prev) => prev.map((it) => ({ ...it, progress: 100, state: "error" as const })))
-          toast.error(getApiErrorMessage(error, `Failed to upload ${file.name}`))
+          const message = getApiErrorMessage(error, `Failed to upload ${file.name}`)
+          const code = getApiError(error)?.code
+          setItems((prev) =>
+            prev.map((it) => ({ ...it, progress: 100, state: "error" as const, errorMessage: message, errorCode: code }))
+          )
+          toast.error(message)
         }
       })()
       return
@@ -277,6 +311,10 @@ export function BulkImportDialog({
 
   const isUploading = items.some((i) => i.state === "uploading" || i.state === "processing")
   const isDone = items.length > 0 && items.every((i) => i.state === "done")
+  const errorItem = items.find((i) => i.state === "error")
+  const errorIsTemplateVersion = errorItem
+    ? isTemplateVersionError(errorItem.errorCode, errorItem.errorMessage)
+    : false
 
   const handleUploadClick = React.useCallback(() => {
     if (isDone) {
@@ -315,10 +353,28 @@ export function BulkImportDialog({
             />
           ) : null}
 
+          {errorItem?.errorMessage && (
+            <Alert variant="destructive">
+              <FileWarningIcon />
+              <AlertTitle>Upload failed</AlertTitle>
+              <AlertDescription>
+                <span className="block font-normal">{errorItem.errorMessage}</span>
+                {errorItem.errorCode && (
+                  <span className="mt-1 block font-mono text-xs opacity-80">{errorItem.errorCode}</span>
+                )}
+                {errorIsTemplateVersion && (
+                  <span className="mt-1 block">
+                    Please download the latest template below and re-upload.
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {items.length > 0 && (
             <div className="flex w-full flex-col gap-2">
               {items.map((item, idx) => {
-                const { state, file, progress } = item
+                const { state, file, progress, errorMessage } = item
                 return (
                   <Attachment key={`${file.name}-${idx}`} state={state} className="w-full">
                     <AttachmentMedia>
@@ -330,11 +386,16 @@ export function BulkImportDialog({
                     </AttachmentMedia>
                     <AttachmentContent>
                       <AttachmentTitle>{file.name}</AttachmentTitle>
-                      <AttachmentDescription>
+                      <AttachmentDescription
+                        title={
+                          state === "error" && errorMessage ? errorMessage : undefined
+                        }
+                        className={state === "error" ? "whitespace-normal break-words" : undefined}
+                      >
                         {state === "idle" && "Ready to upload"}
                         {state === "uploading" && `Uploading · ${progress}%`}
                         {state === "processing" && "Processing document"}
-                        {state === "error" && "Upload failed. Try again."}
+                        {state === "error" && (errorMessage ?? "Upload failed. Try again.")}
                         {state === "done" && `Uploaded · ${formatBytes(file.size)}`}
                       </AttachmentDescription>
                     </AttachmentContent>
