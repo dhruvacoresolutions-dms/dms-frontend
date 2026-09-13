@@ -1,7 +1,7 @@
 "use client"
 
 import { BulkImportDialog } from "@/components/common/BulkImportDialog"
-import { getGeographyImportTemplate, uploadGeographyImport } from "@/features/geographies/api/geography.api"
+import { getGeographyImportTemplate, uploadGeographyImport, getGeographyImportJob, getGeographyImportResultsCsv } from "@/features/geographies/api/geography.api"
 
 type GeographyBulkUploadDialogProps = {
   open: boolean
@@ -29,6 +29,8 @@ export function GeographyBulkUploadDialog({
       templateFileName="geography-import-template"
       getTemplate={(format) => getGeographyImportTemplate(companyUuid, format)}
       uploadFn={(file) => uploadGeographyImport(companyUuid, file)}
+      getJobStatus={(jobUuid) => getGeographyImportJob(companyUuid, jobUuid)}
+      getJobResults={(jobUuid) => getGeographyImportResultsCsv(companyUuid, jobUuid)}
     />
   )
 }

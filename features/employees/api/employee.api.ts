@@ -13,6 +13,7 @@ import type {
   EnableEmployeeLoginRequest,
   EmployeeImportJobResponse,
   EmployeeImportRowResponse,
+  EmployeeImportJobStatusResponse,
 } from "./employee.types"
 import type { PageResponse } from "@/features/companies/api/company.types"
 
@@ -212,6 +213,17 @@ export async function getEmployeeImportJob(
     ApiSuccessResponse<EmployeeImportJobResponse>
   >(
     `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${importJobUuid}`,
+    { headers: { "X-Company-Context": resolved } }
+  )
+  return data.data
+}
+
+export async function getEmployeeImportJobStatus(companyUuid: string, jobUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<EmployeeImportJobStatusResponse>
+  >(
+    `${baseUrl(companyUuid).replace("/employees", "/employee-imports")}/${jobUuid}`,
     { headers: { "X-Company-Context": resolved } }
   )
   return data.data

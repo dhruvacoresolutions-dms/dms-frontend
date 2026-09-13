@@ -1,7 +1,7 @@
 "use client"
 
 import { BulkImportDialog } from "@/components/common/BulkImportDialog"
-import { getEmployeeImportTemplate } from "@/features/employees/api/employee.api"
+import { getEmployeeImportTemplate, getEmployeeImportJobStatus, getEmployeeImportResultsCsv } from "@/features/employees/api/employee.api"
 import { useUploadEmployeeImport } from "@/features/employees/hooks/use-upload-employee-import"
 import { useAuthStore } from "@/stores/auth-store"
 
@@ -36,6 +36,8 @@ export function BulkUploadDialog({
       templateFileName="employee-import-template"
       getTemplate={(format) => getEmployeeImportTemplate(companyUuid, format)}
       uploadFn={(file) => uploadMutation.mutateAsync(file)}
+      getJobStatus={(jobUuid) => getEmployeeImportJobStatus(companyUuid, jobUuid)}
+      getJobResults={(jobUuid) => getEmployeeImportResultsCsv(companyUuid, jobUuid)}
     />
   )
 }

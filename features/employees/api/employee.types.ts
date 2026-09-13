@@ -100,3 +100,22 @@ export type EmployeeImportRowResponse = {
   errors?: string[]
   employeeCode?: string
 }
+
+export type EmployeeImportJobDiagnostic = {
+  sheet?: string
+  rowNumber: number
+  entityKey?: string
+  field?: string
+  rejectedValue?: string
+  errorCode?: string
+  reason?: string
+}
+
+export type EmployeeImportJobStatusResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: EmployeeImportJobDiagnostic[]
+}
