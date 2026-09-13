@@ -44,16 +44,16 @@ export async function getEmployees(
   params?: EmployeeListParams
 ) {
   const resolved = companyHeader(companyUuid)
+  // Backend expects `search` (not `query`) plus `status` / `designationUuid`
   const queryParams = params
-    ? ({
-        ...params,
-        query:
-          (params as Record<string, unknown>).query ??
-          (params as Record<string, unknown>).search,
-      } as EmployeeListParams)
+    ? {
+        search: params.search ?? params.query ?? undefined,
+        status: params.status,
+        designationUuid: params.designationUuid,
+        page: params.page,
+        size: params.size,
+      }
     : params
-  if (queryParams && "search" in (queryParams as Record<string, unknown>))
-    delete (queryParams as Record<string, unknown>).search
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<EmployeeResponse>>
   >(baseUrl(companyUuid), {

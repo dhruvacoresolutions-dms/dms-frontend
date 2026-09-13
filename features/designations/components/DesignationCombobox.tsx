@@ -2,16 +2,21 @@
 
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Combobox as ComboboxPrimitive } from "@base-ui/react"
+import { X } from "lucide-react"
 import { useDesignations } from "../hooks/use-designations"
 import { getDesignation } from "../api/designation.api"
 import type { DesignationResponse } from "../api/designation.types"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
+  Combobox,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
 } from "@/components/ui/combobox"
 
 type Props = {
@@ -20,6 +25,8 @@ type Props = {
   onValueChange: (value: string | null, designation?: DesignationResponse | null) => void
   placeholder?: string
   disabled?: boolean
+  /** Page size for the options query (use 100 for filter dropdowns) */
+  size?: number
 }
 
 export function DesignationCombobox({
@@ -28,6 +35,7 @@ export function DesignationCombobox({
   onValueChange,
   placeholder = "Search designation...",
   disabled,
+  size = 20,
 }: Props) {
   const [inputValue, setInputValue] = React.useState("")
 
@@ -41,7 +49,7 @@ export function DesignationCombobox({
   const designationsQuery = useDesignations(companyUuid, {
     query: debouncedQuery || undefined,
     page: 0,
-    size: 20,
+    size,
   })
 
   const searchResults = designationsQuery.data?.content ?? []
@@ -74,46 +82,99 @@ export function DesignationCombobox({
 
   const isPending = designationsQuery.isFetching
 
+  const clearSelection = () => {
+    onValueChange(null)
+    setInputValue("")
+    setDebouncedQuery("")
+  }
+
+  // Clear lives inside the trigger (a span, not a nested button) and
+  // stops every pointer/keyboard event so the popup never toggles.
+  const stopToggle = (e: React.SyntheticEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+  }
+
   return (
-    <ComboboxPrimitive.Root
+    <Combobox
       items={items}
-      value={selectedItem}
-      onValueChange={(next: DesignationResponse | null) => {
-        const uuid = next ? (next.designationUuid ?? next.publicId) : null
-        onValueChange(uuid, next)
-        // clear input after selection to show full list next time
-        setInputValue("")
-        setDebouncedQuery("")
-      }}
-      itemToStringLabel={(item: DesignationResponse | null) => item?.name ?? ""}
-      filter={null}
-      onInputValueChange={(nextValue, details) => {
-        // don't trigger search when selecting via item-press (value already set)
-        if (details.reason === "item-press") return
-        setInputValue(nextValue)
-      }}
-    >
-      <ComboboxInput
-        placeholder={placeholder}
+        value={selectedItem}
         disabled={disabled}
-        showClear={!!selectedItem}
-      />
-      <ComboboxContent>
-        {isPending ? (
-          <div className="px-3 py-2 text-sm text-muted-foreground">Searching…</div>
-        ) : null}
-        <ComboboxEmpty>No designations found.</ComboboxEmpty>
-        <ComboboxList>
-          {(item: DesignationResponse) => (
-            <ComboboxItem key={item.designationUuid ?? item.publicId} value={item}>
-              <span className="flex flex-col">
-                <span className="font-medium">{item.name}</span>
-                <span className="text-xs text-muted-foreground">{item.code}</span>
-              </span>
-            </ComboboxItem>
+        inputValue={inputValue}
+        onInputValueChange={(nextValue, details) => {
+          // don't touch the search when selecting via item-press (value already set)
+          if (details.reason === "item-press") return
+          setInputValue(nextValue)
+        }}
+        onValueChange={(next: DesignationResponse | null) => {
+          const uuid = next ? (next.designationUuid ?? next.publicId) : null
+          onValueChange(uuid, next)
+          // clear search after selection to show full list next time
+          setInputValue("")
+          setDebouncedQuery("")
+        }}
+        itemToStringLabel={(item: DesignationResponse | null) => item?.name ?? ""}
+        filter={null}
+      >
+        <ComboboxTrigger
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "w-full justify-between gap-2 px-3 font-normal"
           )}
-        </ComboboxList>
-      </ComboboxContent>
-    </ComboboxPrimitive.Root>
+        >
+          <span
+            className={
+              selectedItem
+                ? "min-w-0 flex-1 truncate text-left"
+                : "min-w-0 flex-1 truncate text-left text-muted-foreground"
+            }
+          >
+            <ComboboxValue placeholder={placeholder} />
+          </span>
+          {selectedItem && !disabled && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Clear designation"
+              onClick={(e) => {
+                stopToggle(e)
+                clearSelection()
+              }}
+              onMouseDown={stopToggle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  stopToggle(e)
+                  clearSelection()
+                }
+              }}
+              className="flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </span>
+          )}
+        </ComboboxTrigger>
+        <ComboboxContent>
+          <ComboboxInput
+            placeholder="Search designations..."
+            disabled={disabled}
+            showTrigger={false}
+            showSearchIcon
+          />
+          {isPending ? (
+            <div className="px-3 py-2 text-sm text-muted-foreground">Searching…</div>
+          ) : null}
+          <ComboboxEmpty>No designations found.</ComboboxEmpty>
+          <ComboboxList>
+            {(item: DesignationResponse) => (
+              <ComboboxItem key={item.designationUuid ?? item.publicId} value={item}>
+                <span className="flex flex-col">
+                  <span className="font-medium">{item.name}</span>
+                  <span className="text-xs text-muted-foreground">{item.code}</span>
+                </span>
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
   )
 }

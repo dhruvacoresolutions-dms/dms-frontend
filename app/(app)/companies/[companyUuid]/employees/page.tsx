@@ -5,8 +5,9 @@ import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { SearchInput } from "@/components/common/SearchInput"
 import { BulkUploadDialog } from "@/features/employees/components/BulkUploadDialog"
+import { EmployeeFilters } from "@/features/employees/components/EmployeeFilters"
+import type { EmployeeStatus } from "@/features/employees/api/employee.types"
 import {
   Table,
   TableBody,
@@ -30,6 +31,8 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { useEmployees } from "@/features/employees/hooks/use-employees"
 import { useUpdateEmployeeStatus } from "@/features/employees/hooks/use-update-employee-status"
+import { useEmployeeCreationGate } from "@/features/employees/hooks/use-employee-creation-gate"
+import { CreationGate } from "@/features/employees/components/CreationGate"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -39,6 +42,8 @@ export default function EmployeesPage() {
   const companyUuid = params.companyUuid
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [statusFilter, setStatusFilter] = useState<"ALL" | EmployeeStatus>("ALL")
+  const [designationFilter, setDesignationFilter] = useState<string | null>(null)
   const [statusToggle, setStatusToggle] = useState<{
     employeeUuid: string
     currentStatus: string
@@ -47,11 +52,16 @@ export default function EmployeesPage() {
 
   const { data, isLoading, error, refetch } = useEmployees(companyUuid, {
     search: search || undefined,
+    status: statusFilter === "ALL" ? undefined : statusFilter,
+    designationUuid: designationFilter ?? undefined,
     page,
     size: 20,
   })
 
+  const hasActiveFilters = search !== "" || statusFilter !== "ALL" || designationFilter !== null
+
   const updateStatusMutation = useUpdateEmployeeStatus(companyUuid)
+  const creationGate = useEmployeeCreationGate(companyUuid)
   const employees = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
 
@@ -62,25 +72,35 @@ export default function EmployeesPage() {
         description="Manage company employees"
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setBulkOpen(true)}>
-              <Upload className="mr-2 size-4" />
-              Bulk Upload
-            </Button>
-            <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />}>
-              <Plus className="mr-2 size-4" />
-              Create Employee
-            </Button>
+            <CreationGate message={creationGate.message}>
+              <Button variant="outline" disabled={creationGate.disabled} onClick={() => setBulkOpen(true)}>
+                <Upload className="mr-2 size-4" />
+                Bulk Upload
+              </Button>
+            </CreationGate>
+            <CreationGate message={creationGate.message}>
+              <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />} disabled={creationGate.disabled}>
+                <Plus className="mr-2 size-4" />
+                Create Employee
+              </Button>
+            </CreationGate>
           </div>
         }
       />
 
-      <div className="flex items-center gap-2">
-        <SearchInput
-          placeholder="Search employees..."
-          defaultValue={search}
-          onChange={(v) => { setSearch(v); setPage(0) }}
-        />
-      </div>
+      <EmployeeFilters
+        companyUuid={companyUuid}
+        values={{ search, status: statusFilter, designationUuid: designationFilter }}
+        onSearchChange={(v) => { setSearch(v); setPage(0) }}
+        onStatusChange={(v) => { setStatusFilter(v); setPage(0) }}
+        onDesignationChange={(uuid) => { setDesignationFilter(uuid); setPage(0) }}
+        onClear={() => {
+          setSearch("")
+          setStatusFilter("ALL")
+          setDesignationFilter(null)
+          setPage(0)
+        }}
+      />
 
       {isLoading ? <TableSkeleton rows={5} /> : error ? (
         <ErrorState onRetry={refetch} />
@@ -88,13 +108,15 @@ export default function EmployeesPage() {
         <EmptyState
           icon={Briefcase}
           title="No employees found"
-          description={search ? "Try a different search term." : "Get started by creating an employee."}
+          description={hasActiveFilters ? "Try a different search or clear filters." : "Get started by creating an employee."}
         >
-          {!search && (
-            <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />} className="mt-2">
-              <Plus className="mr-2 size-4" />
-              Create Employee
-            </Button>
+          {!hasActiveFilters && (
+            <CreationGate message={creationGate.message}>
+              <Button nativeButton={false} render={<Link href={`/companies/${companyUuid}/employees/new`} />} className="mt-2" disabled={creationGate.disabled}>
+                <Plus className="mr-2 size-4" />
+                Create Employee
+              </Button>
+            </CreationGate>
           )}
         </EmptyState>
       ) : (

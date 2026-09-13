@@ -52,6 +52,7 @@ export type EmployeeListParams = {
   search?: string
   query?: string
   status?: EmployeeStatus
+  designationUuid?: string
   page?: number
   size?: number
 }
