@@ -34,6 +34,10 @@ type Props = {
 export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null)
 
+  const hasCopyable = (data?.results ?? []).some(
+    (r) => r.username || r.temporaryPassword
+  )
+
   const copyText = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -48,7 +52,10 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
   const copyAllCredentials = () => {
     const lines = (data?.results ?? [])
       .filter((r) => r.username || r.temporaryPassword)
-      .map((r) => `${r.username ?? ""}\t${r.temporaryPassword ?? ""}`)
+      .map(
+        (r) =>
+          `${r.employeeName ?? r.employeeCode ?? r.employeeUuid} - username: ${r.username ?? "—"}, temporary password:${r.temporaryPassword ?? "—"}`
+      )
     if (lines.length === 0) {
       toast.error("Nothing to copy")
       return
@@ -58,7 +65,7 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
 
   return (
     <Dialog open={!!data} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-7xl min-w-4xl">
         <DialogHeader>
           <DialogTitle>
             Logins enabled — {data?.successful ?? 0} succeeded
@@ -106,7 +113,10 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
                             size="icon-xs"
                             aria-label={`Copy username ${r.username}`}
                             onClick={() =>
-                              void copyText(r.username as string, `u:${r.employeeUuid}`)
+                              void copyText(
+                                r.username as string,
+                                `u:${r.employeeUuid}`
+                              )
                             }
                           >
                             {copiedKey === `u:${r.employeeUuid}` ? (
@@ -178,10 +188,12 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
           </Table>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={copyAllCredentials}>
-            <Copy className="mr-1.5 size-4" />
-            Copy all
-          </Button>
+          {hasCopyable && (
+            <Button variant="outline" onClick={copyAllCredentials}>
+              <Copy className="mr-1.5 size-4" />
+              Copy all
+            </Button>
+          )}
           <Button onClick={onClose}>Done</Button>
         </div>
       </DialogContent>

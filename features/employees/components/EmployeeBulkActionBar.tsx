@@ -57,8 +57,6 @@ export function EmployeeBulkActionBar({
   const enableMutation = useBulkEnableEmployeeLogin(companyUuid)
   const disableMutation = useBulkDisableEmployeeLogin(companyUuid)
 
-  if (selected.length === 0) return null
-
   // Login state is derived from the linked user: employees with a userUuid
   // already have login enabled.
   const withoutLogin = selected.filter((e) => !e.userUuid)
@@ -160,6 +158,9 @@ export function EmployeeBulkActionBar({
 
   return (
     <>
+      {/* Dialogs stay mounted even after the selection is cleared so the
+          credentials dialog can open on enable success. */}
+      {selected.length > 0 && (
       <div className="fixed bottom-6 left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-2xl border bg-background px-4 py-2 shadow-lg">
         <span className="text-sm whitespace-nowrap">
           <span className="font-semibold">{selected.length}</span>{" "}
@@ -198,6 +199,7 @@ export function EmployeeBulkActionBar({
           Clear
         </Button>
       </div>
+      )}
 
       {/* ── Bulk Enable Login ── */}
       <Dialog
