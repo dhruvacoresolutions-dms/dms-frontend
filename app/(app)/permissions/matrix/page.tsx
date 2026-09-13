@@ -3,12 +3,12 @@
 import { useState } from "react"
 import { ShieldCheck, ShieldAlert } from "lucide-react"
 import { SearchInput } from "@/components/common/SearchInput"
-import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { usePermissionMatrix } from "@/features/permissions/hooks/use-permission-matrix"
+import { PermissionMatrixTable } from "@/features/permissions/components/PermissionMatrixTable"
 import { getApiError } from "@/lib/api/api-error"
 
 export default function PermissionMatrixPage() {
@@ -57,30 +57,7 @@ export default function PermissionMatrixPage() {
       ) : !filtered || filtered.length === 0 ? (
         <EmptyState icon={ShieldCheck} title="No data" description="No permissions matrix available." />
       ) : (
-        <div className="space-y-6">
-          {filtered.map((module) => (
-            <div key={module.moduleCode} className="rounded-lg border overflow-hidden">
-              <div className="bg-muted/50 px-4 py-3 border-b">
-                <h3 className="font-semibold">{module.moduleName}</h3>
-                <p className="text-xs text-muted-foreground">{module.moduleCode}</p>
-              </div>
-              <div className="divide-y">
-                {module.resources.map((resource) => (
-                  <div key={resource.resourceCode} className="px-4 py-3">
-                    <p className="text-sm font-medium mb-2">{resource.resourceName}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {resource.actions.map((action) => (
-                        <Badge key={action.permissionCode} variant="secondary" className="font-mono text-xs">
-                          {action.action}: {action.permissionCode}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <PermissionMatrixTable matrix={filtered} />
       )}
     </div>
   )
