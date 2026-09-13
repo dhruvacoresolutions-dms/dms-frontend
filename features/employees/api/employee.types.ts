@@ -134,3 +134,13 @@ export type EmployeeGeographyImportJobResponse = {
   failedRows?: number
   diagnostics?: EmployeeImportJobDiagnostic[]
 }
+
+export type EmployeeImportRowDetailResponse = {
+  rowNumber: number
+  employeeCode?: string | null
+  validationStatus?: string | null
+  processingStatus?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  employeeUuid?: string | null
+}
