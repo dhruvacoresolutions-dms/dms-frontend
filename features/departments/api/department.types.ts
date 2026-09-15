@@ -28,3 +28,22 @@ export type DepartmentListParams = {
   page?: number
   size?: number
 }
+
+export type DepartmentImportJobDiagnostic = {
+  sheet?: string
+  rowNumber: number
+  entityKey?: string
+  field?: string
+  rejectedValue?: string
+  errorCode?: string
+  reason?: string
+}
+
+export type DepartmentImportJobResponse = {
+  jobUuid: string
+  status: string
+  totalRows: number
+  successRows?: number
+  failedRows?: number
+  diagnostics?: DepartmentImportJobDiagnostic[]
+}
