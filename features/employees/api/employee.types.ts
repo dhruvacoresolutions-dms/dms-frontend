@@ -80,6 +80,8 @@ export type EmployeeResponse = {
   profilePhotoConfigured?: boolean
   profilePhotoContentType?: string | null
   profilePhotoSizeBytes?: number | null
+  loginEnabled?: boolean
+  loginStatus?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -130,6 +132,20 @@ export type EmployeeLoginStatusResponse = {
 
 export type EnableEmployeeLoginRequest = {
   roleUuid: string
+}
+
+export type EnableEmployeeLoginResponse = {
+  userUuid: string
+  username: string
+  temporaryPassword?: string | null
+  emailDispatched?: boolean
+}
+
+export type DisableEmployeeLoginResponse = {
+  userUuid: string
+  username: string
+  status: string
+  mustChangePassword?: boolean
 }
 
 export type BulkEnableEmployeeLoginRequest = {

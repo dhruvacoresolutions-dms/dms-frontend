@@ -27,6 +27,8 @@ type EmployeeFiltersProps = {
   onStatusChange: (value: "ALL" | EmployeeStatus) => void
   onDesignationChange: (uuid: string | null) => void
   onClear: () => void
+  /** Optional trailing element pinned to the right (e.g. bulk actions) */
+  action?: React.ReactNode
 }
 
 export function EmployeeFilters({
@@ -36,6 +38,7 @@ export function EmployeeFilters({
   onStatusChange,
   onDesignationChange,
   onClear,
+  action,
 }: EmployeeFiltersProps) {
   const [resetKey, setResetKey] = React.useState(0)
   const hasActiveFilters =
@@ -86,6 +89,7 @@ export function EmployeeFilters({
           Clear
         </Button>
       )}
+      {action && <div className="ml-auto flex items-center">{action}</div>}
     </div>
   )
 }
