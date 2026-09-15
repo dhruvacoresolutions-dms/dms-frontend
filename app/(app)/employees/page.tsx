@@ -4,15 +4,36 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
-import { Briefcase, Plus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight, Upload } from "lucide-react"
+import {
+  Briefcase,
+  Plus,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  ToggleLeft,
+  ToggleRight,
+  Upload,
+  KeyRound,
+  UserX,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { BulkUploadDialog } from "@/features/employees/components/BulkUploadDialog"
 import { EmployeeGeographyBulkUploadDialog } from "@/features/employees/components/EmployeeGeographyBulkUploadDialog"
 import { EmployeeFilters } from "@/features/employees/components/EmployeeFilters"
-import { EmployeeBulkActionBar } from "@/features/employees/components/EmployeeBulkActionBar"
+import { EmployeeBulkActionDropdown } from "@/features/employees/components/EmployeeBulkActionDropdown"
 import { useHasEmployees } from "@/features/employees/hooks/use-has-employees"
-import type { EmployeeResponse, EmployeeStatus } from "@/features/employees/api/employee.types"
+import type {
+  EmployeeResponse,
+  EmployeeStatus,
+} from "@/features/employees/api/employee.types"
 import {
   Table,
   TableBody,
@@ -29,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -36,6 +58,9 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { useEmployees } from "@/features/employees/hooks/use-employees"
 import { useUpdateEmployeeStatus } from "@/features/employees/hooks/use-update-employee-status"
+import { useEnableEmployeeLogin } from "@/features/employees/hooks/use-enable-employee-login"
+import { useDisableEmployeeLogin } from "@/features/employees/hooks/use-disable-employee-login"
+import { RoleCombobox } from "@/features/roles/components/RoleCombobox"
 import { useEmployeeCreationGate } from "@/features/employees/hooks/use-employee-creation-gate"
 import { CreationGate } from "@/features/employees/components/CreationGate"
 import { toast } from "sonner"
@@ -43,17 +68,27 @@ import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function EmployeesPage() {
   const router = useRouter()
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
-  const [statusFilter, setStatusFilter] = useState<"ALL" | EmployeeStatus>("ALL")
-  const [designationFilter, setDesignationFilter] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<"ALL" | EmployeeStatus>(
+    "ALL"
+  )
+  const [designationFilter, setDesignationFilter] = useState<string | null>(
+    null
+  )
   const [statusToggle, setStatusToggle] = useState<{
     employeeUuid: string
     currentStatus: string
   } | null>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [geoBulkOpen, setGeoBulkOpen] = useState(false)
+  const [loginEnable, setLoginEnable] = useState<EmployeeResponse | null>(null)
+  const [loginDisable, setLoginDisable] = useState<EmployeeResponse | null>(
+    null
+  )
+  const [enableRoleUuid, setEnableRoleUuid] = useState<string | null>(null)
   const [selected, setSelected] = useState<EmployeeResponse[]>([])
   const { hasEmployees } = useHasEmployees(companyUuid)
 
@@ -65,15 +100,17 @@ export default function EmployeesPage() {
     size: 20,
   })
 
-  const hasActiveFilters = search !== "" || statusFilter !== "ALL" || designationFilter !== null
+  const hasActiveFilters =
+    search !== "" || statusFilter !== "ALL" || designationFilter !== null
 
   const updateStatusMutation = useUpdateEmployeeStatus(companyUuid)
+  const enableLoginMutation = useEnableEmployeeLogin(companyUuid)
+  const disableLoginMutation = useDisableEmployeeLogin(companyUuid)
   const creationGate = useEmployeeCreationGate(companyUuid)
   const employees = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
 
-  const employeeId = (emp: EmployeeResponse) =>
-    emp.employeeUuid ?? emp.publicId
+  const employeeId = (emp: EmployeeResponse) => emp.employeeUuid ?? emp.publicId
   const selectedIds = selected.map(employeeId)
   const allPageSelected =
     employees.length > 0 &&
@@ -113,7 +150,11 @@ export default function EmployeesPage() {
         action={
           <div className="flex items-center gap-2">
             <CreationGate message={creationGate.message}>
-              <Button variant="outline" disabled={creationGate.disabled} onClick={() => setBulkOpen(true)}>
+              <Button
+                variant="outline"
+                disabled={creationGate.disabled}
+                onClick={() => setBulkOpen(true)}
+              >
                 <Upload className="mr-2 size-4" />
                 Bulk Upload
               </Button>
@@ -125,7 +166,11 @@ export default function EmployeesPage() {
               </Button>
             )}
             <CreationGate message={creationGate.message}>
-              <Button nativeButton={false} render={<Link href={`/employees/new`} />} disabled={creationGate.disabled}>
+              <Button
+                nativeButton={false}
+                render={<Link href={`/employees/new`} />}
+                disabled={creationGate.disabled}
+              >
                 <Plus className="mr-2 size-4" />
                 Create Employee
               </Button>
@@ -136,29 +181,63 @@ export default function EmployeesPage() {
 
       <EmployeeFilters
         companyUuid={companyUuid}
-        values={{ search, status: statusFilter, designationUuid: designationFilter }}
-        onSearchChange={(v) => { setSearch(v); setPage(0) }}
-        onStatusChange={(v) => { setStatusFilter(v); setPage(0) }}
-        onDesignationChange={(uuid) => { setDesignationFilter(uuid); setPage(0) }}
+        values={{
+          search,
+          status: statusFilter,
+          designationUuid: designationFilter,
+        }}
+        onSearchChange={(v) => {
+          setSearch(v)
+          setPage(0)
+        }}
+        onStatusChange={(v) => {
+          setStatusFilter(v)
+          setPage(0)
+        }}
+        onDesignationChange={(uuid) => {
+          setDesignationFilter(uuid)
+          setPage(0)
+        }}
         onClear={() => {
           setSearch("")
           setStatusFilter("ALL")
           setDesignationFilter(null)
           setPage(0)
         }}
+        action={
+          <EmployeeBulkActionDropdown
+            companyUuid={companyUuid}
+            selected={selected}
+            onComplete={() => {
+              refetch()
+              setSelected([])
+            }}
+          />
+        }
       />
 
-      {isLoading ? <TableSkeleton rows={5} /> : error ? (
+      {isLoading ? (
+        <TableSkeleton rows={5} />
+      ) : error ? (
         <ErrorState onRetry={refetch} />
       ) : employees.length === 0 ? (
         <EmptyState
           icon={Briefcase}
           title="No employees found"
-          description={hasActiveFilters ? "Try a different search or clear filters." : "Get started by creating an employee."}
+          description={
+            hasActiveFilters
+              ? "Try a different search or clear filters."
+              : "Get started by creating an employee."
+          }
         >
           {!hasActiveFilters && (
             <CreationGate message={creationGate.message}>
-              <Button nativeButton={false} render={<Link href={`/employees/new`} />} className="mt-2" disabled={creationGate.disabled}>
+              <Button
+                nativeButton={false}
+                render={<Link href={`/employees/new`} />}
+                className="mt-2"
+                disabled={creationGate.disabled}
+              >
                 <Plus className="mr-2 size-4" />
                 Create Employee
               </Button>
@@ -167,7 +246,7 @@ export default function EmployeesPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="rounded-md border overflow-hidden">
+          <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -184,43 +263,106 @@ export default function EmployeesPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Designation</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Login</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employees.map((emp) => (
-                  <TableRow
-                    key={emp.employeeUuid}
-                    className="cursor-pointer"
-                    onClick={() => router.push(`/employees/${emp.employeeUuid}`)}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableRow key={emp.employeeUuid}>
+                    <TableCell>
                       <Checkbox
                         checked={selectedIds.includes(employeeId(emp))}
                         onCheckedChange={() => toggleOne(emp)}
                         aria-label={`Select ${emp.firstName} ${emp.lastName}`}
                       />
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{emp.employeeCode}</TableCell>
-                    <TableCell className="font-medium">{emp.firstName} {emp.lastName}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {emp.employeeCode}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {emp.firstName} {emp.lastName}
+                    </TableCell>
                     <TableCell>{emp.email}</TableCell>
                     <TableCell>{emp.designationName ?? "-"}</TableCell>
-                    <TableCell><StatusBadge status={emp.status} /></TableCell>
+                    <TableCell>
+                      <StatusBadge status={emp.status} />
+                    </TableCell>
+                    <TableCell>
+                      {emp.loginStatus === "ACTIVE" ? (
+                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
+                          <KeyRound className="mr-1 size-3" /> Enabled
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="cursor-pointer">
+                        <DropdownMenuTrigger className="cursor-pointer">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/employees/${emp.employeeUuid}`) }}>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-auto min-w-40"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => {
+                              router.push(`/employees/${emp.employeeUuid}`)
+                            }}
+                          >
                             <Eye className="mr-2 size-4" /> View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/employees/${emp.employeeUuid}/edit`) }}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              router.push(`/employees/${emp.employeeUuid}/edit`)
+                            }}
+                          >
                             <Edit className="mr-2 size-4" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setStatusToggle({ employeeUuid: emp.employeeUuid, currentStatus: emp.status }) }}>
-                            {emp.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" /> Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                          {emp.loginStatus === "ACTIVE" ? (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setLoginDisable(emp)
+                              }}
+                            >
+                              <UserX className="mr-2 size-4" /> Disable Login
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEnableRoleUuid(null)
+                                setLoginEnable(emp)
+                              }}
+                            >
+                              <KeyRound className="mr-2 size-4" /> Enable Login
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant={
+                              emp.status === "ACTIVE"
+                                ? "destructive"
+                                : "default"
+                            }
+                            onClick={() => {
+                              setStatusToggle({
+                                employeeUuid: emp.employeeUuid,
+                                currentStatus: emp.status,
+                              })
+                            }}
+                          >
+                            {emp.status === "ACTIVE" ? (
+                              <>
+                                <ToggleLeft className="mr-2 size-4" />{" "}
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <ToggleRight className="mr-2 size-4" /> Activate
+                              </>
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -232,10 +374,26 @@ export default function EmployeesPage() {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</p>
+              <p className="text-sm text-muted-foreground">
+                Page {page + 1} of {totalPages}
+              </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           )}
@@ -245,34 +403,153 @@ export default function EmployeesPage() {
       <ConfirmDialog
         open={!!statusToggle}
         onOpenChange={(open) => !open && setStatusToggle(null)}
-        title={statusToggle?.currentStatus === "ACTIVE" ? "Deactivate Employee?" : "Activate Employee?"}
-        description={statusToggle?.currentStatus === "ACTIVE" ? "This employee will be deactivated." : "This employee will be reactivated."}
-        confirmLabel={statusToggle?.currentStatus === "ACTIVE" ? "Deactivate" : "Activate"}
+        title={
+          statusToggle?.currentStatus === "ACTIVE"
+            ? "Deactivate Employee?"
+            : "Activate Employee?"
+        }
+        description={
+          statusToggle?.currentStatus === "ACTIVE"
+            ? "This employee will be deactivated."
+            : "This employee will be reactivated."
+        }
+        confirmLabel={
+          statusToggle?.currentStatus === "ACTIVE" ? "Deactivate" : "Activate"
+        }
         variant="destructive"
         isLoading={updateStatusMutation.isPending}
         onConfirm={() => {
           if (!statusToggle) return
           updateStatusMutation.mutate(
-            { employeeUuid: statusToggle.employeeUuid, input: { status: statusToggle.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE" } },
             {
-              onSuccess: () => { toast.success("Employee status updated"); setStatusToggle(null) },
-              onError: (error) => { toast.error(getApiErrorMessage(error, "Failed to update status")) },
+              employeeUuid: statusToggle.employeeUuid,
+              input: {
+                status:
+                  statusToggle.currentStatus === "ACTIVE"
+                    ? "INACTIVE"
+                    : "ACTIVE",
+              },
+            },
+            {
+              onSuccess: () => {
+                toast.success("Employee status updated")
+                setStatusToggle(null)
+                refetch()
+              },
+              onError: (error) => {
+                toast.error(
+                  getApiErrorMessage(error, "Failed to update status")
+                )
+              },
             }
           )
         }}
       />
 
-      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
-      <EmployeeGeographyBulkUploadDialog open={geoBulkOpen} onOpenChange={setGeoBulkOpen} companyUuid={companyUuid} onUploadComplete={() => refetch()} />
-
-      <EmployeeBulkActionBar
-        companyUuid={companyUuid}
-        selected={selected}
-        onClear={() => setSelected([])}
-        onComplete={() => {
-          refetch()
-          setSelected([])
+      <Dialog
+        open={!!loginEnable}
+        onOpenChange={(open) => {
+          if (!open) {
+            setLoginEnable(null)
+            setEnableRoleUuid(null)
+          }
         }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enable Login</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Select a role for {loginEnable?.firstName} {loginEnable?.lastName} (
+            {loginEnable?.employeeCode}). Login credentials will be generated.
+          </p>
+          <Field>
+            <FieldLabel>Role</FieldLabel>
+            <RoleCombobox
+              companyUuid={companyUuid}
+              value={enableRoleUuid}
+              onValueChange={(v) => setEnableRoleUuid(v)}
+              placeholder="Select role..."
+              status="ACTIVE"
+            />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLoginEnable(null)
+                setEnableRoleUuid(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!enableRoleUuid || enableLoginMutation.isPending}
+              onClick={() => {
+                if (!loginEnable || !enableRoleUuid) return
+                enableLoginMutation.mutate(
+                  {
+                    employeeUuid: loginEnable.employeeUuid,
+                    input: { roleUuid: enableRoleUuid },
+                  },
+                  {
+                    onSuccess: (data) => {
+                      toast.success(
+                        `Login enabled${data.username ? ` — ${data.username}` : ""}`
+                      )
+                      setLoginEnable(null)
+                      setEnableRoleUuid(null)
+                      refetch()
+                    },
+                    onError: (error) => {
+                      toast.error(
+                        getApiErrorMessage(error, "Failed to enable login")
+                      )
+                    },
+                  }
+                )
+              }}
+            >
+              {enableLoginMutation.isPending ? "Enabling..." : "Enable Login"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!loginDisable}
+        onOpenChange={(open) => !open && setLoginDisable(null)}
+        title="Disable Login?"
+        description={`This will disable login for ${loginDisable?.firstName} ${loginDisable?.lastName} (${loginDisable?.employeeCode}).`}
+        confirmLabel="Disable"
+        variant="destructive"
+        isLoading={disableLoginMutation.isPending}
+        onConfirm={() => {
+          if (!loginDisable) return
+          disableLoginMutation.mutate(loginDisable.employeeUuid, {
+            onSuccess: () => {
+              toast.success("Login disabled")
+              setLoginDisable(null)
+              refetch()
+            },
+            onError: (error) => {
+              toast.error(getApiErrorMessage(error, "Failed to disable login"))
+            },
+          })
+        }}
+      />
+
+      <BulkUploadDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        companyUuid={companyUuid}
+        onUploadComplete={() => refetch()}
+      />
+      <EmployeeGeographyBulkUploadDialog
+        open={geoBulkOpen}
+        onOpenChange={setGeoBulkOpen}
+        companyUuid={companyUuid}
+        onUploadComplete={() => refetch()}
       />
     </div>
   )

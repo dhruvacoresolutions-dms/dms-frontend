@@ -12,6 +12,8 @@ import type {
   AssignEmployeeGeographyRequest,
   EmployeeLoginStatusResponse,
   EnableEmployeeLoginRequest,
+  EnableEmployeeLoginResponse,
+  DisableEmployeeLoginResponse,
   BulkEnableEmployeeLoginRequest,
   BulkDisableEmployeeLoginRequest,
   BulkLoginResultEntry,
@@ -361,7 +363,7 @@ export async function enableEmployeeLogin(
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.post<
-    ApiSuccessResponse<EmployeeLoginStatusResponse>
+    ApiSuccessResponse<EnableEmployeeLoginResponse>
   >(`${baseUrl(companyUuid)}/${employeeUuid}/login/enable`, input, {
     headers: { "X-Company-Context": resolved },
   })
@@ -374,7 +376,7 @@ export async function disableEmployeeLogin(
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.post<
-    ApiSuccessResponse<EmployeeLoginStatusResponse>
+    ApiSuccessResponse<DisableEmployeeLoginResponse>
   >(`${baseUrl(companyUuid)}/${employeeUuid}/login/disable`, undefined, {
     headers: { "X-Company-Context": resolved },
   })

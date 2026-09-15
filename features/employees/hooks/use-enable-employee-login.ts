@@ -1,12 +1,12 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { updateEmployeeStatus } from "../api/employee.api"
+import { enableEmployeeLogin } from "../api/employee.api"
 import { employeeKeys } from "../api/employee-keys"
 import { patchEmployeeInLists } from "../utils/employee-cache"
-import type { UpdateEmployeeStatusRequest } from "../api/employee.types"
+import type { EnableEmployeeLoginRequest } from "../api/employee.types"
 
-export function useUpdateEmployeeStatus(companyUuid: string) {
+export function useEnableEmployeeLogin(companyUuid: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({
@@ -14,11 +14,12 @@ export function useUpdateEmployeeStatus(companyUuid: string) {
       input,
     }: {
       employeeUuid: string
-      input: UpdateEmployeeStatusRequest
-    }) => updateEmployeeStatus(companyUuid, employeeUuid, input),
+      input: EnableEmployeeLoginRequest
+    }) => enableEmployeeLogin(companyUuid, employeeUuid, input),
     onSuccess: (_data, variables) => {
       patchEmployeeInLists(queryClient, companyUuid, variables.employeeUuid, {
-        status: variables.input.status,
+        loginEnabled: true,
+        loginStatus: "ACTIVE",
       })
       queryClient.invalidateQueries({
         queryKey: employeeKeys.lists(companyUuid),
