@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useAuthStore } from "@/stores/auth-store"
-import { Plus } from "lucide-react"
+import { Plus, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
 import { PageHeader } from "@/components/common/PageHeader"
@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { useDepartments } from "@/features/departments/hooks/use-departments"
 import { DepartmentTable } from "@/features/departments/components/DepartmentTable"
 import { DepartmentFormDialog } from "@/features/departments/components/DepartmentFormDialog"
+import { DepartmentBulkUploadDialog } from "@/features/departments/components/DepartmentBulkUploadDialog"
 import { DEPARTMENT_PAGE_SIZE, DEPARTMENT_TEXTS } from "@/features/departments/configs/department.config"
 
 export default function DepartmentsPage() {
@@ -19,6 +20,7 @@ export default function DepartmentsPage() {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
 
   const { data, isLoading, error, refetch } = useDepartments(companyUuid, {
@@ -36,9 +38,15 @@ export default function DepartmentsPage() {
         title={DEPARTMENT_TEXTS.title}
         description={DEPARTMENT_TEXTS.description}
         action={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 size-4" /> Create Department
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="mr-2 size-4" />
+              Bulk Upload
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 size-4" /> Create Department
+            </Button>
+          </div>
         }
       />
 
@@ -84,6 +92,12 @@ export default function DepartmentsPage() {
         onOpenChange={(open) => !open && setEditingUuid(null)}
         companyUuid={companyUuid}
         departmentUuid={editingUuid}
+      />
+      <DepartmentBulkUploadDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        companyUuid={companyUuid}
+        onUploadComplete={() => refetch()}
       />
     </div>
   )
