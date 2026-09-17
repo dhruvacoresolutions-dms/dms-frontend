@@ -5,20 +5,22 @@ import { updateDesignation } from "../api/designation.api"
 import { designationKeys } from "../api/designation-keys"
 import type { UpdateDesignationRequest } from "../api/designation.types"
 
-export function useUpdateDesignation(
-  companyUuid: string,
-  designationUuid: string
-) {
+export function useUpdateDesignation(companyUuid: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: UpdateDesignationRequest) =>
-      updateDesignation(companyUuid, designationUuid, input),
-    onSuccess: () => {
+    mutationFn: ({
+      designationUuid,
+      input,
+    }: {
+      designationUuid: string
+      input: UpdateDesignationRequest
+    }) => updateDesignation(companyUuid, designationUuid, input),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: designationKeys.lists(companyUuid),
       })
       queryClient.invalidateQueries({
-        queryKey: designationKeys.detail(companyUuid, designationUuid),
+        queryKey: designationKeys.detail(companyUuid, variables.designationUuid),
       })
     },
   })

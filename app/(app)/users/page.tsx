@@ -117,15 +117,7 @@ export default function UsersPage() {
                 {users.map((user) => {
                   const uid = user.userUuid ?? user.publicId
                   return (
-                  <TableRow
-                    key={uid}
-                    className="cursor-pointer"
-                    onClick={() =>
-                      router.push(
-                        `/users/${uid}`
-                      )
-                    }
-                  >
+                  <TableRow key={uid}>
                     <TableCell className="font-mono text-sm">
                       {user.username}
                     </TableCell>
@@ -138,16 +130,15 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger
-                          onClick={(e) => e.stopPropagation()}
-                          className="cursor-pointer"
-                        >
+                        <DropdownMenuTrigger className="cursor-pointer">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-auto min-w-40"
+                        >
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            onClick={() => {
                               router.push(`/users/${uid}`)
                             }}
                           >
@@ -155,8 +146,7 @@ export default function UsersPage() {
                             View
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            onClick={() => {
                               router.push(`/users/${uid}/edit`)
                             }}
                           >
@@ -165,8 +155,12 @@ export default function UsersPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            variant={
+                              user.status === "ACTIVE"
+                                ? "destructive"
+                                : "default"
+                            }
+                            onClick={() => {
                               setStatusToggle({
                                 userUuid: uid,
                                 currentStatus: user.status,
@@ -175,13 +169,12 @@ export default function UsersPage() {
                           >
                             {user.status === "ACTIVE" ? (
                               <>
-                                <ToggleLeft className="mr-2 size-4" />
+                                <ToggleLeft className="mr-2 size-4" />{" "}
                                 Deactivate
                               </>
                             ) : (
                               <>
-                                <ToggleRight className="mr-2 size-4" />
-                                Activate
+                                <ToggleRight className="mr-2 size-4" /> Activate
                               </>
                             )}
                           </DropdownMenuItem>
