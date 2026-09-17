@@ -28,9 +28,10 @@ type CollapsedNavPopupProps = {
   links: CollapsedNavLink[]
 }
 
-/** Delay before the popup closes after the cursor leaves, so the gap
- * between the sidebar icon and the popup can be crossed. */
-const CLOSE_DELAY_MS = 200
+/** Minimal delay before the popup closes after the cursor leaves — just
+ * enough to cross the gap between the icon and the popup, so switching
+ * tabs feels as instant as a tooltip. */
+const CLOSE_DELAY_MS = 50
 
 /**
  * Flyout submenu for icon-collapsed sidebar mode. Opens on hover next to

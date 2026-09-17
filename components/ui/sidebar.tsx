@@ -543,8 +543,15 @@ function SidebarMenuButton({
       <TooltipContent
         side="right"
         align="center"
+        sideOffset={10}
         hidden={state !== "collapsed" || isMobile}
         {...tooltip}
+        className={cn(
+          // Match the collapsed-nav dropdown popup surface; the arrow is the
+          // only <div> child since sidebar tooltips always use string titles.
+          "rounded-lg bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-md ring-1 ring-foreground/10 [&>div]:hidden",
+          tooltip.className
+        )}
       />
     </Tooltip>
   )
