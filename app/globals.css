@@ -228,3 +228,13 @@ html {
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Icon-mode sidebar: hide the scrollbar entirely (content stays scrollable) */
+.group[data-collapsible="icon"] [data-sidebar="content"] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.group[data-collapsible="icon"] [data-sidebar="content"]::-webkit-scrollbar {
+  display: none;
+}
