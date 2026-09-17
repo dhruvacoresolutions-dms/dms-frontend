@@ -4,7 +4,14 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
-import { UserPlus, MoreHorizontal, Eye, Edit, ToggleLeft, ToggleRight } from "lucide-react"
+import {
+  UserPlus,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
 import {
@@ -35,7 +42,8 @@ import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function UsersPage() {
   const router = useRouter()
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
 
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
@@ -94,7 +102,11 @@ export default function UsersPage() {
           }
         >
           {!search && (
-            <Button nativeButton={false} render={<Link href={`/users/new`} />} className="mt-2">
+            <Button
+              nativeButton={false}
+              render={<Link href={`/users/new`} />}
+              className="mt-2"
+            >
               <UserPlus className="mr-2 size-4" />
               Create User
             </Button>
@@ -102,7 +114,7 @@ export default function UsersPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="rounded-md border overflow-hidden">
+          <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -117,71 +129,72 @@ export default function UsersPage() {
                 {users.map((user) => {
                   const uid = user.userUuid ?? user.publicId
                   return (
-                  <TableRow key={uid}>
-                    <TableCell className="font-mono text-sm">
-                      {user.username}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {user.displayName}
-                    </TableCell>
-                    <TableCell>{user.email ?? "—"}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={user.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => {
-                              router.push(`/users/${uid}`)
-                            }}
+                    <TableRow key={uid}>
+                      <TableCell className="font-mono text-sm">
+                        {user.username}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {user.displayName}
+                      </TableCell>
+                      <TableCell>{user.email ?? "—"}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={user.status} />
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="cursor-pointer">
+                            <MoreHorizontal className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-auto min-w-40"
                           >
-                            <Eye className="mr-2 size-4" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              router.push(`/users/${uid}/edit`)
-                            }}
-                          >
-                            <Edit className="mr-2 size-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant={
-                              user.status === "ACTIVE"
-                                ? "destructive"
-                                : "default"
-                            }
-                            onClick={() => {
-                              setStatusToggle({
-                                userUuid: uid,
-                                currentStatus: user.status,
-                              })
-                            }}
-                          >
-                            {user.status === "ACTIVE" ? (
-                              <>
-                                <ToggleLeft className="mr-2 size-4" />{" "}
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <ToggleRight className="mr-2 size-4" /> Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                router.push(`/users/${uid}`)
+                              }}
+                            >
+                              <Eye className="mr-2 size-4" />
+                              View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                router.push(`/users/${uid}/edit`)
+                              }}
+                            >
+                              <Edit className="mr-2 size-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant={
+                                user.status === "ACTIVE"
+                                  ? "destructive"
+                                  : "default"
+                              }
+                              onClick={() => {
+                                setStatusToggle({
+                                  userUuid: uid,
+                                  currentStatus: user.status,
+                                })
+                              }}
+                            >
+                              {user.status === "ACTIVE" ? (
+                                <>
+                                  <ToggleLeft className="mr-2 size-4" />{" "}
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleRight className="mr-2 size-4" />{" "}
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
               </TableBody>
@@ -241,7 +254,9 @@ export default function UsersPage() {
               userUuid: statusToggle.userUuid,
               input: {
                 status:
-                  statusToggle.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                  statusToggle.currentStatus === "ACTIVE"
+                    ? "INACTIVE"
+                    : "ACTIVE",
               },
             },
             {
