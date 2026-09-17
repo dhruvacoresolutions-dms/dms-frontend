@@ -19,7 +19,9 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
+import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
 import type { NavGroup, SidebarNavItem } from "@/types/components/sidebar"
 
 function normalizePath(pathname: string) {
@@ -50,6 +52,10 @@ function isItemActive(item: SidebarNavItem, activeUrl: string | null): boolean {
 
 export function NavGroups({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname()
+  const { state, isMobile } = useSidebar()
+  // Icon-collapsed (desktop) mode hides inline submenus, so parents with
+  // children render a hover popup instead.
+  const iconMode = !isMobile && state === "collapsed"
   const activeUrl = getActiveUrl(pathname, groups)
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
@@ -82,6 +88,22 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
               const key = `${group.label}::${item.title}`
               const isOpen = hasChildren ? (openMap[key] ?? false) : false
               const active = activeUrl === item.url
+
+              if (hasChildren && iconMode) {
+                return (
+                  <CollapsedNavPopup
+                    key={item.title}
+                    title={item.title}
+                    icon={item.icon && <item.icon />}
+                    triggerActive={isItemActive(item, activeUrl)}
+                    links={item.items!.map((sub) => ({
+                      title: sub.title,
+                      url: sub.url,
+                      active: activeUrl === sub.url,
+                    }))}
+                  />
+                )
+              }
 
               return (
                 <Collapsible

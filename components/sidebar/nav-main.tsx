@@ -18,7 +18,9 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
+import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
 import { ChevronRightIcon, LayoutDashboard } from "lucide-react"
 import type { MainNav } from "@/types/components/sidebar"
 
@@ -51,6 +53,10 @@ function isGroupActive(item: { url: string; items?: { url: string }[] }, pathnam
 
 export function NavMain({ items }: { items: MainNav }) {
   const pathname = usePathname()
+  const { state, isMobile } = useSidebar()
+  // Icon-collapsed (desktop) mode hides inline submenus, so parents with
+  // children render a hover popup instead.
+  const iconMode = !isMobile && state === "collapsed"
   const activeUrl = getActiveUrl(pathname, items)
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -76,6 +82,21 @@ export function NavMain({ items }: { items: MainNav }) {
         {items.map((item) => {
           const hasChildren = !!item.items?.length
           const isOpen = hasChildren ? (openMap[item.title] ?? false) : false
+          if (hasChildren && iconMode) {
+            return (
+              <CollapsedNavPopup
+                key={item.title}
+                title={item.title}
+                icon={item.icon && <item.icon />}
+                triggerActive={isGroupActive(item, pathname, items)}
+                links={item.items!.map((subItem) => ({
+                  title: subItem.title,
+                  url: subItem.url,
+                  active: activeUrl === subItem.url,
+                }))}
+              />
+            )
+          }
           return (
             <Collapsible
               key={item.title}
