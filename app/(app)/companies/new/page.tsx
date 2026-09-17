@@ -64,7 +64,7 @@ export default function NewCompanyPage() {
     trigger,
     getValues,
     clearErrors,
-    formState: { errors, touchedFields },
+    formState: { errors },
   } = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
     mode: "onTouched",
