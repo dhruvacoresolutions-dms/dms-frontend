@@ -6,9 +6,6 @@ import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import {
-  Check,
-  Copy,
-  CheckCircle2,
   ArrowLeft,
   ArrowRight,
 } from "lucide-react"
@@ -28,15 +25,8 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { PageHeader } from "@/components/common/PageHeader"
+import { LoginCredentialsDialog } from "@/components/common/LoginCredentialsDialog"
 import { Stepper } from "@/components/ui/stepper"
 import { StateCombobox } from "@/components/common/StateCombobox"
 import { PhoneInput } from "@/components/common/PhoneInput"
@@ -65,7 +55,6 @@ export default function NewCompanyPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(() => new Set([0]))
   const [successData, setSuccessData] = useState<CreateCompanyResponse | null>(null)
-  const [copiedField, setCopiedField] = useState<"username" | "password" | null>(null)
 
   const {
     register,
@@ -126,17 +115,6 @@ export default function NewCompanyPage() {
     const current = enabledFeatures ?? []
     const next = current.includes(feature) ? current.filter((f) => f !== feature) : [...current, feature]
     setValue("enabledFeatures", next, { shouldValidate: true })
-  }
-
-  const handleCopy = async (value: string, field: "username" | "password") => {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopiedField(field)
-      toast.success(`${field === "username" ? "Username" : "Password"} copied to clipboard`)
-      setTimeout(() => setCopiedField(null), 2000)
-    } catch {
-      toast.error("Failed to copy")
-    }
   }
 
   const handleGstinBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -821,66 +799,34 @@ export default function NewCompanyPage() {
         </div>
       </form>
 
-      <Dialog open={!!successData} onOpenChange={(open) => { if (!open) setSuccessData(null) }}>
-        <DialogContent className="sm:max-w-md" showCloseButton={false}>
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-6 text-green-600" />
-              <DialogTitle>Company Created Successfully</DialogTitle>
-            </div>
-            <DialogDescription>
-              Company <span className="font-medium text-foreground">{successData?.company.companyName}</span> has been provisioned. Save the administrator credentials below — the temporary password will not be shown again.
-            </DialogDescription>
-          </DialogHeader>
-
-          {successData && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Username</label>
-                <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 shadow-xs">
-                  <span className="flex-1 font-mono text-sm break-all">{successData.bootstrapAdmin.username}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => handleCopy(successData.bootstrapAdmin.username, "username")}
-                    aria-label="Copy username"
-                  >
-                    {copiedField === "username" ? <Check className="size-4 text-green-600" /> : <Copy className="size-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Temporary Password</label>
-                <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 shadow-xs">
-                  <span className="flex-1 font-mono text-sm break-all">{successData.bootstrapAdmin.temporaryPassword}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => handleCopy(successData.bootstrapAdmin.temporaryPassword, "password")}
-                    aria-label="Copy password"
-                  >
-                    {copiedField === "password" ? <Check className="size-4 text-green-600" /> : <Copy className="size-4" />}
-                  </Button>
-                </div>
-                {successData.bootstrapAdmin.mustChangePassword && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Administrator must change password on first login.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button onClick={() => router.push("/companies")} className="w-full sm:w-auto">
-              Go to Companies
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LoginCredentialsDialog
+        data={
+          successData
+            ? {
+                username: successData.bootstrapAdmin.username,
+                temporaryPassword: successData.bootstrapAdmin.temporaryPassword,
+                mustChangePassword: successData.bootstrapAdmin.mustChangePassword,
+              }
+            : null
+        }
+        title="Company Created Successfully"
+        description={
+          <>
+            Company{" "}
+            <span className="font-medium text-foreground">
+              {successData?.company.companyName}
+            </span>{" "}
+            has been provisioned. Save the administrator credentials below —
+            the temporary password will not be shown again.
+          </>
+        }
+        footer={
+          <Button onClick={() => router.push("/companies")} className="w-full sm:w-auto">
+            Go to Companies
+          </Button>
+        }
+        onClose={() => setSuccessData(null)}
+      />
     </div>
   )
 }

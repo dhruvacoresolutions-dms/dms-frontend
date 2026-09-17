@@ -63,6 +63,20 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
     void copyText(lines.join("\n"), "__all__")
   }
 
+  /** Human-friendly label for SKIPPED_* codes (raw codes are not shown). */
+  const skippedLabel = (status: string): string => {
+    if (status === "SKIPPED_ALREADY_ENABLED")
+      return "Skipped — login already enabled"
+    if (status.startsWith("SKIPPED_")) {
+      const rest = status
+        .slice("SKIPPED_".length)
+        .toLowerCase()
+        .replace(/_/g, " ")
+      return `Skipped — ${rest}`
+    }
+    return "Skipped"
+  }
+
   return (
     <Dialog open={!!data} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-7xl min-w-4xl">
@@ -90,8 +104,13 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
             <TableBody>
               {data?.results.map((r) => {
                 const ok = r.status === "SUCCESS"
+                const statusCode = r.status ?? ""
+                const isSkipped = statusCode.startsWith("SKIPPED")
                 const failureReason =
                   r.message ?? r.error ?? r.errorCode ?? r.reason
+                // Skipped rows (e.g. SKIPPED_ALREADY_ENABLED): show the
+                // human message in destructive red instead of the raw code.
+                const skippedDetail = r.error ?? r.errorCode ?? r.reason
                 return (
                   <TableRow key={r.employeeUuid}>
                     <TableCell>
@@ -165,6 +184,17 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
                           {r.emailDispatched != null && (
                             <span className="text-xs text-muted-foreground">
                               Email {r.emailDispatched ? "sent" : "not sent"}
+                            </span>
+                          )}
+                        </span>
+                      ) : isSkipped ? (
+                        <span className="flex flex-col text-sm">
+                          <span className="font-medium text-destructive">
+                            {r.message ?? skippedLabel(statusCode)}
+                          </span>
+                          {skippedDetail && skippedDetail !== r.message && (
+                            <span className="text-xs text-muted-foreground">
+                              {skippedDetail}
                             </span>
                           )}
                         </span>

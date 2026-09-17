@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import { useAuthStore } from "@/stores/auth-store"
-import { Plus, MoreHorizontal, ToggleLeft, ToggleRight, Upload } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { SearchInput } from "@/components/common/SearchInput"
 import {
   Table,
@@ -15,19 +14,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { TableSkeleton } from "@/components/common/LoadingState"
@@ -35,27 +27,11 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { useDesignations } from "@/features/designations/hooks/use-designations"
-import { useCreateDesignation } from "@/features/designations/hooks/use-create-designation"
 import { useUpdateDesignationStatus } from "@/features/designations/hooks/use-update-designation-status"
+import { DesignationFormDialog } from "@/features/designations/components/DesignationFormDialog"
 import { DesignationBulkUploadDialog } from "@/features/designations/components/DesignationBulkUploadDialog"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
-
-const designationSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid code format"),
-  name: z.string().min(1, "Name is required"),
-  hierarchyLevel: z.coerce.number().int().min(1, "Hierarchy level required"),
-  description: z.string().optional(),
-})
-
-type DesignationFormValues = z.infer<typeof designationSchema>
 
 export default function DesignationsPage() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
@@ -63,6 +39,7 @@ export default function DesignationsPage() {
   const [page, setPage] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [editingUuid, setEditingUuid] = useState<string | null>(null)
   const [statusToggle, setStatusToggle] = useState<{
     uuid: string
     currentStatus: string
@@ -74,18 +51,7 @@ export default function DesignationsPage() {
     size: 20,
   })
 
-  const createMutation = useCreateDesignation(companyUuid)
   const updateStatusMutation = useUpdateDesignationStatus(companyUuid)
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<DesignationFormValues>({
-    resolver: zodResolver(designationSchema),
-    defaultValues: { code: "", name: "", hierarchyLevel: 10, description: "" },
-  })
 
   const designations = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
@@ -101,74 +67,9 @@ export default function DesignationsPage() {
               <Upload className="mr-2 size-4" />
               Bulk Upload
             </Button>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger render={<Button />}>
-                <Plus className="mr-2 size-4" /> Create Designation
-              </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Designation</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={handleSubmit((values) =>
-                  createMutation.mutate(values, {
-                    onSuccess: () => {
-                      toast.success("Designation created")
-                      reset()
-                      setCreateOpen(false)
-                    },
-                    onError: (error) => {
-                      toast.error(getApiErrorMessage(error, "Failed"))
-                    },
-                  })
-                )}
-                className="space-y-4"
-              >
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel>Code</FieldLabel>
-                    <Input
-                      placeholder="e.g. SR_MGR"
-                      aria-invalid={!!errors.code}
-                      {...register("code")}
-                    />
-                    <FieldError errors={[errors.code]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Name</FieldLabel>
-                    <Input
-                      placeholder="e.g. Senior Manager"
-                      aria-invalid={!!errors.name}
-                      {...register("name")}
-                    />
-                    <FieldError errors={[errors.name]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Hierarchy Level</FieldLabel>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 10"
-                      aria-invalid={!!errors.hierarchyLevel}
-                      {...register("hierarchyLevel", { valueAsNumber: true })}
-                    />
-                    <FieldError errors={[errors.hierarchyLevel]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Description</FieldLabel>
-                    <Input placeholder="Optional description" {...register("description")} />
-                  </Field>
-                </FieldGroup>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? "Creating..." : "Create"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 size-4" /> Create Designation
+            </Button>
           </div>
         }
       />
@@ -224,8 +125,22 @@ export default function DesignationsPage() {
                         <DropdownMenuTrigger className="cursor-pointer">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-auto min-w-40"
+                        >
                           <DropdownMenuItem
+                            onClick={() =>
+                              setEditingUuid(d.publicId ?? d.designationUuid)
+                            }
+                          >
+                            <Pencil className="mr-2 size-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant={
+                              d.status === "ACTIVE" ? "destructive" : "default"
+                            }
                             onClick={() =>
                               setStatusToggle({
                                 uuid: d.publicId ?? d.designationUuid,
@@ -235,7 +150,8 @@ export default function DesignationsPage() {
                           >
                             {d.status === "ACTIVE" ? (
                               <>
-                                <ToggleLeft className="mr-2 size-4" /> Deactivate
+                                <ToggleLeft className="mr-2 size-4" />{" "}
+                                Deactivate
                               </>
                             ) : (
                               <>
@@ -278,6 +194,18 @@ export default function DesignationsPage() {
           )}
         </>
       )}
+
+      <DesignationFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        companyUuid={companyUuid}
+      />
+      <DesignationFormDialog
+        open={!!editingUuid}
+        onOpenChange={(open) => !open && setEditingUuid(null)}
+        companyUuid={companyUuid}
+        designationUuid={editingUuid}
+      />
 
       <ConfirmDialog
         open={!!statusToggle}

@@ -33,6 +33,7 @@ import { useHasEmployees } from "@/features/employees/hooks/use-has-employees"
 import type {
   EmployeeResponse,
   EmployeeStatus,
+  EnableEmployeeLoginResponse,
 } from "@/features/employees/api/employee.types"
 import {
   Table,
@@ -56,6 +57,7 @@ import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import { LoginCredentialsDialog } from "@/components/common/LoginCredentialsDialog"
 import { useEmployees } from "@/features/employees/hooks/use-employees"
 import { useUpdateEmployeeStatus } from "@/features/employees/hooks/use-update-employee-status"
 import { useEnableEmployeeLogin } from "@/features/employees/hooks/use-enable-employee-login"
@@ -89,6 +91,9 @@ export default function EmployeesPage() {
     null
   )
   const [enableRoleUuid, setEnableRoleUuid] = useState<string | null>(null)
+  const [loginCredentials, setLoginCredentials] = useState<
+    (EnableEmployeeLoginResponse & { employeeLabel: string }) | null
+  >(null)
   const [selected, setSelected] = useState<EmployeeResponse[]>([])
   const { hasEmployees } = useHasEmployees(companyUuid)
 
@@ -497,6 +502,13 @@ export default function EmployeesPage() {
                       toast.success(
                         `Login enabled${data.username ? ` — ${data.username}` : ""}`
                       )
+                      const label = `${loginEnable.firstName} ${loginEnable.lastName}`.trim()
+                      setLoginCredentials({
+                        ...data,
+                        employeeLabel: label
+                          ? `${label} (${loginEnable.employeeCode})`
+                          : loginEnable.employeeCode,
+                      })
                       setLoginEnable(null)
                       setEnableRoleUuid(null)
                       refetch()
@@ -515,6 +527,17 @@ export default function EmployeesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <LoginCredentialsDialog
+        data={loginCredentials}
+        title="Login Enabled"
+        description={
+          loginCredentials
+            ? `Login is enabled for ${loginCredentials.employeeLabel}. Save the credentials below — the temporary password will not be shown again.`
+            : undefined
+        }
+        onClose={() => setLoginCredentials(null)}
+      />
 
       <ConfirmDialog
         open={!!loginDisable}

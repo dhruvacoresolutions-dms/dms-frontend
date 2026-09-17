@@ -40,6 +40,12 @@ export function useEmployeeBulkActions(
   // already have login enabled.
   const withoutLogin = selected.filter((e) => !e.userUuid)
   const withLogin = selected.filter((e) => !!e.userUuid)
+  // Bulk disable only applies to currently ACTIVE logins — employees whose
+  // login is missing or already INACTIVE are skipped.
+  const withActiveLogin = selected.filter((e) => e.loginStatus === "ACTIVE")
+  const withoutActiveLogin = selected.filter(
+    (e) => e.loginStatus !== "ACTIVE"
+  )
   const busy =
     enableMutation.isPending || disableMutation.isPending || psBusy
 
@@ -82,9 +88,9 @@ export function useEmployeeBulkActions(
   }
 
   const handleDisable = () => {
-    if (withLogin.length === 0) return
+    if (withActiveLogin.length === 0) return
     disableMutation.mutate(
-      { employeeUuids: withLogin.map(employeeId) },
+      { employeeUuids: withActiveLogin.map(employeeId) },
       {
         onSuccess: (data) => {
           const { successful: ok, failed: fail, skipped } = data
@@ -138,6 +144,8 @@ export function useEmployeeBulkActions(
   return {
     withoutLogin,
     withLogin,
+    withActiveLogin,
+    withoutActiveLogin,
     busy,
     enableOpen,
     setEnableOpen,

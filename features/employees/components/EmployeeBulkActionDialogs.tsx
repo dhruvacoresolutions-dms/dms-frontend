@@ -23,6 +23,8 @@ export function EmployeeBulkActionDialogs({ companyUuid, actions }: Props) {
   const {
     withoutLogin,
     withLogin,
+    withActiveLogin,
+    withoutActiveLogin,
     busy,
     enableOpen,
     disableOpen,
@@ -98,18 +100,18 @@ export function EmployeeBulkActionDialogs({ companyUuid, actions }: Props) {
         onClose={() => setCredentials(null)}
       />
 
-      {/* ── Bulk Disable Login ── */}
+      {/* ── Bulk Disable Login (ACTIVE logins only) ── */}
       <ConfirmDialog
         open={disableOpen}
         onOpenChange={(next) => !next && !busy && setDisableOpen(false)}
-        title={`Disable login for ${withLogin.length} ${withLogin.length === 1 ? "employee" : "employees"}?`}
+        title={`Disable login for ${withActiveLogin.length} ${withActiveLogin.length === 1 ? "employee" : "employees"}?`}
         description={
-          withLogin.length > 0
-            ? `${withLogin.slice(0, 5).map(employeeLabel).join(", ")}${withLogin.length > 5 ? ` and ${withLogin.length - 5} more` : ""} will no longer be able to log in.` +
-              (withoutLogin.length > 0
-                ? ` ${withoutLogin.length} selected without login will be skipped.`
+          withActiveLogin.length > 0
+            ? `${withActiveLogin.slice(0, 5).map(employeeLabel).join(", ")}${withActiveLogin.length > 5 ? ` and ${withActiveLogin.length - 5} more` : ""} will no longer be able to log in.` +
+              (withoutActiveLogin.length > 0
+                ? ` ${withoutActiveLogin.length} selected without an active login will be skipped.`
                 : "")
-            : "None of the selected employees have login enabled."
+            : "None of the selected employees have an active login."
         }
         confirmLabel="Disable Login"
         variant="destructive"
