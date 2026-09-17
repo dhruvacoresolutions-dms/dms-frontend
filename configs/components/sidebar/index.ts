@@ -12,7 +12,6 @@ import {
   Network,
   ShieldCheck,
   FileCheck,
-  Settings,
   ShieldAlert,
   // Primary Management
   Package,
@@ -123,18 +122,6 @@ export const mainNav: MainNav = [
         title: "Permission Matrix",
         url: "/permissions/matrix",
         icon: ShieldCheck,
-      },
-    ],
-  },
-  {
-    title: "Administration",
-    url: "/administration",
-    icon: Settings,
-    items: [
-      {
-        title: "Feature Management",
-        url: "/features",
-        icon: Settings,
       },
       {
         title: "RBAC Audit",

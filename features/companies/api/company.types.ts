@@ -65,6 +65,42 @@ export type CompanySummaryResponse = {
   erpSystem: ErpSystemType
   externalCompanyCode?: string
   enabledFeatures?: string[]
+  // Detail fields returned by GET /companies/{uuid}
+  companyType?: CompanyType
+  gstin?: string
+  pan?: string
+  cin?: string
+  website?: string
+  financialYear?: FinancialYear
+  currency?: string
+  timeZone?: string
+  subscriptionPlan?: SubscriptionPlan
+  primaryAddress?: PrimaryAddressRequest
+  primaryContact?: PrimaryContactRequest
+}
+
+/** PUT /companies/{uuid} — mirrors create minus code/type/features. */
+export type UpdateCompanyRequest = {
+  companyName: string
+  legalName?: string
+  businessDomain: BusinessDomain
+  gstin?: string
+  pan?: string
+  cin?: string
+  primaryAddress: PrimaryAddressRequest
+  primaryContact: PrimaryContactRequest
+  website?: string
+  financialYear: FinancialYear
+  currency: string
+  timeZone: string
+  subscriptionPlan: SubscriptionPlan
+  erpSystem: ErpSystemType
+  externalCompanyCode?: string
+}
+
+/** PATCH /companies/{uuid}/status — company lifecycle transition. */
+export type UpdateCompanyStatusRequest = {
+  status: CompanyStatus
 }
 
 export type CreateCompanyResponse = {

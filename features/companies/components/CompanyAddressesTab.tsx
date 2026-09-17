@@ -133,6 +133,7 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
                       <SelectItem value="CORPORATE">Corporate</SelectItem>
                       <SelectItem value="BRANCH">Branch</SelectItem>
                       <SelectItem value="WAREHOUSE">Warehouse</SelectItem>
+                      <SelectItem value="BILLING">Billing</SelectItem>
                     </SelectContent>
                   </Select>
                   <FieldError errors={[errors.addressType]} />

@@ -82,6 +82,16 @@ export const companySchema = z.object({
 
 export type CompanyFormValues = z.infer<typeof companySchema>
 
+/** Edit schema: PUT /companies/{uuid} accepts everything except
+ * companyCode, companyType and enabledFeatures (all immutable). */
+export const companyEditSchema = companySchema.omit({
+  companyCode: true,
+  companyType: true,
+  enabledFeatures: true,
+})
+
+export type CompanyEditFormValues = z.infer<typeof companyEditSchema>
+
 export const STEP_FIELDS: Record<number, (keyof CompanyFormValues)[]> = {
   0: ["companyCode", "companyName", "legalName", "companyType", "businessDomain", "gstin", "pan", "cin"],
   1: ["addressType", "line1", "line2", "city", "state", "district", "postalCode", "countryCode"],

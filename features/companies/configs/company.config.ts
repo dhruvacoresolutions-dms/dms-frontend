@@ -37,3 +37,12 @@ export const COMPANY_FEATURES = [
   { value: "DMS_CORE", label: "DMS Core", description: "Core document management capabilities" },
   { value: "GEOGRAPHY_MANAGEMENT", label: "Geography Management", description: "Geography administration capabilities" },
 ] as const
+
+export const COMPANY_STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
+  { value: "SUSPENDED", label: "Suspended" },
+] as const
+
+export type CompanyStatusOption =
+  (typeof COMPANY_STATUS_OPTIONS)[number]

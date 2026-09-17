@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Plus, MoreHorizontal, Eye } from "lucide-react"
+import { Building2, Plus, MoreHorizontal, Eye, Pencil, ToggleLeft, ToggleRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
 import {
@@ -18,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -27,11 +28,17 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { useCompanies } from "@/features/companies/hooks/use-companies"
 import type { CompanyListParams } from "@/features/companies/api/company.types"
+import { CompanyStatusDialog } from "@/features/companies/components/CompanyStatusDialog"
 
 export default function CompaniesPage() {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [statusTarget, setStatusTarget] = useState<{
+    uuid: string
+    name: string
+    status: string
+  } | null>(null)
   const size = 20
 
   const params: CompanyListParams = {
@@ -110,13 +117,7 @@ export default function CompaniesPage() {
               </TableHeader>
               <TableBody>
                 {companies.map((company) => (
-                  <TableRow
-                    key={company.publicId}
-                    className="cursor-pointer"
-                    onClick={() =>
-                      router.push(`/companies/${company.publicId}`)
-                    }
-                  >
+                  <TableRow key={company.publicId}>
                     <TableCell className="font-mono text-sm">
                       {company.companyCode}
                     </TableCell>
@@ -130,21 +131,54 @@ export default function CompaniesPage() {
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger
-                          onClick={(e) => e.stopPropagation()}
-                          className="cursor-pointer"
-                        >
+                        <DropdownMenuTrigger className="cursor-pointer">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-auto min-w-40"
+                        >
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
+                            onClick={() => {
                               router.push(`/companies/${company.publicId}`)
                             }}
                           >
                             <Eye className="mr-2 size-4" />
                             View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              router.push(`/companies/${company.publicId}/edit`)
+                            }}
+                          >
+                            <Pencil className="mr-2 size-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant={
+                              company.status === "ACTIVE"
+                                ? "destructive"
+                                : "default"
+                            }
+                            onClick={() => {
+                              setStatusTarget({
+                                uuid: company.publicId,
+                                name: company.companyName,
+                                status: company.status,
+                              })
+                            }}
+                          >
+                            {company.status === "ACTIVE" ? (
+                              <>
+                                <ToggleLeft className="mr-2 size-4" />{" "}
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <ToggleRight className="mr-2 size-4" /> Activate
+                              </>
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -182,6 +216,14 @@ export default function CompaniesPage() {
           )}
         </>
       )}
+
+      <CompanyStatusDialog
+        open={!!statusTarget}
+        onOpenChange={(open) => !open && setStatusTarget(null)}
+        companyUuid={statusTarget?.uuid ?? null}
+        companyName={statusTarget?.name}
+        currentStatus={statusTarget?.status}
+      />
     </div>
   )
 }
