@@ -13,6 +13,7 @@ import type {
   EmployeeLoginStatusResponse,
   EnableEmployeeLoginRequest,
   EnableEmployeeLoginResponse,
+  RawEnableEmployeeLoginResponse,
   DisableEmployeeLoginResponse,
   BulkEnableEmployeeLoginRequest,
   BulkDisableEmployeeLoginRequest,
@@ -360,14 +361,26 @@ export async function enableEmployeeLogin(
   companyUuid: string,
   employeeUuid: string,
   input: EnableEmployeeLoginRequest
-) {
+): Promise<EnableEmployeeLoginResponse> {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.post<
-    ApiSuccessResponse<EnableEmployeeLoginResponse>
+    ApiSuccessResponse<RawEnableEmployeeLoginResponse>
   >(`${baseUrl(companyUuid)}/${employeeUuid}/login/enable`, input, {
     headers: { "X-Company-Context": resolved },
   })
-  return data.data
+  // Live backend nests credential fields under `login`:
+  // `{ login: { userUuid, username, status, mustChangePassword },
+  //    temporaryPassword, emailDispatched }`
+  const raw = data.data
+  const login = raw.login ?? {}
+  return {
+    userUuid: raw.userUuid ?? login.userUuid ?? "",
+    username: raw.username ?? login.username ?? "",
+    temporaryPassword: raw.temporaryPassword ?? null,
+    emailDispatched: raw.emailDispatched,
+    mustChangePassword:
+      raw.mustChangePassword ?? login.mustChangePassword,
+  }
 }
 
 export async function disableEmployeeLogin(
@@ -402,7 +415,17 @@ export async function resetEmployeePassword(
 function normalizeBulkResponse(raw: unknown): BulkOperationSummary {
   const d = (raw ?? {}) as Record<string, unknown>
   if (Array.isArray(d.results)) {
-    const results = d.results as BulkLoginResultEntry[]
+    // Per-entry credential fields may arrive nested under `login` — lift
+    // them so dialogs can rely on the flat shape.
+    const results = (d.results as BulkLoginResultEntry[]).map((r) => {
+      if (!r?.login) return r
+      const { login, ...rest } = r
+      return {
+        ...rest,
+        userUuid: rest.userUuid ?? login?.userUuid,
+        username: rest.username ?? login?.username,
+      }
+    })
     const successful =
       typeof d.successful === "number"
         ? d.successful

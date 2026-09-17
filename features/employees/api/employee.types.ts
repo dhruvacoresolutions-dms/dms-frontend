@@ -139,7 +139,23 @@ export type EnableEmployeeLoginResponse = {
   username: string
   temporaryPassword?: string | null
   emailDispatched?: boolean
+  mustChangePassword?: boolean
 }
+
+/** Raw backend shape for single enable-login: credential fields may arrive
+ * nested under `login` (e.g. `{ login: { userUuid, username, ... },
+ * temporaryPassword, emailDispatched }`). Normalized to
+ * {@link EnableEmployeeLoginResponse} in the API service. */
+export type RawEnableEmployeeLoginResponse =
+  Partial<Pick<EnableEmployeeLoginResponse, "userUuid" | "username">> &
+    Omit<EnableEmployeeLoginResponse, "userUuid" | "username"> & {
+      login?: {
+        userUuid?: string
+        username?: string
+        status?: string
+        mustChangePassword?: boolean
+      } | null
+    }
 
 export type DisableEmployeeLoginResponse = {
   userUuid: string
@@ -161,12 +177,19 @@ export type BulkLoginResultEntry = {
   employeeUuid: string
   employeeCode?: string
   employeeName?: string
-  /** "SUCCESS" / "FAILED" / "SKIPPED" */
+  /** "SUCCESS" / "FAILED" / "SKIPPED" / "SKIPPED_ALREADY_ENABLED" / ... */
   status?: string
   userUuid?: string
   username?: string
   temporaryPassword?: string
   emailDispatched?: boolean
+  /** Per-entry credential fields may also arrive nested under `login`. */
+  login?: {
+    userUuid?: string
+    username?: string
+    status?: string
+    mustChangePassword?: boolean
+  } | null
   errorCode?: string | null
   message?: string
   error?: string
