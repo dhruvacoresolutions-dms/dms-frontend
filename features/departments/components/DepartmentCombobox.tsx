@@ -55,7 +55,10 @@ export function DepartmentCombobox({
     size,
   })
 
-  const searchResults = departmentsQuery.data?.content ?? []
+  const searchResults = React.useMemo(
+    () => departmentsQuery.data?.content ?? [],
+    [departmentsQuery.data]
+  )
 
   // Fetch selected department if value not in searchResults (to keep label)
   const selectedInResults = React.useMemo(

@@ -308,6 +308,34 @@ export function Dropzone({
               </Button>
             )}
           </div>
+          <ul className="flex flex-col gap-1.5">
+            {files.map((file, idx) => (
+              <li
+                key={`${file.name}-${file.size}-${file.lastModified}-${idx}`}
+                className="flex items-center gap-2 rounded-md border bg-muted/50 px-2.5 py-1.5"
+              >
+                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                  {file.name}
+                </span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  {formatBytes(file.size)}
+                </span>
+                {!disabled && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => removeFile(idx)}
+                    aria-label={`Remove ${file.name}`}
+                    className="h-6 w-6"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       ) : placeholder ? (
         <p className="text-xs text-muted-foreground">{placeholder}</p>

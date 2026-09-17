@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -57,7 +57,7 @@ export function RoleEditForm({
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RoleEditValues>({
     resolver: zodResolver(editSchema),
@@ -76,7 +76,7 @@ export function RoleEditForm({
     })
   }, [role, reset])
 
-  const status = watch("status")
+  const status = useWatch({ control, name: "status" })
 
   return (
     <form

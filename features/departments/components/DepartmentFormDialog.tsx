@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -70,13 +70,13 @@ export function DepartmentFormDialog({
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<DepartmentFormValues>({
     resolver: zodResolver(departmentSchema),
     defaultValues: toFormDefaults(),
   })
-  const statusValue = watch("status")
+  const statusValue = useWatch({ control, name: "status" })
 
   React.useEffect(() => {
     if (!open) return
