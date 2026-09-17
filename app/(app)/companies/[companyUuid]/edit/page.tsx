@@ -1,17 +1,14 @@
 "use client"
 
+import * as React from "react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import {
-  ArrowLeft,
-  ArrowRight,
-} from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -19,42 +16,83 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { PageHeader } from "@/components/common/PageHeader"
-import { LoginCredentialsDialog } from "@/components/common/LoginCredentialsDialog"
+import { LoadingState } from "@/components/common/LoadingState"
+import { ErrorState } from "@/components/common/ErrorState"
 import { Stepper } from "@/components/ui/stepper"
 import { StateCombobox } from "@/components/common/StateCombobox"
 import { PhoneInput } from "@/components/common/PhoneInput"
-import { useCreateCompany } from "@/features/companies/hooks/use-create-company"
+import { useCompany } from "@/features/companies/hooks/use-company"
+import { useCompanyAddresses } from "@/features/companies/hooks/use-company-addresses"
+import { useUpdateCompany } from "@/features/companies/hooks/use-update-company"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { extractPanFromGstin, ensurePlus91 } from "@/lib/utils"
-import type { CreateCompanyResponse } from "@/features/companies/api/company.types"
+import { COMPANY_CREATE_STEPS } from "@/features/companies/configs/company.config"
 import {
-  COMPANY_CREATE_STEPS,
-  COMPANY_FEATURES,
-  COMPANY_TYPE_OPTIONS,
-} from "@/features/companies/configs/company.config"
-import {
-  STEP_FIELDS,
-  companySchema,
-  type CompanyFormValues,
+  companyEditSchema,
+  type CompanyEditFormValues,
 } from "@/features/companies/schemas/company.schema"
+import type { UpdateCompanyRequest } from "@/features/companies/api/company.types"
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+const EDIT_STEP_FIELDS: Record<number, (keyof CompanyEditFormValues)[]> = {
+  0: ["companyName", "legalName", "businessDomain", "gstin", "pan", "cin"],
+  1: ["addressType", "line1", "line2", "city", "state", "district", "postalCode", "countryCode"],
+  2: [
+    "contactName",
+    "contactMobile",
+    "contactEmail",
+    "website",
+    "financialYear",
+    "currency",
+    "timeZone",
+    "subscriptionPlan",
+    "erpSystem",
+    "externalCompanyCode",
+  ],
+}
 
-export default function NewCompanyPage() {
+function toFormDefaults(): CompanyEditFormValues {
+  return {
+    companyName: "",
+    legalName: "",
+    businessDomain: undefined as unknown as CompanyEditFormValues["businessDomain"],
+    gstin: "",
+    pan: "",
+    cin: "",
+    addressType: "REGISTERED",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    district: "",
+    postalCode: "",
+    countryCode: "IN",
+    contactName: "",
+    contactMobile: "",
+    contactEmail: "",
+    website: "",
+    financialYear: undefined as unknown as CompanyEditFormValues["financialYear"],
+    currency: "",
+    timeZone: "",
+    subscriptionPlan: undefined as unknown as CompanyEditFormValues["subscriptionPlan"],
+    erpSystem: undefined as unknown as CompanyEditFormValues["erpSystem"],
+    externalCompanyCode: "",
+  }
+}
+
+export default function EditCompanyPage() {
   const router = useRouter()
-  const createCompanyMutation = useCreateCompany()
+  const params = useParams<{ companyUuid: string }>()
+  const companyUuid = params.companyUuid
+
+  const { data: company, isLoading, error, refetch } = useCompany(companyUuid)
+  const { data: addresses, isLoading: addressesLoading } =
+    useCompanyAddresses(companyUuid)
+  const updateMutation = useUpdateCompany()
   const [currentStep, setCurrentStep] = useState(0)
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(() => new Set([0]))
-  const [successData, setSuccessData] = useState<CreateCompanyResponse | null>(null)
+  const [initFor, setInitFor] = useState<string | null>(null)
 
   const {
     register,
@@ -64,58 +102,69 @@ export default function NewCompanyPage() {
     trigger,
     getValues,
     clearErrors,
+    reset,
     formState: { errors },
-  } = useForm<CompanyFormValues>({
-    resolver: zodResolver(companySchema),
+  } = useForm<CompanyEditFormValues>({
+    resolver: zodResolver(companyEditSchema),
     mode: "onTouched",
-    defaultValues: {
-      companyCode: "",
-      companyName: "",
-      legalName: "",
-      companyType: undefined,
-      businessDomain: undefined,
-      gstin: "",
-      pan: "",
-      cin: "",
-      addressType: "REGISTERED",
-      line1: "",
-      line2: "",
-      city: "",
-      state: "",
-      district: "",
-      postalCode: "",
-      countryCode: "IN",
-      contactName: "",
-      contactMobile: "",
-      contactEmail: "",
-      website: "",
-      financialYear: "APR_MAR",
-      currency: "INR",
-      timeZone: "Asia/Kolkata",
-      subscriptionPlan: "ENTERPRISE",
-      erpSystem: undefined,
-      externalCompanyCode: "",
-      enabledFeatures: ["DMS_CORE"],
-    },
+    defaultValues: toFormDefaults(),
   })
 
+  // Prefill once the detail loads (and when navigating between companies).
+  // The primary address comes from the addresses API (primary first,
+  // otherwise the first address), falling back to the embedded detail.
+  if (company && !addressesLoading && initFor !== company.publicId) {
+    setInitFor(company.publicId)
+    const apiAddress =
+      addresses?.find((a) => a.isPrimary) ?? addresses?.[0]
+    reset({
+      companyName: company.companyName ?? "",
+      legalName: company.legalName ?? "",
+      businessDomain: company.businessDomain as CompanyEditFormValues["businessDomain"],
+      gstin: company.gstin ?? "",
+      pan: company.pan ?? "",
+      cin: company.cin ?? "",
+      addressType:
+        apiAddress?.addressType ??
+        company.primaryAddress?.addressType ??
+        "REGISTERED",
+      line1:
+        apiAddress?.addressLine1 ?? company.primaryAddress?.line1 ?? "",
+      line2:
+        apiAddress?.addressLine2 ?? company.primaryAddress?.line2 ?? "",
+      city: apiAddress?.city ?? company.primaryAddress?.city ?? "",
+      state: apiAddress?.state ?? company.primaryAddress?.state ?? "",
+      district: company.primaryAddress?.district ?? "",
+      postalCode:
+        apiAddress?.postalCode ?? company.primaryAddress?.postalCode ?? "",
+      countryCode:
+        apiAddress?.countryCode ??
+        company.primaryAddress?.countryCode ??
+        "IN",
+      contactName: company.primaryContact?.name ?? "",
+      contactMobile: company.primaryContact?.mobile ?? "",
+      contactEmail: company.primaryContact?.email ?? "",
+      website: company.website ?? "",
+      financialYear: company.financialYear as CompanyEditFormValues["financialYear"],
+      currency: company.currency ?? "",
+      timeZone: company.timeZone ?? "",
+      subscriptionPlan: company.subscriptionPlan as CompanyEditFormValues["subscriptionPlan"],
+      erpSystem: company.erpSystem as CompanyEditFormValues["erpSystem"],
+      externalCompanyCode: company.externalCompanyCode ?? "",
+    })
+  }
+
   const businessDomainValue = useWatch({ control, name: "businessDomain" })
-  const companyTypeValue = useWatch({ control, name: "companyType" })
   const addressTypeValue = useWatch({ control, name: "addressType" })
   const stateValue = useWatch({ control, name: "state" }) as string | undefined
-  const contactMobileValue = useWatch({ control, name: "contactMobile" }) as string | undefined
+  const contactMobileValue = useWatch({ control, name: "contactMobile" }) as
+    | string
+    | undefined
   const financialYearValue = useWatch({ control, name: "financialYear" })
   const currencyValue = useWatch({ control, name: "currency" })
   const timeZoneValue = useWatch({ control, name: "timeZone" })
   const subscriptionPlanValue = useWatch({ control, name: "subscriptionPlan" })
   const erpSystemValue = useWatch({ control, name: "erpSystem" })
-  const enabledFeatures = useWatch({ control, name: "enabledFeatures" })
-
-  const toggleFeature = (feature: string) => {
-    const current = enabledFeatures ?? []
-    const next = current.includes(feature) ? current.filter((f) => f !== feature) : [...current, feature]
-    setValue("enabledFeatures", next, { shouldValidate: true })
-  }
 
   const handleGstinBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const raw = e.target.value?.toUpperCase().trim()
@@ -125,22 +174,19 @@ export default function NewCompanyPage() {
       const currentPan = getValues("pan")
       if (currentPan !== pan) {
         setValue("pan", pan, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
-        // optional soft hint; remove if too noisy
-        // toast.success(`PAN auto-filled from GSTIN`)
       }
     }
   }
 
   const handleNext = async () => {
-    const fields = STEP_FIELDS[currentStep]
+    const fields = EDIT_STEP_FIELDS[currentStep]
     const valid = await trigger(fields, { shouldFocus: true })
     if (valid) {
       const next = Math.min(currentStep + 1, COMPANY_CREATE_STEPS.length - 1)
       setVisitedSteps((prev) => new Set([...prev, next]))
       setCurrentStep(next)
       // Clear any premature errors for the destination step (zodResolver may have set them)
-      // so step 3 doesn't show validations immediately on entry
-      requestAnimationFrame(() => clearErrors(STEP_FIELDS[next]))
+      requestAnimationFrame(() => clearErrors(EDIT_STEP_FIELDS[next]))
     } else {
       // mark current step as visited so errors become visible, but don't mark next
       setVisitedSteps((prev) => new Set([...prev, currentStep]))
@@ -161,7 +207,7 @@ export default function NewCompanyPage() {
     }
     // going forward: validate all intermediate steps - only those steps, never the destination step
     for (let i = currentStep; i < index; i++) {
-      const valid = await trigger(STEP_FIELDS[i], { shouldFocus: true })
+      const valid = await trigger(EDIT_STEP_FIELDS[i], { shouldFocus: true })
       if (!valid) {
         setVisitedSteps((prev) => new Set([...prev, i]))
         toast.error(`Please complete step ${i + 1} before continuing`)
@@ -171,15 +217,13 @@ export default function NewCompanyPage() {
     }
     setVisitedSteps((prev) => new Set([...prev, index]))
     setCurrentStep(index)
-    requestAnimationFrame(() => clearErrors(STEP_FIELDS[index]))
+    requestAnimationFrame(() => clearErrors(EDIT_STEP_FIELDS[index]))
   }
 
-  const onSubmit = (values: CompanyFormValues) => {
-    const payload = {
-      companyCode: values.companyCode,
+  const onSubmit = (values: CompanyEditFormValues) => {
+    const payload: UpdateCompanyRequest = {
       companyName: values.companyName,
       legalName: values.legalName || undefined,
-      companyType: values.companyType,
       businessDomain: values.businessDomain,
       gstin: values.gstin || undefined,
       pan: values.pan || undefined,
@@ -193,7 +237,7 @@ export default function NewCompanyPage() {
         district: values.district || undefined,
         postalCode: values.postalCode,
         countryCode: values.countryCode,
-        primary: true as const,
+        primary: true,
       },
       primaryContact: {
         name: values.contactName,
@@ -207,18 +251,19 @@ export default function NewCompanyPage() {
       subscriptionPlan: values.subscriptionPlan,
       erpSystem: values.erpSystem,
       externalCompanyCode: values.externalCompanyCode || undefined,
-      enabledFeatures: values.enabledFeatures,
     }
-
-    createCompanyMutation.mutate(payload, {
-      onSuccess: (data) => {
-        toast.success("Company created successfully")
-        setSuccessData(data)
-      },
-      onError: (error) => {
-        toast.error(getApiErrorMessage(error, "Failed to create company"))
-      },
-    })
+    updateMutation.mutate(
+      { companyUuid, input: payload },
+      {
+        onSuccess: () => {
+          toast.success("Company updated successfully")
+          router.push(`/companies/${companyUuid}`)
+        },
+        onError: (err) => {
+          toast.error(getApiErrorMessage(err, "Failed to update company"))
+        },
+      }
+    )
   }
 
   const stepperSteps = COMPANY_CREATE_STEPS.map((s) => ({
@@ -226,19 +271,23 @@ export default function NewCompanyPage() {
     icon: <s.icon className="size-4" />,
   }))
 
-  // Derive which steps have errors for stepper error state - only for visited steps, so entering step 3 doesn't immediately show errors
+  // Derive which steps have errors for stepper error state - only for visited steps
   const errorSteps = COMPANY_CREATE_STEPS.map((_, idx) =>
-    visitedSteps.has(idx) && STEP_FIELDS[idx].some((field) => !!errors[field as keyof typeof errors])
+    visitedSteps.has(idx) && EDIT_STEP_FIELDS[idx].some((field) => !!errors[field as keyof typeof errors])
   )
     .map((hasError, idx) => (hasError ? idx : -1))
     .filter((v) => v !== -1)
+
+  if (isLoading || addressesLoading) return <LoadingState />
+  if (error) return <ErrorState onRetry={refetch} />
+  if (!company) return <ErrorState message="Company not found" />
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-6 overflow-hidden">
       <div className="shrink-0 space-y-4 px-4 sm:px-6">
         <PageHeader
-          title="Create Company"
-          description="Provision a new company — administrator is created automatically"
+          title={`Edit ${company.companyName}`}
+          description={`Company code: ${company.companyCode}`}
         />
 
         {/* Stepper - boxless, airy */}
@@ -265,16 +314,16 @@ export default function NewCompanyPage() {
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
-                  <FieldLabel htmlFor="companyCode">
-                    Company Code <span className="text-destructive">*</span>
-                  </FieldLabel>
+                  <FieldLabel htmlFor="companyCode">Company Code</FieldLabel>
                   <Input
                     id="companyCode"
-                    placeholder="e.g. SACP"
-                    aria-invalid={!!errors.companyCode}
-                    {...register("companyCode")}
+                    value={company.companyCode}
+                    disabled
+                    className="font-mono"
                   />
-                  <FieldError errors={[errors.companyCode]} />
+                  <p className="text-xs text-muted-foreground">
+                    Code cannot be changed after creation.
+                  </p>
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="companyName">
@@ -282,7 +331,6 @@ export default function NewCompanyPage() {
                   </FieldLabel>
                   <Input
                     id="companyName"
-                    placeholder="e.g. Shivansh Auto Components Pvt Ltd"
                     aria-invalid={!!errors.companyName}
                     {...register("companyName")}
                   />
@@ -292,45 +340,18 @@ export default function NewCompanyPage() {
 
               <Field>
                 <FieldLabel htmlFor="legalName">Legal Name</FieldLabel>
-                <Input
-                  id="legalName"
-                  placeholder="e.g. Shivansh Auto Components Private Limited"
-                  {...register("legalName")}
-                />
+                <Input id="legalName" {...register("legalName")} />
                 <FieldError errors={[errors.legalName]} />
               </Field>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
-                  <FieldLabel>
-                    Company Type <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Select
-                    value={companyTypeValue}
-                    onValueChange={(v) => {
-                      if (v) setValue("companyType", v as CompanyFormValues["companyType"], { shouldValidate: true })
-                    }}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.companyType} className="w-full">
-                      <SelectValue placeholder="Select type">
-                        {(v: string | null) =>
-                          v
-                            ? (COMPANY_TYPE_OPTIONS.find((o) => o.value === v)?.label ?? v)
-                            : "Select type"
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMPANY_TYPE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.companyType]} />
+                  <FieldLabel>Company Type</FieldLabel>
+                  <Input value={company.companyType ?? "—"} disabled />
+                  <p className="text-xs text-muted-foreground">
+                    Type cannot be changed after creation.
+                  </p>
                 </Field>
-
                 <Field>
                   <FieldLabel>
                     Business Domain <span className="text-destructive">*</span>
@@ -338,7 +359,7 @@ export default function NewCompanyPage() {
                   <Select
                     value={businessDomainValue}
                     onValueChange={(v) => {
-                      if (v) setValue("businessDomain", v as CompanyFormValues["businessDomain"], { shouldValidate: true })
+                      if (v) setValue("businessDomain", v as CompanyEditFormValues["businessDomain"], { shouldValidate: true })
                     }}
                   >
                     <SelectTrigger aria-invalid={!!errors.businessDomain} className="w-full">
@@ -365,7 +386,6 @@ export default function NewCompanyPage() {
                     return (
                       <Input
                         id="gstin"
-                        placeholder="23ABCDE1234F1Z5"
                         maxLength={15}
                         className="font-mono uppercase"
                         aria-invalid={!!errors.gstin}
@@ -383,7 +403,6 @@ export default function NewCompanyPage() {
                   <FieldLabel htmlFor="pan">PAN</FieldLabel>
                   <Input
                     id="pan"
-                    placeholder="ABCDE1234F"
                     maxLength={10}
                     className="font-mono uppercase"
                     aria-invalid={!!errors.pan}
@@ -399,7 +418,6 @@ export default function NewCompanyPage() {
                   <FieldLabel htmlFor="cin">CIN</FieldLabel>
                   <Input
                     id="cin"
-                    placeholder="U29309MP2021PTC056789"
                     maxLength={21}
                     className="font-mono uppercase"
                     aria-invalid={!!errors.cin}
@@ -454,7 +472,6 @@ export default function NewCompanyPage() {
                   </FieldLabel>
                   <Input
                     id="countryCode"
-                    placeholder="IN"
                     maxLength={2}
                     className="uppercase"
                     aria-invalid={!!errors.countryCode}
@@ -472,18 +489,13 @@ export default function NewCompanyPage() {
                 <FieldLabel htmlFor="line1">
                   Address Line 1 <span className="text-destructive">*</span>
                 </FieldLabel>
-                <Input
-                  id="line1"
-                  placeholder="Plot 18, Industrial Area, Govindpura"
-                  aria-invalid={!!errors.line1}
-                  {...register("line1")}
-                />
+                <Input id="line1" aria-invalid={!!errors.line1} {...register("line1")} />
                 <FieldError errors={[errors.line1]} />
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="line2">Address Line 2</FieldLabel>
-                <Input id="line2" placeholder="Near JK Road" {...register("line2")} />
+                <Input id="line2" {...register("line2")} />
                 <FieldError errors={[errors.line2]} />
               </Field>
 
@@ -492,17 +504,12 @@ export default function NewCompanyPage() {
                   <FieldLabel htmlFor="city">
                     City <span className="text-destructive">*</span>
                   </FieldLabel>
-                  <Input
-                    id="city"
-                    placeholder="Bhopal"
-                    aria-invalid={!!errors.city}
-                    {...register("city")}
-                  />
+                  <Input id="city" aria-invalid={!!errors.city} {...register("city")} />
                   <FieldError errors={[errors.city]} />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="district">District</FieldLabel>
-                  <Input id="district" placeholder="Bhopal" {...register("district")} />
+                  <Input id="district" {...register("district")} />
                   <FieldError errors={[errors.district]} />
                 </Field>
                 <Field>
@@ -528,7 +535,6 @@ export default function NewCompanyPage() {
                   </FieldLabel>
                   <Input
                     id="postalCode"
-                    placeholder="462023"
                     maxLength={6}
                     aria-invalid={!!errors.postalCode}
                     {...register("postalCode")}
@@ -560,7 +566,6 @@ export default function NewCompanyPage() {
                   </FieldLabel>
                   <Input
                     id="contactName"
-                    placeholder="Rahul Verma"
                     aria-invalid={!!errors.contactName}
                     {...register("contactName")}
                   />
@@ -593,7 +598,6 @@ export default function NewCompanyPage() {
                     <Input
                       id="contactEmail"
                       type="email"
-                      placeholder="rahul.verma@sacp-demo.com"
                       aria-invalid={!!errors.contactEmail}
                       {...register("contactEmail")}
                     />
@@ -602,7 +606,7 @@ export default function NewCompanyPage() {
                 </div>
                 <Field>
                   <FieldLabel htmlFor="website">Website</FieldLabel>
-                  <Input id="website" placeholder="https://sacp-demo.com" {...register("website")} />
+                  <Input id="website" placeholder="https://example.com" {...register("website")} />
                   <FieldError errors={[errors.website]} />
                 </Field>
               </FieldGroup>
@@ -622,7 +626,7 @@ export default function NewCompanyPage() {
                     <Select
                       value={financialYearValue}
                       onValueChange={(v) => {
-                        if (v) setValue("financialYear", v as CompanyFormValues["financialYear"], { shouldValidate: true })
+                        if (v) setValue("financialYear", v as CompanyEditFormValues["financialYear"], { shouldValidate: true })
                       }}
                     >
                       <SelectTrigger aria-invalid={!!errors.financialYear} className="w-full">
@@ -692,7 +696,7 @@ export default function NewCompanyPage() {
                     <Select
                       value={subscriptionPlanValue}
                       onValueChange={(v) => {
-                        if (v) setValue("subscriptionPlan", v as CompanyFormValues["subscriptionPlan"], { shouldValidate: true })
+                        if (v) setValue("subscriptionPlan", v as CompanyEditFormValues["subscriptionPlan"], { shouldValidate: true })
                       }}
                     >
                       <SelectTrigger aria-invalid={!!errors.subscriptionPlan} className="w-full">
@@ -715,7 +719,7 @@ export default function NewCompanyPage() {
                     <Select
                       value={erpSystemValue}
                       onValueChange={(v) => {
-                        if (v) setValue("erpSystem", v as CompanyFormValues["erpSystem"], { shouldValidate: true })
+                        if (v) setValue("erpSystem", v as CompanyEditFormValues["erpSystem"], { shouldValidate: true })
                       }}
                     >
                       <SelectTrigger aria-invalid={!!errors.erpSystem} className="w-full">
@@ -735,35 +739,10 @@ export default function NewCompanyPage() {
 
                 <Field>
                   <FieldLabel htmlFor="externalCompanyCode">External Company Code</FieldLabel>
-                  <Input id="externalCompanyCode" placeholder="SACP1001" {...register("externalCompanyCode")} />
+                  <Input id="externalCompanyCode" {...register("externalCompanyCode")} />
                   <FieldError errors={[errors.externalCompanyCode]} />
                 </Field>
               </FieldGroup>
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <div className="space-y-1.5 border-b pb-5">
-                <h2 className="text-[15px] font-semibold tracking-tight">Features</h2>
-                <p className="text-sm text-muted-foreground">Select at least one feature to enable for this company.</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3">
-                {COMPANY_FEATURES.map((feature) => (
-                  <label
-                    key={feature.value}
-                    className="flex items-start gap-3 rounded-lg border bg-muted/20 px-3.5 py-3 cursor-pointer transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.06]"
-                  >
-                    <Checkbox
-                      checked={enabledFeatures?.includes(feature.value) ?? false}
-                      onCheckedChange={() => toggleFeature(feature.value)}
-                    />
-                    <div className="space-y-0.5">
-                      <div className="text-sm font-medium">{feature.label}</div>
-                      <div className="text-xs text-muted-foreground">{feature.description}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              <FieldError errors={[errors.enabledFeatures]} />
             </div>
           </div>
         )}
@@ -791,42 +770,13 @@ export default function NewCompanyPage() {
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={createCompanyMutation.isPending}>
-                {createCompanyMutation.isPending ? "Creating..." : "Create Company"}
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             )}
           </div>
         </div>
       </form>
-
-      <LoginCredentialsDialog
-        data={
-          successData
-            ? {
-                username: successData.bootstrapAdmin.username,
-                temporaryPassword: successData.bootstrapAdmin.temporaryPassword,
-                mustChangePassword: successData.bootstrapAdmin.mustChangePassword,
-              }
-            : null
-        }
-        title="Company Created Successfully"
-        description={
-          <>
-            Company{" "}
-            <span className="font-medium text-foreground">
-              {successData?.company.companyName}
-            </span>{" "}
-            has been provisioned. Save the administrator credentials below —
-            the temporary password will not be shown again.
-          </>
-        }
-        footer={
-          <Button onClick={() => router.push("/companies")} className="w-full sm:w-auto">
-            Go to Companies
-          </Button>
-        }
-        onClose={() => setSuccessData(null)}
-      />
     </div>
   )
 }

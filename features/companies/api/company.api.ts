@@ -5,6 +5,8 @@ import type {
   CompanySummaryResponse,
   CreateCompanyRequest,
   CreateCompanyResponse,
+  UpdateCompanyRequest,
+  UpdateCompanyStatusRequest,
   AddressResponse,
   CreateAddressRequest,
   FeatureEntitlementRequest,
@@ -39,6 +41,32 @@ export async function createCompany(input: CreateCompanyRequest) {
   const { data } = await apiClient.post<
     ApiSuccessResponse<CreateCompanyResponse>
   >("/api/v1/companies", input)
+  return data.data
+}
+
+export async function updateCompany(
+  companyUuid: string,
+  input: UpdateCompanyRequest
+) {
+  const resolved = resolveCompanyUuid(companyUuid)
+  const { data } = await apiClient.put<
+    ApiSuccessResponse<CompanySummaryResponse>
+  >(`/api/v1/companies/${resolved}`, input, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
+
+export async function updateCompanyStatus(
+  companyUuid: string,
+  input: UpdateCompanyStatusRequest
+) {
+  const resolved = resolveCompanyUuid(companyUuid)
+  const { data } = await apiClient.patch<
+    ApiSuccessResponse<CompanySummaryResponse>
+  >(`/api/v1/companies/${resolved}/status`, input, {
+    headers: { "X-Company-Context": resolved },
+  })
   return data.data
 }
 
