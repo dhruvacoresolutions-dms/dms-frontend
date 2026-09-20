@@ -62,7 +62,6 @@ export function ThemeInitScript() {
 
   return (
     <script
-      // eslint-disable-next-line @next/next/no-before-interactive-script-outside-document
       dangerouslySetInnerHTML={{ __html: scriptContent }}
       suppressHydrationWarning
     />

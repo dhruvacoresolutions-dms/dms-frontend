@@ -177,16 +177,19 @@ export function BulkImportDialog({
     }
   }, [])
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      const files = items.map((i) => i.file)
-      const hadUpload = uploadedRef.current
-      reset()
-      // refetch the list on every page no matter how the dialog is closed
-      if (hadUpload) onUploadComplete?.(files)
-    }
-    onOpenChange(nextOpen)
-  }
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        const files = items.map((i) => i.file)
+        const hadUpload = uploadedRef.current
+        reset()
+        // refetch the list on every page no matter how the dialog is closed
+        if (hadUpload) onUploadComplete?.(files)
+      }
+      onOpenChange(nextOpen)
+    },
+    [items, reset, onUploadComplete, onOpenChange]
+  )
 
   const handleFileSelect = React.useCallback((files: File[]) => {
     if (files.length === 0) return
