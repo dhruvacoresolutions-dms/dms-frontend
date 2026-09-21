@@ -1,6 +1,7 @@
 "use client"
 
 import { useForm } from "react-hook-form"
+import { createPortal } from "react-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
@@ -43,7 +44,11 @@ export function ChangePasswordForm() {
 
   return (
     <>
-      {isLoggingOut && <AuthLoadingScreen variant="logout" />}
+      {isLoggingOut &&
+        createPortal(
+          <AuthLoadingScreen variant="logout" className="z-[60]" />,
+          document.body
+        )}
     <form
       className="flex flex-col gap-6"
       onSubmit={handleSubmit((values) =>

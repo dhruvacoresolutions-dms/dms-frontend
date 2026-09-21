@@ -2,6 +2,8 @@
 
 import { Loader2 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
+
 export type AuthLoadingVariant = "login" | "loading" | "logout"
 
 const VARIANT_COPY: Record<AuthLoadingVariant, { title: string; message: string }> = {
@@ -23,6 +25,7 @@ export function AuthLoadingScreen({
   variant = "loading",
   title,
   message,
+  className,
 }: {
   /**
    * - `login`: shown right after a successful login (permissions fetch).
@@ -32,6 +35,7 @@ export function AuthLoadingScreen({
   variant?: AuthLoadingVariant
   title?: string
   message?: string
+  className?: string
 }) {
   const copy = VARIANT_COPY[variant]
 
@@ -40,7 +44,10 @@ export function AuthLoadingScreen({
       role="status"
       aria-live="polite"
       data-variant={variant}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-background"
+      className={cn(
+        "fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-background",
+        className
+      )}
     >
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
       <div className="flex flex-col items-center gap-1 text-center">

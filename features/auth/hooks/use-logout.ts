@@ -21,8 +21,10 @@ export function useLogout() {
     setIsLoggingOut(true)
 
     // Give the "Logging you out…" screen a frame to paint before we tear
-    // down session state and trigger the full-page navigation. Without this
-    // the RouteGate fallback ("Loading...") flashes underneath instead.
+    // down session state and trigger the full-page navigation. The logout
+    // overlay renders at z-[60], above the RouteGate "Loading..." fallback
+    // (z-50) that appears once access is cleared, so it stays on top until
+    // the login page loads.
     await new Promise((resolve) => setTimeout(resolve, 450))
 
     clearSession()

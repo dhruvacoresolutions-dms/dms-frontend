@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -33,7 +34,14 @@ export function HeaderUserMenu() {
 
   return (
     <>
-      {isLoggingOut && <AuthLoadingScreen variant="logout" />}
+      {/* Portalled to body: inside the sticky (z-50) header the overlay's
+          z-index would be trapped in the header's stacking context and the
+          RouteGate "Loading..." fallback would paint over it. */}
+      {isLoggingOut &&
+        createPortal(
+          <AuthLoadingScreen variant="logout" className="z-[60]" />,
+          document.body
+        )}
       <ThemeCustomizer open={themeOpen} onOpenChange={setThemeOpen} />
       <DropdownMenu>
       <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
