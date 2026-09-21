@@ -9,6 +9,10 @@ export function setGlobalQueryClient(client: QueryClient) {
   globalQueryClient = client
 }
 
+export function getGlobalQueryClient(): QueryClient | null {
+  return globalQueryClient
+}
+
 const AUTH_PREFIX = "/auth/"
 
 let redirecting = false

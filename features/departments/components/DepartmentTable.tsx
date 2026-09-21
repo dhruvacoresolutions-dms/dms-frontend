@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import type { DepartmentResponse } from "../api/department.types"
 
 type DepartmentTableProps = {
@@ -60,9 +62,11 @@ export function DepartmentTable({
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(d)}>
-                        <Pencil className="mr-2 size-4" /> Edit
-                      </DropdownMenuItem>
+                      <PermissionGate permission={PERMISSIONS.DEPARTMENT.UPDATE}>
+                        <DropdownMenuItem onClick={() => onEdit(d)}>
+                          <Pencil className="mr-2 size-4" /> Edit
+                        </DropdownMenuItem>
+                      </PermissionGate>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

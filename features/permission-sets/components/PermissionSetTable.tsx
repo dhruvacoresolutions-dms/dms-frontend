@@ -18,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import type { PermissionSetListItem } from "../api/permission-set.types"
 import { getPermissionSetId } from "../utils/permission-set.utils"
 
@@ -78,32 +80,38 @@ export function PermissionSetTable({
                       >
                         <Eye className="mr-2 size-4" /> View
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`${detailPath}/edit`)
-                        }}
-                      >
-                        <Edit className="mr-2 size-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`${detailPath}/permissions`)
-                        }}
-                      >
-                        <Key className="mr-2 size-4" /> Manage Permissions
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDelete(set)
-                        }}
-                      >
-                        <Trash2 className="mr-2 size-4 text-destructive" />{" "}
-                        Delete
-                      </DropdownMenuItem>
+                      <PermissionGate permission={PERMISSIONS.PERMISSION_SET.UPDATE}>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`${detailPath}/edit`)
+                          }}
+                        >
+                          <Edit className="mr-2 size-4" /> Edit
+                        </DropdownMenuItem>
+                      </PermissionGate>
+                      <PermissionGate permission={PERMISSIONS.PERMISSION_SET.UPDATE}>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`${detailPath}/permissions`)
+                          }}
+                        >
+                          <Key className="mr-2 size-4" /> Manage Permissions
+                        </DropdownMenuItem>
+                      </PermissionGate>
+                      <PermissionGate permission={PERMISSIONS.PERMISSION_SET.DELETE}>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete(set)
+                          }}
+                        >
+                          <Trash2 className="mr-2 size-4 text-destructive" />{" "}
+                          Delete
+                        </DropdownMenuItem>
+                      </PermissionGate>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

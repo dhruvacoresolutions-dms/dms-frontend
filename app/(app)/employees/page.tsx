@@ -65,10 +65,22 @@ import { useDisableEmployeeLogin } from "@/features/employees/hooks/use-disable-
 import { RoleCombobox } from "@/features/roles/components/RoleCombobox"
 import { useEmployeeCreationGate } from "@/features/employees/hooks/use-employee-creation-gate"
 import { CreationGate } from "@/features/employees/components/CreationGate"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
+import { usePermission } from "@/hooks/use-permission"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function EmployeesPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.EMPLOYEE.VIEW}>
+      <EmployeesContent />
+    </RouteGate>
+  )
+}
+
+function EmployeesContent() {
   const router = useRouter()
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
@@ -112,6 +124,12 @@ export default function EmployeesPage() {
   const enableLoginMutation = useEnableEmployeeLogin(companyUuid)
   const disableLoginMutation = useDisableEmployeeLogin(companyUuid)
   const creationGate = useEmployeeCreationGate(companyUuid)
+  const { canAny } = usePermission()
+  // Bulk selection is only useful when a bulk action is permitted.
+  const canBulkAction = canAny([
+    PERMISSIONS.EMPLOYEE.LOGIN_MANAGE,
+    PERMISSIONS.PERMISSION_SET.ASSIGN,
+  ])
   const employees = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
 
@@ -154,32 +172,38 @@ export default function EmployeesPage() {
         description="Manage company employees"
         action={
           <div className="flex items-center gap-2">
-            <CreationGate message={creationGate.message}>
-              <Button
-                variant="outline"
-                disabled={creationGate.disabled}
-                onClick={() => setBulkOpen(true)}
-              >
-                <Upload className="mr-2 size-4" />
-                Bulk Upload
-              </Button>
-            </CreationGate>
+            <PermissionGate permission={PERMISSIONS.EMPLOYEE.IMPORT}>
+              <CreationGate message={creationGate.message}>
+                <Button
+                  variant="outline"
+                  disabled={creationGate.disabled}
+                  onClick={() => setBulkOpen(true)}
+                >
+                  <Upload className="mr-2 size-4" />
+                  Bulk Upload
+                </Button>
+              </CreationGate>
+            </PermissionGate>
             {hasEmployees && (
-              <Button variant="outline" onClick={() => setGeoBulkOpen(true)}>
-                <Upload className="mr-2 size-4" />
-                Geography Upload
-              </Button>
+              <PermissionGate permission={PERMISSIONS.EMPLOYEE.GEOGRAPHY_IMPORT}>
+                <Button variant="outline" onClick={() => setGeoBulkOpen(true)}>
+                  <Upload className="mr-2 size-4" />
+                  Geography Upload
+                </Button>
+              </PermissionGate>
             )}
-            <CreationGate message={creationGate.message}>
-              <Button
-                nativeButton={false}
-                render={<Link href={`/employees/new`} />}
-                disabled={creationGate.disabled}
-              >
-                <Plus className="mr-2 size-4" />
-                Create Employee
-              </Button>
-            </CreationGate>
+            <PermissionGate permission={PERMISSIONS.EMPLOYEE.CREATE}>
+              <CreationGate message={creationGate.message}>
+                <Button
+                  nativeButton={false}
+                  render={<Link href={`/employees/new`} />}
+                  disabled={creationGate.disabled}
+                >
+                  <Plus className="mr-2 size-4" />
+                  Create Employee
+                </Button>
+              </CreationGate>
+            </PermissionGate>
           </div>
         }
       />
@@ -236,17 +260,19 @@ export default function EmployeesPage() {
           }
         >
           {!hasActiveFilters && (
-            <CreationGate message={creationGate.message}>
-              <Button
-                nativeButton={false}
-                render={<Link href={`/employees/new`} />}
-                className="mt-2"
-                disabled={creationGate.disabled}
-              >
-                <Plus className="mr-2 size-4" />
-                Create Employee
-              </Button>
-            </CreationGate>
+            <PermissionGate permission={PERMISSIONS.EMPLOYEE.CREATE}>
+              <CreationGate message={creationGate.message}>
+                <Button
+                  nativeButton={false}
+                  render={<Link href={`/employees/new`} />}
+                  className="mt-2"
+                  disabled={creationGate.disabled}
+                >
+                  <Plus className="mr-2 size-4" />
+                  Create Employee
+                </Button>
+              </CreationGate>
+            </PermissionGate>
           )}
         </EmptyState>
       ) : (
@@ -255,14 +281,16 @@ export default function EmployeesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={allPageSelected}
-                      indeterminate={somePageSelected}
-                      onCheckedChange={() => toggleAllOnPage()}
-                      aria-label="Select all employees on this page"
-                    />
-                  </TableHead>
+                  {canBulkAction && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allPageSelected}
+                        indeterminate={somePageSelected}
+                        onCheckedChange={() => toggleAllOnPage()}
+                        aria-label="Select all employees on this page"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
@@ -275,13 +303,15 @@ export default function EmployeesPage() {
               <TableBody>
                 {employees.map((emp) => (
                   <TableRow key={emp.employeeUuid}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.includes(employeeId(emp))}
-                        onCheckedChange={() => toggleOne(emp)}
-                        aria-label={`Select ${emp.firstName} ${emp.lastName}`}
-                      />
-                    </TableCell>
+                    {canBulkAction && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(employeeId(emp))}
+                          onCheckedChange={() => toggleOne(emp)}
+                          aria-label={`Select ${emp.firstName} ${emp.lastName}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono text-sm">
                       {emp.employeeCode}
                     </TableCell>
@@ -318,46 +348,51 @@ export default function EmployeesPage() {
                           >
                             <Eye className="mr-2 size-4" /> View
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              router.push(`/employees/${emp.employeeUuid}/edit`)
-                            }}
-                          >
-                            <Edit className="mr-2 size-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {emp.loginStatus === "ACTIVE" ? (
+                          <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
                             <DropdownMenuItem
                               onClick={() => {
-                                setLoginDisable(emp)
+                                router.push(`/employees/${emp.employeeUuid}/edit`)
                               }}
                             >
-                              <UserX className="mr-2 size-4" /> Disable Login
+                              <Edit className="mr-2 size-4" /> Edit
                             </DropdownMenuItem>
-                          ) : (
+                          </PermissionGate>
+                          <PermissionGate permission={PERMISSIONS.EMPLOYEE.LOGIN_MANAGE}>
+                            <DropdownMenuSeparator />
+                            {emp.loginStatus === "ACTIVE" ? (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setLoginDisable(emp)
+                                }}
+                              >
+                                <UserX className="mr-2 size-4" /> Disable Login
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEnableRoleUuid(null)
+                                  setLoginEnable(emp)
+                                }}
+                              >
+                                <KeyRound className="mr-2 size-4" /> Enable Login
+                              </DropdownMenuItem>
+                            )}
+                          </PermissionGate>
+                          <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
+                              variant={
+                                emp.status === "ACTIVE"
+                                  ? "destructive"
+                                  : "default"
+                              }
                               onClick={() => {
-                                setEnableRoleUuid(null)
-                                setLoginEnable(emp)
+                                setStatusToggle({
+                                  employeeUuid: emp.employeeUuid,
+                                  currentStatus: emp.status,
+                                })
                               }}
                             >
-                              <KeyRound className="mr-2 size-4" /> Enable Login
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant={
-                              emp.status === "ACTIVE"
-                                ? "destructive"
-                                : "default"
-                            }
-                            onClick={() => {
-                              setStatusToggle({
-                                employeeUuid: emp.employeeUuid,
-                                currentStatus: emp.status,
-                              })
-                            }}
-                          >
                             {emp.status === "ACTIVE" ? (
                               <>
                                 <ToggleLeft className="mr-2 size-4" />{" "}
@@ -369,6 +404,7 @@ export default function EmployeesPage() {
                               </>
                             )}
                           </DropdownMenuItem>
+                          </PermissionGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

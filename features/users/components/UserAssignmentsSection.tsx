@@ -29,6 +29,8 @@ import { LoadingState } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useRoles } from "@/features/roles/hooks/use-roles"
 import { usePermissionSets } from "@/features/permission-sets/hooks/use-permission-sets"
 import {
@@ -77,11 +79,12 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Role Assignments</h3>
-          <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
-            <DialogTrigger render={<Button size="sm" />}>
-              <Plus className="mr-2 size-4" />
-              Assign Role
-            </DialogTrigger>
+          <PermissionGate permission={PERMISSIONS.ROLE.ASSIGN}>
+            <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+              <DialogTrigger render={<Button size="sm" />}>
+                <Plus className="mr-2 size-4" />
+                Assign Role
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Assign Role</DialogTitle>
@@ -147,6 +150,7 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
               </div>
             </DialogContent>
           </Dialog>
+          </PermissionGate>
         </div>
 
         {!roleAssignments.data || roleAssignments.data.length === 0 ? (
@@ -167,19 +171,21 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
                     <TableCell className="font-mono">{a.code}</TableCell>
                     <TableCell>{a.status}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() =>
-                          setRemoveTarget({
-                            type: "role",
-                            uuid: a.publicId,
-                            label: a.code,
-                          })
-                        }
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      <PermissionGate permission={PERMISSIONS.ROLE.ASSIGN}>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() =>
+                            setRemoveTarget({
+                              type: "role",
+                              uuid: a.publicId,
+                              label: a.code,
+                            })
+                          }
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </PermissionGate>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -192,11 +198,12 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Permission Set Assignments</h3>
-          <Dialog open={psDialogOpen} onOpenChange={setPsDialogOpen}>
-            <DialogTrigger render={<Button size="sm" />}>
-              <Plus className="mr-2 size-4" />
-              Assign Permission Set
-            </DialogTrigger>
+          <PermissionGate permission={PERMISSIONS.PERMISSION_SET.ASSIGN}>
+            <Dialog open={psDialogOpen} onOpenChange={setPsDialogOpen}>
+              <DialogTrigger render={<Button size="sm" />}>
+                <Plus className="mr-2 size-4" />
+                Assign Permission Set
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Assign Permission Set</DialogTitle>
@@ -261,6 +268,7 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
               </div>
             </DialogContent>
           </Dialog>
+          </PermissionGate>
         </div>
 
         {!psAssignments.data || psAssignments.data.length === 0 ? (
@@ -284,19 +292,21 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
                     <TableCell className="font-mono">{a.code}</TableCell>
                     <TableCell>{a.status}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() =>
-                          setRemoveTarget({
-                            type: "ps",
-                            uuid: a.publicId,
-                            label: a.code,
-                          })
-                        }
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      <PermissionGate permission={PERMISSIONS.PERMISSION_SET.ASSIGN}>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() =>
+                            setRemoveTarget({
+                              type: "ps",
+                              uuid: a.publicId,
+                              label: a.code,
+                            })
+                          }
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </PermissionGate>
                     </TableCell>
                   </TableRow>
                 ))}

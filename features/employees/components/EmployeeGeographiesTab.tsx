@@ -25,6 +25,8 @@ import { LoadingState } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import {
   useEmployeeGeographies,
   useAssignEmployeeGeography,
@@ -53,7 +55,8 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Assigned Geographies</h3>
-        <Dialog
+        <PermissionGate permission={PERMISSIONS.GEOGRAPHY.ASSIGN}>
+          <Dialog
           open={open}
           onOpenChange={(next) => {
             setOpen(next)
@@ -123,6 +126,7 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
             </div>
           </DialogContent>
         </Dialog>
+        </PermissionGate>
       </div>
 
       {!geographies.data || geographies.data.length === 0 ? (
@@ -147,9 +151,11 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
                   <TableCell>{g.geographyType}</TableCell>
                   <TableCell>{g.primaryAssignment ? "Yes" : "No"}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon-sm" onClick={() => setRemoveTarget({ uuid: g.geographyUuid, name: g.geographyName })}>
-                      <Trash2 className="size-4 text-destructive" />
-                    </Button>
+                    <PermissionGate permission={PERMISSIONS.GEOGRAPHY.ASSIGN}>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setRemoveTarget({ uuid: g.geographyUuid, name: g.geographyName })}>
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
+                    </PermissionGate>
                   </TableCell>
                 </TableRow>
               ))}

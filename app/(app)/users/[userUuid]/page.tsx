@@ -10,11 +10,22 @@ import { PageHeader } from "@/components/common/PageHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useUser } from "@/features/users/hooks/use-user"
 import { UserAssignmentsSection } from "@/features/users/components/UserAssignmentsSection"
 import { UserEffectiveAccessSection } from "@/features/users/components/UserEffectiveAccessSection"
 
 export default function UserDetailPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.USER.VIEW}>
+      <UserDetailContent />
+    </RouteGate>
+  )
+}
+
+function UserDetailContent() {
   const params = useParams<{ userUuid: string }>()
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const userUuid = params.userUuid
@@ -36,10 +47,12 @@ export default function UserDetailPage() {
               <ArrowLeft className="mr-2 size-4" />
               Back
             </Button>
-            <Button nativeButton={false} render={<Link href={`/users/${userUuid}/edit`} />}>
-              <Edit className="mr-2 size-4" />
-              Edit
-            </Button>
+            <PermissionGate permission={PERMISSIONS.USER.UPDATE}>
+              <Button nativeButton={false} render={<Link href={`/users/${userUuid}/edit`} />}>
+                <Edit className="mr-2 size-4" />
+                Edit
+              </Button>
+            </PermissionGate>
           </div>
         }
       />

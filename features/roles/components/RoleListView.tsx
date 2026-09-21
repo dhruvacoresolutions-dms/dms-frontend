@@ -11,6 +11,8 @@ import type { RoleListItem } from "../api/role.types"
 import { RoleTable } from "./RoleTable"
 import { RoleCreateDialog } from "./RoleCreateDialog"
 import { RoleDeleteDialog } from "./RoleDeleteDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
 
 type RoleListViewProps = {
   companyUuid: string
@@ -29,11 +31,13 @@ export function RoleListView({ companyUuid, basePath }: RoleListViewProps) {
         title="Roles"
         description="Manage company roles"
         action={
-          <RoleCreateDialog
-            companyUuid={companyUuid}
-            open={createOpen}
-            onOpenChange={setCreateOpen}
-          />
+          <PermissionGate permission={PERMISSIONS.ROLE.CREATE}>
+            <RoleCreateDialog
+              companyUuid={companyUuid}
+              open={createOpen}
+              onOpenChange={setCreateOpen}
+            />
+          </PermissionGate>
         }
       />
 

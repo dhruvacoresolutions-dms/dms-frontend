@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -16,11 +17,12 @@ import { LogOutIcon, UserIcon, KeyIcon, PaintbrushIcon } from "lucide-react"
 
 import { useAuthStore } from "@/stores/auth-store"
 import { useLogout } from "@/features/auth/hooks/use-logout"
+import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
 import { ThemeCustomizer } from "@/components/theme/theme-customizer"
 
 export function HeaderUserMenu() {
   const user = useAuthStore((state) => state.session?.user)
-  const { logout } = useLogout()
+  const { logout, isLoggingOut } = useLogout()
   const [themeOpen, setThemeOpen] = useState(false)
 
   const displayName = user?.displayName ?? "User"
@@ -32,6 +34,14 @@ export function HeaderUserMenu() {
 
   return (
     <>
+      {/* Portalled to body: inside the sticky (z-50) header the overlay's
+          z-index would be trapped in the header's stacking context and the
+          RouteGate "Loading..." fallback would paint over it. */}
+      {isLoggingOut &&
+        createPortal(
+          <AuthLoadingScreen variant="logout" className="z-[60]" />,
+          document.body
+        )}
       <ThemeCustomizer open={themeOpen} onOpenChange={setThemeOpen} />
       <DropdownMenu>
       <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">

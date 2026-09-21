@@ -5,6 +5,8 @@ import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { usePermissionSet } from "@/features/permission-sets/hooks/use-permission-set"
 import { PermissionSetEditForm } from "@/features/permission-sets/components/PermissionSetEditForm"
 
@@ -20,17 +22,19 @@ export default function EditPermissionSetPage() {
   if (!set) return <ErrorState message="Permission set not found" />
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
-        title="Edit Permission Set"
-        description={`Editing ${set.name} (${set.code})`}
-      />
-      <PermissionSetEditForm
-        companyUuid={companyUuid}
-        setUuid={setUuid}
-        set={set}
-        onSuccessPath={`/permission-sets/${setUuid}`}
-      />
-    </div>
+    <RouteGate permission={PERMISSIONS.PERMISSION_SET.UPDATE}>
+      <div className="flex flex-1 flex-col gap-4">
+        <PageHeader
+          title="Edit Permission Set"
+          description={`Editing ${set.name} (${set.code})`}
+        />
+        <PermissionSetEditForm
+          companyUuid={companyUuid}
+          setUuid={setUuid}
+          set={set}
+          onSuccessPath={`/permission-sets/${setUuid}`}
+        />
+      </div>
+    </RouteGate>
   )
 }

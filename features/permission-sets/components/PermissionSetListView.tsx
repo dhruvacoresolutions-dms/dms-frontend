@@ -11,6 +11,8 @@ import type { PermissionSetListItem } from "../api/permission-set.types"
 import { PermissionSetTable } from "./PermissionSetTable"
 import { PermissionSetCreateDialog } from "./PermissionSetCreateDialog"
 import { PermissionSetDeleteDialog } from "./PermissionSetDeleteDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
 
 type PermissionSetListViewProps = {
   companyUuid: string
@@ -33,11 +35,13 @@ export function PermissionSetListView({
         title="Permission Sets"
         description="Manage permission sets"
         action={
-          <PermissionSetCreateDialog
-            companyUuid={companyUuid}
-            open={createOpen}
-            onOpenChange={setCreateOpen}
-          />
+          <PermissionGate permission={PERMISSIONS.PERMISSION_SET.CREATE}>
+            <PermissionSetCreateDialog
+              companyUuid={companyUuid}
+              open={createOpen}
+              onOpenChange={setCreateOpen}
+            />
+          </PermissionGate>
         }
       />
 

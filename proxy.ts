@@ -8,6 +8,15 @@ const protectedRoutes = [
   "/companies",
   "/permissions",
   "/profile",
+  "/users",
+  "/employees",
+  "/roles",
+  "/permission-sets",
+  "/departments",
+  "/designations",
+  "/geographies",
+  "/audit",
+  "/forbidden",
 ]
 const authRoutes = [
   "/auth/login",

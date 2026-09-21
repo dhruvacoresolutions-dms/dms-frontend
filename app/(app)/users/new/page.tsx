@@ -15,6 +15,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { PageHeader } from "@/components/common/PageHeader"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useCreateUser } from "@/features/users/hooks/use-create-user"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -34,6 +36,14 @@ const userSchema = z.object({
 type UserFormValues = z.infer<typeof userSchema>
 
 export default function NewUserPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.USER.CREATE}>
+      <NewUserContent />
+    </RouteGate>
+  )
+}
+
+function NewUserContent() {
   const router = useRouter()
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const createUserMutation = useCreateUser(companyUuid)

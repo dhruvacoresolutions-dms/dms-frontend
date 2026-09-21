@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { usePermissionSet } from "@/features/permission-sets/hooks/use-permission-set"
 import { PermissionSetPermissionsManager } from "@/features/permission-sets/components/PermissionSetPermissionsManager"
 
@@ -23,7 +25,8 @@ export default function PermissionSetPermissionsPage() {
   if (!set) return <ErrorState message="Permission set not found" />
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <RouteGate permission={PERMISSIONS.PERMISSION_SET.UPDATE}>
+      <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title={`Manage Permissions: ${set.name}`}
         description="Saving replaces all current permissions for this permission set."
@@ -43,5 +46,6 @@ export default function PermissionSetPermissionsPage() {
         set={set}
       />
     </div>
+    </RouteGate>
   )
 }

@@ -1,4 +1,5 @@
 import type { MainNav, NavGroup } from "@/types/components/sidebar"
+import { PERMISSIONS } from "@/lib/permissions"
 import {
   LayoutDashboard,
   Building2,
@@ -65,6 +66,7 @@ export const mainNav: MainNav = [
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
+    permission: PERMISSIONS.DASHBOARD.VIEW,
   },
   {
     title: "Organization",
@@ -75,26 +77,31 @@ export const mainNav: MainNav = [
         title: "Users",
         url: "/users",
         icon: UserCog,
+        permission: PERMISSIONS.USER.VIEW,
       },
       {
         title: "Employees",
         url: "/employees",
         icon: Briefcase,
+        permission: PERMISSIONS.EMPLOYEE.VIEW,
       },
       {
         title: "Designations",
         url: "/designations",
         icon: ShieldCheck,
+        permission: PERMISSIONS.DESIGNATION.VIEW,
       },
       {
         title: "Departments",
         url: "/departments",
         icon: Network,
+        permission: PERMISSIONS.DEPARTMENT.VIEW,
       },
       {
         title: "Geographies",
         url: "/geographies",
         icon: MapPin,
+        permission: PERMISSIONS.GEOGRAPHY.VIEW,
       },
     ],
   },
@@ -107,26 +114,31 @@ export const mainNav: MainNav = [
         title: "Roles",
         url: "/roles",
         icon: Shield,
+        permission: PERMISSIONS.ROLE.VIEW,
       },
       {
         title: "Permission Sets",
         url: "/permission-sets",
         icon: KeyRound,
+        permission: PERMISSIONS.PERMISSION_SET.VIEW,
       },
       {
         title: "Permissions",
         url: "/permissions",
         icon: FileCheck,
+        permission: PERMISSIONS.PERMISSION.VIEW,
       },
       {
         title: "Permission Matrix",
         url: "/permissions/matrix",
         icon: ShieldCheck,
+        permission: PERMISSIONS.PERMISSION.VIEW,
       },
       {
         title: "RBAC Audit",
         url: "/audit/rbac",
         icon: ShieldAlert,
+        // TODO: picks up its backend code once confirmed; visible meanwhile.
       },
     ],
   },

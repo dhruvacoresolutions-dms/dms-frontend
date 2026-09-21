@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useEmployee } from "@/features/employees/hooks/use-employee"
 import { EmployeeOverview } from "@/features/employees/components/EmployeeOverview"
 import { EmployeeGeographiesTab } from "@/features/employees/components/EmployeeGeographiesTab"
@@ -24,21 +27,24 @@ export default function EmployeeDetailPage() {
   if (!employee) return <ErrorState message="Employee not found" />
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
-        title={employee.fullName ?? `${employee.firstName} ${employee.lastName}`}
-        description={`Code: ${employee.employeeCode}`}
-        action={
-          <div className="flex gap-2">
-            <Button variant="outline" nativeButton={false} render={<Link href={`/employees`} />}>
-              <ArrowLeft className="mr-2 size-4" /> Back
-            </Button>
-            <Button nativeButton={false} render={<Link href={`/employees/${employeeUuid}/edit`} />}>
-              <Edit className="mr-2 size-4" /> Edit
-            </Button>
-          </div>
-        }
-      />
+    <RouteGate permission={PERMISSIONS.EMPLOYEE.VIEW}>
+      <div className="flex flex-1 flex-col gap-4">
+        <PageHeader
+          title={employee.fullName ?? `${employee.firstName} ${employee.lastName}`}
+          description={`Code: ${employee.employeeCode}`}
+          action={
+            <div className="flex gap-2">
+              <Button variant="outline" nativeButton={false} render={<Link href={`/employees`} />}>
+                <ArrowLeft className="mr-2 size-4" /> Back
+              </Button>
+              <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+                <Button nativeButton={false} render={<Link href={`/employees/${employeeUuid}/edit`} />}>
+                  <Edit className="mr-2 size-4" /> Edit
+                </Button>
+              </PermissionGate>
+            </div>
+          }
+        />
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -52,5 +58,6 @@ export default function EmployeeDetailPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </RouteGate>
   )
 }

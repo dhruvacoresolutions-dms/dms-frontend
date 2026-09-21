@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/field"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useUser } from "@/features/users/hooks/use-user"
 import { useUpdateUser } from "@/features/users/hooks/use-update-user"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -29,6 +31,14 @@ const editUserSchema = z.object({
 type EditUserValues = z.infer<typeof editUserSchema>
 
 export default function EditUserPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.USER.UPDATE}>
+      <EditUserContent />
+    </RouteGate>
+  )
+}
+
+function EditUserContent() {
   const params = useParams<{ userUuid: string }>()
   const router = useRouter()
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
