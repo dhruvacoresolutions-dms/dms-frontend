@@ -1,5 +1,21 @@
 import type { PermissionResponse } from "../api/permission.types"
 
+/** Canonical action display order — missing actions are skipped. */
+export const PERMISSION_ACTION_ORDER = [
+  "VIEW",
+  "CREATE",
+  "UPDATE",
+  "DELETE",
+  "ASSIGN",
+  "ACCESS",
+  "LIST",
+  "MANAGE",
+  "APPROVE",
+  "REJECT",
+  "EXPORT",
+  "IMPORT",
+] as const
+
 /** Generic display labels for known action codes. */
 const ACTION_LABELS: Record<string, string> = {
   VIEW: "View",
@@ -89,6 +105,36 @@ export function groupPermissionsByModule(
     grouped.set(key, list)
   }
   return Array.from(grouped.entries())
+}
+
+/**
+ * Sort permissions by resource, then canonical action order
+ * (View → Create → …), then label — so each resource's permissions read
+ * naturally inside a merged module group.
+ */
+export function sortPermissionsByActionOrder(
+  perms: PermissionResponse[]
+): PermissionResponse[] {
+  return [...perms].sort((a, b) => {
+    const resourceCompare = a.resourceCode.localeCompare(b.resourceCode)
+    if (resourceCompare !== 0) return resourceCompare
+    const orderA = PERMISSION_ACTION_ORDER.indexOf(
+      getPermissionActionKey(a) as (typeof PERMISSION_ACTION_ORDER)[number]
+    )
+    const orderB = PERMISSION_ACTION_ORDER.indexOf(
+      getPermissionActionKey(b) as (typeof PERMISSION_ACTION_ORDER)[number]
+    )
+    const rankA = orderA === -1 ? PERMISSION_ACTION_ORDER.length : orderA
+    const rankB = orderB === -1 ? PERMISSION_ACTION_ORDER.length : orderB
+    if (rankA !== rankB) return rankA - rankB
+    return getPermissionActionLabel(
+      a.actionCode,
+      a.code,
+      a.action
+    ).localeCompare(
+      getPermissionActionLabel(b.actionCode, b.code, b.action)
+    )
+  })
 }
 
 /**

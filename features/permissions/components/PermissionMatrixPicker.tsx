@@ -9,6 +9,7 @@ import {
   getPermissionActionLabel,
   groupPermissionsByModule,
   groupPermissionsByResource,
+  sortPermissionsByActionOrder,
   formatModuleLabel,
 } from "../utils/permission.utils"
 
@@ -19,45 +20,6 @@ type PermissionMatrixPickerProps = {
   onToggleAll: (codes: string[], select: boolean) => void
   search: string
   onSearchChange: (value: string) => void
-}
-
-/** Canonical display order within a module — missing actions are skipped. */
-const ACTION_ORDER = [
-  "VIEW",
-  "CREATE",
-  "UPDATE",
-  "DELETE",
-  "ASSIGN",
-  "ACCESS",
-  "LIST",
-  "MANAGE",
-  "APPROVE",
-  "REJECT",
-  "EXPORT",
-  "IMPORT",
-] as const
-
-function sortByActionOrder(perms: PermissionResponse[]): PermissionResponse[] {
-  return [...perms].sort((a, b) => {
-    // Keep each resource's permissions adjacent so its View → Create → …
-    // order reads naturally inside the merged module section.
-    const resourceCompare = a.resourceCode.localeCompare(b.resourceCode)
-    if (resourceCompare !== 0) return resourceCompare
-    const orderA = ACTION_ORDER.indexOf(
-      getPermissionActionKey(a) as (typeof ACTION_ORDER)[number]
-    )
-    const orderB = ACTION_ORDER.indexOf(
-      getPermissionActionKey(b) as (typeof ACTION_ORDER)[number]
-    )
-    const rankA = orderA === -1 ? ACTION_ORDER.length : orderA
-    const rankB = orderB === -1 ? ACTION_ORDER.length : orderB
-    if (rankA !== rankB) return rankA - rankB
-    return getPermissionActionLabel(
-      a.actionCode,
-      a.code,
-      a.action
-    ).localeCompare(getPermissionActionLabel(b.actionCode, b.code, b.action))
-  })
 }
 
 /**
@@ -110,8 +72,8 @@ export function PermissionMatrixPicker({
         />
       ) : (
         <div className="space-y-4">
-          {grouped.map(([moduleCode, perms]) => {
-            const ordered = sortByActionOrder(perms)
+            {grouped.map(([moduleCode, perms]) => {
+              const ordered = sortPermissionsByActionOrder(perms)
 
             const handleToggle = (
               perm: PermissionResponse,

@@ -56,7 +56,7 @@ export default function RoleDetailPage() {
           }
         />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="flex flex-1 flex-col gap-4">
         <RoleInfoCard role={role} />
         <RolePermissionsCard permissionCodes={getRolePermissions(role)} />
       </div>
