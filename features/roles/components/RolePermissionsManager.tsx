@@ -90,7 +90,6 @@ export function RolePermissionsManager({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Badge variant="secondary">{selected.size} selected</Badge>
         {hasChanges && (
           <Badge variant="outline" className="text-amber-600">
             Unsaved changes

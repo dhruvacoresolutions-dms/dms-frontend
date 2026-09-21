@@ -1,21 +1,15 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { EmptyState } from "@/components/common/EmptyState"
 import type { PermissionResponse } from "../api/permission.types"
 import {
+  getPermissionActionKey,
   getPermissionActionLabel,
+  groupPermissionsByModule,
   groupPermissionsByResource,
+  sortPermissionsByActionOrder,
   formatModuleLabel,
 } from "../utils/permission.utils"
 
@@ -29,9 +23,17 @@ type PermissionMatrixPickerProps = {
 }
 
 /**
- * Matrix-style permission picker — one table row per resource, generic
- * action names (View / Create / Update / Delete / Assign …) in the row.
+ * Matrix-style permission picker — one section per module (heading +
+ * resource rows), plain checkbox + label options ordered View → Create → …
  * Shared by role and permission-set Manage Permissions pages.
+ *
+ * Rules enforced here (single place for both pages):
+ * - "All" is the first option per resource: checking it selects everything
+ *   in that resource, and it auto-checks once the resource is fully
+ *   selected.
+ * - "View" is a prerequisite per resource: checking any other permission
+ *   auto-checks that resource's View; unchecking a View clears that
+ *   resource's other selections.
  */
 export function PermissionMatrixPicker({
   permissions,
@@ -48,9 +50,11 @@ export function PermissionMatrixPicker({
       p.code.toLowerCase().includes(query) ||
       p.name.toLowerCase().includes(query) ||
       p.resourceCode.toLowerCase().includes(query) ||
-      (p.actionCode ?? "").toLowerCase().includes(query)
+      (p.moduleCode ?? "").toLowerCase().includes(query) ||
+      (p.actionCode ?? "").toLowerCase().includes(query) ||
+      (p.action ?? "").toLowerCase().includes(query)
   )
-  const grouped = groupPermissionsByResource(filtered)
+  const grouped = groupPermissionsByModule(filtered)
 
   return (
     <div className="space-y-4">
@@ -67,84 +71,114 @@ export function PermissionMatrixPicker({
           description="Try a different search."
         />
       ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[240px]">Module</TableHead>
-                <TableHead>Permissions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {grouped.map(([resourceCode, perms]) => {
-                const codes = perms.map((p) => p.code)
-                const selectedCount = codes.filter((c) =>
-                  selected.has(c)
-                ).length
-                const allSelected =
-                  selectedCount === codes.length && codes.length > 0
-                return (
-                  <TableRow key={resourceCode} className="align-top">
-                    <TableCell>
-                      <label className="flex cursor-pointer items-center gap-2">
-                        <Checkbox
-                          checked={allSelected}
-                          onCheckedChange={() =>
-                            onToggleAll(codes, !allSelected)
-                          }
-                          aria-label={`Select all ${resourceCode} permissions`}
-                        />
-                        <span className="text-sm font-semibold">
-                          {formatModuleLabel(resourceCode)}
-                        </span>
-                      </label>
-                      <p className="mt-1 pl-6 text-xs text-muted-foreground">
-                        {selectedCount}/{codes.length} selected
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {perms.map((perm) => {
-                          const checked = selected.has(perm.code)
-                          return (
-                            <label
-                              key={perm.code}
-                              title={perm.code}
-                              className={`flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition-colors hover:bg-muted ${
-                                checked
-                                  ? "border-primary bg-primary/5"
-                                  : ""
-                              }`}
-                            >
-                              <Checkbox
-                                checked={checked}
-                                onCheckedChange={() => onToggle(perm.code)}
-                                aria-label={perm.code}
-                              />
-                              <span className="font-medium">
-                                {getPermissionActionLabel(
-                                  perm.actionCode,
-                                  perm.code
-                                )}
-                              </span>
-                              {perm.actionCode ? (
-                                <Badge
-                                  variant="outline"
-                                  className="font-mono text-[10px]"
-                                >
-                                  {perm.actionCode}
-                                </Badge>
-                              ) : null}
-                            </label>
-                          )
-                        })}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+        <div className="space-y-4">
+            {grouped.map(([moduleCode, perms]) => {
+              const ordered = sortPermissionsByActionOrder(perms)
+
+            const handleToggle = (
+              perm: PermissionResponse,
+              resourceCodes: string[]
+            ) => {
+              const willCheck = !selected.has(perm.code)
+              // View is a prerequisite within the same resource.
+              const resourceViewCode = ordered.find(
+                (p) =>
+                  p.resourceCode === perm.resourceCode &&
+                  getPermissionActionKey(p) === "VIEW"
+              )?.code
+              if (willCheck) {
+                // Checking any permission pulls its resource's View in
+                // automatically.
+                if (
+                  getPermissionActionKey(perm) !== "VIEW" &&
+                  resourceViewCode &&
+                  !selected.has(resourceViewCode)
+                ) {
+                  onToggle(resourceViewCode)
+                }
+              } else if (getPermissionActionKey(perm) === "VIEW") {
+                // Dropping a View drops the rest of that resource's
+                // selections.
+                onToggleAll(
+                  resourceCodes.filter((c) => c !== perm.code),
+                  false
                 )
-              })}
-            </TableBody>
-          </Table>
+              }
+              onToggle(perm.code)
+            }
+
+            return (
+              <section
+                key={moduleCode}
+                aria-label={formatModuleLabel(moduleCode)}
+                className="overflow-hidden rounded-md border"
+              >
+                <div className="border-b bg-muted/40 px-4 py-2.5">
+                  <h3 className="text-sm font-semibold">
+                    {formatModuleLabel(moduleCode)}
+                  </h3>
+                </div>
+                <div className="divide-y px-4">
+                  {groupPermissionsByResource(ordered).map(
+                    ([resourceCode, resourcePerms]) => {
+                      const resourceCodes = resourcePerms.map((p) => p.code)
+                      const resourceAllSelected =
+                        resourceCodes.length > 0 &&
+                        resourceCodes.every((c) => selected.has(c))
+                      return (
+                        <div
+                          key={resourceCode}
+                          className="flex flex-wrap items-center gap-x-6 gap-y-1 px-2 py-3"
+                        >
+                          <span
+                            title={resourceCode}
+                            className="w-48 shrink-0 truncate text-[13px] font-medium text-muted-foreground"
+                          >
+                            {formatModuleLabel(resourceCode)}
+                          </span>
+                          <label className="flex cursor-pointer items-center gap-2 text-sm">
+                            <Checkbox
+                              checked={resourceAllSelected}
+                              onCheckedChange={() =>
+                                onToggleAll(resourceCodes, !resourceAllSelected)
+                              }
+                              aria-label={`Select all ${resourceCode} permissions`}
+                            />
+                            <span className="font-medium">All</span>
+                          </label>
+                          {resourcePerms.map((perm) => {
+                            const checked = selected.has(perm.code)
+                            return (
+                              <label
+                                key={perm.code}
+                                title={perm.code}
+                                className="flex cursor-pointer items-center gap-2 text-sm"
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={() =>
+                                    handleToggle(perm, resourceCodes)
+                                  }
+                                  aria-label={perm.code}
+                                />
+                                <span className="font-medium">
+                                  {getPermissionActionLabel(
+                                    perm.actionCode,
+                                    perm.code,
+                                    perm.action
+                                  )}
+                                </span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )
+                    }
+                  )}
+                </div>
+              </section>
+            )
+          })}
         </div>
       )}
     </div>

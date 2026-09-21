@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { PermissionSetDetail } from "../api/permission-set.types"
-import { getPermissionSetId } from "../utils/permission-set.utils"
 
 type PermissionSetInfoCardProps = {
   set: PermissionSetDetail
@@ -16,10 +15,6 @@ export function PermissionSetInfoCard({ set }: PermissionSetInfoCardProps) {
         <CardTitle>Permission Set Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">UUID</span>
-          <span className="truncate font-mono">{getPermissionSetId(set)}</span>
-        </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-muted-foreground">Code</span>
           <span className="font-mono">{set.code}</span>

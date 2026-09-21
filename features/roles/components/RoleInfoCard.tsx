@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import type { RoleDetail } from "../api/role.types"
-import { getRoleId } from "../utils/role.utils"
 
 type RoleInfoCardProps = {
   role: RoleDetail
@@ -16,10 +15,6 @@ export function RoleInfoCard({ role }: RoleInfoCardProps) {
         <CardTitle>Role Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">UUID</span>
-          <span className="truncate font-mono">{getRoleId(role)}</span>
-        </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-muted-foreground">Code</span>
           <span className="font-mono">{role.code}</span>

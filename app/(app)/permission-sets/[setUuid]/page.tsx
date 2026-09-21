@@ -63,7 +63,7 @@ export default function PermissionSetDetailPage() {
           }
         />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="flex flex-1 flex-col gap-4">
         <PermissionSetInfoCard set={set} />
         <PermissionSetPermissionsCard
           permissionCodes={getPermissionSetPermissions(set)}
