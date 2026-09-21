@@ -34,8 +34,8 @@ export type ChangePasswordResponse = {
  * `X-Company-Context: <companyUuid>` headers).
  */
 export type MyAccessResponse = {
-  userUuid: string
-  companyUuid: string
+  userPublicId: string
+  companyPublicId: string
   companyCode: string
   roles: string[]
   permissionSets: string[]

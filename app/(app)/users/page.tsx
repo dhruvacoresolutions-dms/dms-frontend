@@ -35,12 +35,23 @@ import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useUsers } from "@/features/users/hooks/use-users"
 import { useUpdateUserStatus } from "@/features/users/hooks/use-update-user-status"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function UsersPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.USER.VIEW}>
+      <UsersContent />
+    </RouteGate>
+  )
+}
+
+function UsersContent() {
   const router = useRouter()
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
@@ -69,10 +80,12 @@ export default function UsersPage() {
         title="Users"
         description="Manage company users"
         action={
-          <Button nativeButton={false} render={<Link href={`/users/new`} />}>
-            <UserPlus className="mr-2 size-4" />
-            Create User
-          </Button>
+          <PermissionGate permission={PERMISSIONS.USER.CREATE}>
+            <Button nativeButton={false} render={<Link href={`/users/new`} />}>
+              <UserPlus className="mr-2 size-4" />
+              Create User
+            </Button>
+          </PermissionGate>
         }
       />
 
@@ -102,14 +115,16 @@ export default function UsersPage() {
           }
         >
           {!search && (
-            <Button
-              nativeButton={false}
-              render={<Link href={`/users/new`} />}
-              className="mt-2"
-            >
-              <UserPlus className="mr-2 size-4" />
-              Create User
-            </Button>
+            <PermissionGate permission={PERMISSIONS.USER.CREATE}>
+              <Button
+                nativeButton={false}
+                render={<Link href={`/users/new`} />}
+                className="mt-2"
+              >
+                <UserPlus className="mr-2 size-4" />
+                Create User
+              </Button>
+            </PermissionGate>
           )}
         </EmptyState>
       ) : (
@@ -157,28 +172,31 @@ export default function UsersPage() {
                               <Eye className="mr-2 size-4" />
                               View
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                router.push(`/users/${uid}/edit`)
-                              }}
-                            >
-                              <Edit className="mr-2 size-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant={
-                                user.status === "ACTIVE"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              onClick={() => {
-                                setStatusToggle({
-                                  userUuid: uid,
-                                  currentStatus: user.status,
-                                })
-                              }}
-                            >
+                            <PermissionGate permission={PERMISSIONS.USER.UPDATE}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  router.push(`/users/${uid}/edit`)
+                                }}
+                              >
+                                <Edit className="mr-2 size-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            </PermissionGate>
+                            <PermissionGate permission={PERMISSIONS.USER.STATUS}>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant={
+                                  user.status === "ACTIVE"
+                                    ? "destructive"
+                                    : "default"
+                                }
+                                onClick={() => {
+                                  setStatusToggle({
+                                    userUuid: uid,
+                                    currentStatus: user.status,
+                                  })
+                                }}
+                              >
                               {user.status === "ACTIVE" ? (
                                 <>
                                   <ToggleLeft className="mr-2 size-4" />{" "}
@@ -191,6 +209,7 @@ export default function UsersPage() {
                                 </>
                               )}
                             </DropdownMenuItem>
+                            </PermissionGate>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

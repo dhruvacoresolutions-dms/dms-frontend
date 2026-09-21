@@ -1,6 +1,9 @@
 import { apiClient } from "@/lib/api-client"
 import type { ApiSuccessResponse } from "@/lib/api-client"
 import { useAuthStore } from "@/stores/auth-store"
+import { useAccessStore } from "@/stores/access-store"
+import { getGlobalQueryClient } from "@/lib/unauthorized-handler"
+import { authKeys } from "./auth-keys"
 import type {
   AuthSession,
   ChangePasswordResponse,
@@ -60,6 +63,30 @@ export function getCurrentAccessIdentifiers(): {
   return {
     companyUuid: session?.user?.companyUuid ?? null,
     userUuid: session?.user?.userUuid ?? null,
+  }
+}
+
+/**
+ * Re-fetch the logged-in user's access mid-session (e.g. after an admin
+ * grants/revokes roles or permission sets). Updates both the access store
+ * and the TanStack cache. Throws on failure and marks the store errored —
+ * callers decide whether to toast.
+ */
+export async function refreshCurrentAccess(): Promise<EffectiveAccess> {
+  const store = useAccessStore.getState()
+  store.setAccessLoading()
+  try {
+    const access = await getCurrentAccess()
+    const { companyUuid, userUuid } = getCurrentAccessIdentifiers()
+    store.setAccess(access)
+    getGlobalQueryClient()?.setQueryData(
+      authKeys.access(companyUuid, userUuid),
+      access
+    )
+    return access
+  } catch (error) {
+    useAccessStore.getState().setAccessError()
+    throw error
   }
 }
 

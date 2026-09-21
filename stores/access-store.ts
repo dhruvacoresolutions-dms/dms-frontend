@@ -1,6 +1,7 @@
 "use client"
 
 import { create } from "zustand"
+import { normalizePermissionCode } from "@/lib/permissions/permissions"
 import type {
   EmployeeAccessResponse,
   MyAccessResponse,
@@ -25,7 +26,16 @@ export type EffectiveAccess = {
 
 type AccessState = {
   access: EffectiveAccess | null
+  /** Lifecycle of the access payload: gates render loading UI until `loaded`. */
+  accessStatus: AccessStatus
+  /**
+   * Granted permission codes normalized once per payload (O(1) lookups).
+   * Stable empty-set reference while no access is loaded.
+   */
+  permissionsSet: ReadonlySet<string>
   setAccess: (access: EffectiveAccess) => void
+  setAccessLoading: () => void
+  setAccessError: () => void
   clearAccess: () => void
   hasPermission: (permission: string) => boolean
   hasAnyPermission: (permissions: string[]) => boolean
@@ -33,14 +43,16 @@ type AccessState = {
   hasFeature: (feature: string) => boolean
 }
 
+export type AccessStatus = "idle" | "loading" | "loaded" | "error"
+
 /**
  * Normalize the self access endpoint payload (GET /api/v1/me/access) into
  * the shared EffectiveAccess shape so all permission checks keep working.
  */
 export function normalizeMyAccess(access: MyAccessResponse): EffectiveAccess {
   return {
-    userPublicId: access.userUuid,
-    companyPublicId: access.companyUuid,
+    userPublicId: access.userPublicId,
+    companyPublicId: access.companyPublicId,
     companyCode: access.companyCode ?? "",
     roles: access.roles ?? [],
     permissionSets: access.permissionSets ?? [],
@@ -79,7 +91,7 @@ export function normalizeEmployeeAccess(
 function allPermissions(access: EffectiveAccess | null): string[] {
   if (!access) return []
   // `permissions` is canonical; `effectivePermissions` is kept for the
-  // employee-access shape — merge defensively for mixed payloads.
+  // legacy employee-access shape — merge defensively for mixed payloads.
   if (access.effectivePermissions?.length) {
     return Array.from(
       new Set([...access.permissions, ...access.effectivePermissions])
@@ -88,23 +100,40 @@ function allPermissions(access: EffectiveAccess | null): string[] {
   return access.permissions
 }
 
+const EMPTY_PERMISSIONS_SET: ReadonlySet<string> = new Set()
+
+function toPermissionsSet(access: EffectiveAccess): ReadonlySet<string> {
+  const set = new Set<string>()
+  for (const code of allPermissions(access)) {
+    if (typeof code === "string" && code.trim()) {
+      set.add(normalizePermissionCode(code))
+    }
+  }
+  return set
+}
+
 export const useAccessStore = create<AccessState>()((set, get) => ({
   access: null,
-  setAccess: (access) => set({ access }),
-  clearAccess: () => set({ access: null }),
+  accessStatus: "idle",
+  permissionsSet: EMPTY_PERMISSIONS_SET,
+  setAccess: (access) =>
+    set({ access, accessStatus: "loaded", permissionsSet: toPermissionsSet(access) }),
+  setAccessLoading: () => set({ accessStatus: "loading" }),
+  setAccessError: () => set({ accessStatus: "error" }),
+  clearAccess: () =>
+    set({ access: null, accessStatus: "idle", permissionsSet: EMPTY_PERMISSIONS_SET }),
   hasPermission: (permission) => {
-    const { access } = get()
-    return allPermissions(access).includes(permission)
+    return get().permissionsSet.has(normalizePermissionCode(permission))
   },
   hasAnyPermission: (permissions) => {
-    const perms = allPermissions(get().access)
-    if (!perms.length) return false
-    return permissions.some((p) => perms.includes(p))
+    const granted = get().permissionsSet
+    if (!granted.size) return false
+    return permissions.some((p) => granted.has(normalizePermissionCode(p)))
   },
   hasAllPermissions: (permissions) => {
-    const perms = allPermissions(get().access)
-    if (!perms.length) return false
-    return permissions.every((p) => perms.includes(p))
+    const granted = get().permissionsSet
+    if (!granted.size) return false
+    return permissions.every((p) => granted.has(normalizePermissionCode(p)))
   },
   hasFeature: (feature) => {
     const { access } = get()

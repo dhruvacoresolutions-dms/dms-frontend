@@ -14,8 +14,19 @@ import { DepartmentTable } from "@/features/departments/components/DepartmentTab
 import { DepartmentFormDialog } from "@/features/departments/components/DepartmentFormDialog"
 import { DepartmentBulkUploadDialog } from "@/features/departments/components/DepartmentBulkUploadDialog"
 import { DEPARTMENT_PAGE_SIZE, DEPARTMENT_TEXTS } from "@/features/departments/configs/department.config"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 
 export default function DepartmentsPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.DEPARTMENT.VIEW}>
+      <DepartmentsContent />
+    </RouteGate>
+  )
+}
+
+function DepartmentsContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
@@ -39,13 +50,17 @@ export default function DepartmentsPage() {
         description={DEPARTMENT_TEXTS.description}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setBulkOpen(true)}>
-              <Upload className="mr-2 size-4" />
-              Bulk Upload
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" /> Create Department
-            </Button>
+            <PermissionGate permission={PERMISSIONS.DEPARTMENT.IMPORT}>
+              <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                <Upload className="mr-2 size-4" />
+                Bulk Upload
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.DEPARTMENT.CREATE}>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" /> Create Department
+              </Button>
+            </PermissionGate>
           </div>
         }
       />

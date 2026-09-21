@@ -31,10 +31,21 @@ import { useGeographies } from "@/features/geographies/hooks/use-geographies"
 import { useUpdateGeographyStatus } from "@/features/geographies/hooks/use-update-geography-status"
 import { GeographyFormDialog } from "@/features/geographies/components/GeographyFormDialog"
 import { GeographyBulkUploadDialog } from "@/features/geographies/components/GeographyBulkUploadDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function GeographiesPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.GEOGRAPHY.VIEW}>
+      <GeographiesContent />
+    </RouteGate>
+  )
+}
+
+function GeographiesContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
@@ -61,13 +72,17 @@ export default function GeographiesPage() {
         description="Manage geographical hierarchy"
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setBulkOpen(true)}>
-              <Upload className="mr-2 size-4" />
-              Bulk Upload
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" /> Create Geography
-            </Button>
+            <PermissionGate permission={PERMISSIONS.GEOGRAPHY.IMPORT}>
+              <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                <Upload className="mr-2 size-4" />
+                Bulk Upload
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.GEOGRAPHY.CREATE}>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" /> Create Geography
+              </Button>
+            </PermissionGate>
           </div>
         }
       />
@@ -113,18 +128,22 @@ export default function GeographiesPage() {
                           align="end"
                           className="w-auto min-w-40"
                         >
-                          <DropdownMenuItem onClick={() => setEditingUuid(g.geographyUuid)}>
-                            <Pencil className="mr-2 size-4" /> Edit
-                          </DropdownMenuItem>
+                          <PermissionGate permission={PERMISSIONS.GEOGRAPHY.UPDATE}>
+                            <DropdownMenuItem onClick={() => setEditingUuid(g.geographyUuid)}>
+                              <Pencil className="mr-2 size-4" /> Edit
+                            </DropdownMenuItem>
+                          </PermissionGate>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant={
-                              g.status === "ACTIVE" ? "destructive" : "default"
-                            }
-                            onClick={() => setStatusToggle({ uuid: g.geographyUuid, currentStatus: g.status })}
-                          >
-                            {g.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
-                          </DropdownMenuItem>
+                          <PermissionGate permission={PERMISSIONS.GEOGRAPHY.UPDATE}>
+                            <DropdownMenuItem
+                              variant={
+                                g.status === "ACTIVE" ? "destructive" : "default"
+                              }
+                              onClick={() => setStatusToggle({ uuid: g.geographyUuid, currentStatus: g.status })}
+                            >
+                              {g.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                            </DropdownMenuItem>
+                          </PermissionGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

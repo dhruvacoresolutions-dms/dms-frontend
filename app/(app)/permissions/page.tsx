@@ -19,8 +19,18 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { usePermissions } from "@/features/permissions/hooks/use-permissions"
 import { formatModuleLabel } from "@/features/permissions/utils/permission.utils"
 import { getApiError } from "@/lib/api/api-error"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 
 export default function PermissionsPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.PERMISSION.VIEW}>
+      <PermissionsContent />
+    </RouteGate>
+  )
+}
+
+function PermissionsContent() {
   const [search, setSearch] = useState("")
   const { data: permissions, isLoading, error, refetch } = usePermissions()
   const apiError = getApiError(error)

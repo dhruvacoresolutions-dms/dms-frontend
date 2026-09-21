@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useRole } from "@/features/roles/hooks/use-role"
 import { RolePermissionsManager } from "@/features/roles/components/RolePermissionsManager"
 
@@ -23,7 +25,8 @@ export default function RolePermissionsPage() {
   if (!role) return <ErrorState message="Role not found" />
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <RouteGate permission={PERMISSIONS.ROLE.PERMISSION_ASSIGN}>
+      <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title={`Manage Permissions: ${role.name}`}
         description="Saving replaces all current permissions for this role."
@@ -39,5 +42,6 @@ export default function RolePermissionsPage() {
         role={role}
       />
     </div>
+    </RouteGate>
   )
 }

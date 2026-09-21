@@ -10,6 +10,7 @@ import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
 
 export function AppBootstrap({ children }: { children: React.ReactNode }) {
   const setAccess = useAccessStore((state) => state.setAccess)
+  const setAccessError = useAccessStore((state) => state.setAccessError)
   const storedAccess = useAccessStore((state) => state.access)
   const session = useAuthStore((s) => s.session)
   const roles = session?.user?.roles ?? []
@@ -30,11 +31,14 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (currentAccessQuery.data) {
       setAccess(currentAccessQuery.data)
+    } else if (currentAccessQuery.isError) {
+      // Fail open: gates render content and backend APIs still enforce.
+      setAccessError()
     }
-  }, [currentAccessQuery.data, setAccess])
+  }, [currentAccessQuery.data, currentAccessQuery.isError, setAccess, setAccessError])
 
   // Role-based route guard:
-  // - PLATFORM_ADMINISTRATOR may only access /companies (and /profile); redirect others to /companies
+  // - PLATFORM_ADMINISTRATOR may only access /companies (and /profile, /forbidden); redirect others to /companies
   // - Non-admin may not access /companies; redirect to /dashboard
   useEffect(() => {
     if (!session) return
@@ -43,6 +47,7 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
     const isAllowedForAdmin =
       isCompaniesRoute ||
       pathname.startsWith("/profile") ||
+      pathname.startsWith("/forbidden") ||
       pathname.startsWith("/auth")
     if (isPlatformAdmin && !isAllowedForAdmin) {
       // Allow dashboard? Spec says only Companies visible for admin, so redirect even dashboard to companies

@@ -10,8 +10,18 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { usePermissionMatrix } from "@/features/permissions/hooks/use-permission-matrix"
 import { PermissionMatrixTable } from "@/features/permissions/components/PermissionMatrixTable"
 import { getApiError } from "@/lib/api/api-error"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 
 export default function PermissionMatrixPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.PERMISSION.VIEW}>
+      <PermissionMatrixContent />
+    </RouteGate>
+  )
+}
+
+function PermissionMatrixContent() {
   const [search, setSearch] = useState("")
   const { data: matrix, isLoading, error, refetch } = usePermissionMatrix()
   const apiError = getApiError(error)

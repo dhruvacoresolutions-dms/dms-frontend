@@ -30,10 +30,21 @@ import { useDesignations } from "@/features/designations/hooks/use-designations"
 import { useUpdateDesignationStatus } from "@/features/designations/hooks/use-update-designation-status"
 import { DesignationFormDialog } from "@/features/designations/components/DesignationFormDialog"
 import { DesignationBulkUploadDialog } from "@/features/designations/components/DesignationBulkUploadDialog"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function DesignationsPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.DESIGNATION.VIEW}>
+      <DesignationsContent />
+    </RouteGate>
+  )
+}
+
+function DesignationsContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
@@ -63,13 +74,17 @@ export default function DesignationsPage() {
         description="Manage job designations"
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setBulkOpen(true)}>
-              <Upload className="mr-2 size-4" />
-              Bulk Upload
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" /> Create Designation
-            </Button>
+            <PermissionGate permission={PERMISSIONS.DESIGNATION.IMPORT}>
+              <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                <Upload className="mr-2 size-4" />
+                Bulk Upload
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.DESIGNATION.CREATE}>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" /> Create Designation
+              </Button>
+            </PermissionGate>
           </div>
         }
       />
@@ -129,25 +144,28 @@ export default function DesignationsPage() {
                           align="end"
                           className="w-auto min-w-40"
                         >
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setEditingUuid(d.publicId ?? d.designationUuid)
-                            }
-                          >
-                            <Pencil className="mr-2 size-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant={
-                              d.status === "ACTIVE" ? "destructive" : "default"
-                            }
-                            onClick={() =>
-                              setStatusToggle({
-                                uuid: d.publicId ?? d.designationUuid,
-                                currentStatus: d.status,
-                              })
-                            }
-                          >
+                          <PermissionGate permission={PERMISSIONS.DESIGNATION.UPDATE}>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setEditingUuid(d.publicId ?? d.designationUuid)
+                              }
+                            >
+                              <Pencil className="mr-2 size-4" /> Edit
+                            </DropdownMenuItem>
+                          </PermissionGate>
+                          <PermissionGate permission={PERMISSIONS.DESIGNATION.UPDATE}>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant={
+                                d.status === "ACTIVE" ? "destructive" : "default"
+                              }
+                              onClick={() =>
+                                setStatusToggle({
+                                  uuid: d.publicId ?? d.designationUuid,
+                                  currentStatus: d.status,
+                                })
+                              }
+                            >
                             {d.status === "ACTIVE" ? (
                               <>
                                 <ToggleLeft className="mr-2 size-4" />{" "}
@@ -159,6 +177,7 @@ export default function DesignationsPage() {
                               </>
                             )}
                           </DropdownMenuItem>
+                          </PermissionGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

@@ -12,6 +12,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
 import { companiesNav, mainNav, navGroups } from "@/configs/components/sidebar"
+import { useFilteredMainNav, useFilteredNavGroups } from "@/hooks/use-filtered-nav"
 import { useAuthStore } from "@/stores/auth-store"
 import { cn } from "@/lib/utils"
 import type { MainNav, NavGroup } from "@/types/components/sidebar"
@@ -55,8 +56,10 @@ export function TopNavBar() {
   const isPlatformAdmin = useAuthStore(
     (s) => s.session?.user?.roles.includes("PLATFORM_ADMINISTRATOR") ?? false
   )
-  const visibleNav = isPlatformAdmin ? companiesNav : mainNav
-  const visibleGroups: NavGroup[] = isPlatformAdmin ? [] : navGroups
+  const filteredNav = useFilteredMainNav(mainNav)
+  const filteredGroups = useFilteredNavGroups(navGroups)
+  const visibleNav = isPlatformAdmin ? companiesNav : filteredNav
+  const visibleGroups: NavGroup[] = isPlatformAdmin ? [] : filteredGroups
   const activeUrl = getActiveUrl(pathname, visibleNav, visibleGroups)
 
   return (

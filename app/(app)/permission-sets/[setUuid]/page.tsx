@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { usePermissionSet } from "@/features/permission-sets/hooks/use-permission-set"
 import { PermissionSetInfoCard } from "@/features/permission-sets/components/PermissionSetInfoCard"
 import { PermissionSetPermissionsCard } from "@/features/permission-sets/components/PermissionSetPermissionsCard"
@@ -25,35 +28,40 @@ export default function PermissionSetDetailPage() {
   if (!set) return <ErrorState message="Permission set not found" />
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
-        title={set.name}
-        description={`Code: ${set.code}`}
-        action={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href="/permission-sets" />}
-            >
-              <ArrowLeft className="mr-2 size-4" /> Back
-            </Button>
-            <Button
-              nativeButton={false}
-              render={<Link href={`/permission-sets/${setUuid}/edit`} />}
-            >
-              <Edit className="mr-2 size-4" /> Edit
-            </Button>
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href={`/permission-sets/${setUuid}/permissions`} />}
-            >
-              <Key className="mr-2 size-4" /> Manage Permissions
-            </Button>
-          </div>
-        }
-      />
+    <RouteGate permission={PERMISSIONS.PERMISSION_SET.VIEW}>
+      <div className="flex flex-1 flex-col gap-4">
+        <PageHeader
+          title={set.name}
+          description={`Code: ${set.code}`}
+          action={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/permission-sets" />}
+              >
+                <ArrowLeft className="mr-2 size-4" /> Back
+              </Button>
+              <PermissionGate permission={PERMISSIONS.PERMISSION_SET.UPDATE}>
+                <Button
+                  nativeButton={false}
+                  render={<Link href={`/permission-sets/${setUuid}/edit`} />}
+                >
+                  <Edit className="mr-2 size-4" /> Edit
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission={PERMISSIONS.PERMISSION_SET.UPDATE}>
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={<Link href={`/permission-sets/${setUuid}/permissions`} />}
+                >
+                  <Key className="mr-2 size-4" /> Manage Permissions
+                </Button>
+              </PermissionGate>
+            </div>
+          }
+        />
 
       <div className="grid gap-4 md:grid-cols-2">
         <PermissionSetInfoCard set={set} />
@@ -62,5 +70,6 @@ export default function PermissionSetDetailPage() {
         />
       </div>
     </div>
+    </RouteGate>
   )
 }

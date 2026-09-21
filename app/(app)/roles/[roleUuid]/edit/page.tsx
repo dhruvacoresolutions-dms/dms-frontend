@@ -5,6 +5,8 @@ import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useRole } from "@/features/roles/hooks/use-role"
 import { RoleEditForm } from "@/features/roles/components/RoleEditForm"
 
@@ -20,14 +22,16 @@ export default function EditRolePage() {
   if (!role) return <ErrorState message="Role not found" />
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <PageHeader title="Edit Role" description={`Editing ${role.name} (${role.code})`} />
-      <RoleEditForm
-        companyUuid={companyUuid}
-        roleUuid={roleUuid}
-        role={role}
-        onSuccessPath={`/roles/${roleUuid}`}
-      />
-    </div>
+    <RouteGate permission={PERMISSIONS.ROLE.UPDATE}>
+      <div className="flex flex-1 flex-col gap-4">
+        <PageHeader title="Edit Role" description={`Editing ${role.name} (${role.code})`} />
+        <RoleEditForm
+          companyUuid={companyUuid}
+          roleUuid={roleUuid}
+          role={role}
+          onSuccessPath={`/roles/${roleUuid}`}
+        />
+      </div>
+    </RouteGate>
   )
 }

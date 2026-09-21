@@ -3,6 +3,8 @@
 import { useParams } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useEmployee } from "@/features/employees/hooks/use-employee"
 import { EmployeeEditForm } from "@/features/employees/components/EmployeeEditForm"
 
@@ -13,7 +15,8 @@ export default function EditEmployeePage() {
   const { data: employee } = useEmployee(companyUuid, employeeUuid)
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <RouteGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+      <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Edit Employee"
         description={
@@ -28,5 +31,6 @@ export default function EditEmployeePage() {
         redirectTo={`/employees/${employeeUuid}`}
       />
     </div>
+    </RouteGate>
   )
 }
