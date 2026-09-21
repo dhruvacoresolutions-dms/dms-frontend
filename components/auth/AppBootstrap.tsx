@@ -6,9 +6,11 @@ import { useAccessStore } from "@/stores/access-store"
 import { useCurrentAccess } from "@/features/auth/hooks/use-current-access"
 import { useSessionExpiry } from "@/features/auth/hooks/use-session-expiry"
 import { useAuthStore } from "@/stores/auth-store"
+import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
 
 export function AppBootstrap({ children }: { children: React.ReactNode }) {
   const setAccess = useAccessStore((state) => state.setAccess)
+  const storedAccess = useAccessStore((state) => state.access)
   const session = useAuthStore((s) => s.session)
   const roles = session?.user?.roles ?? []
   const isPlatformAdmin = roles.includes("PLATFORM_ADMINISTRATOR")
@@ -51,6 +53,20 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
       router.replace("/dashboard")
     }
   }, [session, isPlatformAdmin, pathname, router])
+
+  // Hold the app behind a loading screen until the user's permissions are
+  // resolved (fresh login lands here before the access fetch completes, and
+  // page refreshes need to rehydrate access). On access error we still render
+  // so a backend blip doesn't lock the user out.
+  const isResolvingAccess =
+    !!session &&
+    !storedAccess &&
+    !currentAccessQuery.data &&
+    currentAccessQuery.isLoading
+
+  if (isResolvingAccess) {
+    return <AuthLoadingScreen />
+  }
 
   return <>{children}</>
 }

@@ -10,6 +10,8 @@ export type User = {
   companyUuid: string | null
   companyCode: string | null
   roles: string[]
+  /** Present for company users linked to an employee record. */
+  employeeUuid?: string | null
 }
 
 export type AuthSession = {
