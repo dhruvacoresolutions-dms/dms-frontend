@@ -54,7 +54,9 @@ export function RouteGate({
   }, [shouldRedirect, redirectTo, router])
 
   if (accessStatus === "idle" || accessStatus === "loading") {
-    return <>{loadingFallback ?? <AuthLoadingScreen />}</>
+    // Refresh / navigation path: neutral "Loading..." copy — never the
+    // "Signing you in…" login copy.
+    return <>{loadingFallback ?? <AuthLoadingScreen variant="loading" />}</>
   }
 
   // Fail open when the access payload could not be loaded.

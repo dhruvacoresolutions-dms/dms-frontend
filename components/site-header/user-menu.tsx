@@ -16,11 +16,12 @@ import { LogOutIcon, UserIcon, KeyIcon, PaintbrushIcon } from "lucide-react"
 
 import { useAuthStore } from "@/stores/auth-store"
 import { useLogout } from "@/features/auth/hooks/use-logout"
+import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
 import { ThemeCustomizer } from "@/components/theme/theme-customizer"
 
 export function HeaderUserMenu() {
   const user = useAuthStore((state) => state.session?.user)
-  const { logout } = useLogout()
+  const { logout, isLoggingOut } = useLogout()
   const [themeOpen, setThemeOpen] = useState(false)
 
   const displayName = user?.displayName ?? "User"
@@ -32,6 +33,7 @@ export function HeaderUserMenu() {
 
   return (
     <>
+      {isLoggingOut && <AuthLoadingScreen variant="logout" />}
       <ThemeCustomizer open={themeOpen} onOpenChange={setThemeOpen} />
       <DropdownMenu>
       <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">

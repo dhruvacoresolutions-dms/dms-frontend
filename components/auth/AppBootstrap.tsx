@@ -70,7 +70,9 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
     currentAccessQuery.isLoading
 
   if (isResolvingAccess) {
-    return <AuthLoadingScreen />
+    // Refresh / rehydration path: neutral "Loading..." copy — never the
+    // "Signing you in…" login copy.
+    return <AuthLoadingScreen variant="loading" />
   }
 
   return <>{children}</>

@@ -48,7 +48,7 @@ export function LoginForm() {
 
   return (
     <>
-      {isLoadingPermissions && <AuthLoadingScreen />}
+      {isLoadingPermissions && <AuthLoadingScreen variant="login" />}
       <form
         className="flex flex-col gap-7"
         onSubmit={handleSubmit((values) =>

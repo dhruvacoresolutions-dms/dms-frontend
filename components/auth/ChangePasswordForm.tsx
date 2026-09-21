@@ -18,12 +18,13 @@ import {
 } from "@/lib/validations/auth"
 import { useChangePassword } from "@/features/auth/hooks/use-change-password"
 import { useLogout } from "@/features/auth/hooks/use-logout"
+import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 
 const PASSWORD_FIELDS = ["currentPassword", "newPassword", "confirmPassword"] as const
 
 export function ChangePasswordForm() {
-  const { logout } = useLogout()
+  const { logout, isLoggingOut } = useLogout()
   const changePasswordMutation = useChangePassword()
 
   const {
@@ -41,6 +42,8 @@ export function ChangePasswordForm() {
   })
 
   return (
+    <>
+      {isLoggingOut && <AuthLoadingScreen variant="logout" />}
     <form
       className="flex flex-col gap-6"
       onSubmit={handleSubmit((values) =>
@@ -129,5 +132,6 @@ export function ChangePasswordForm() {
         </Field>
       </FieldGroup>
     </form>
+    </>
   )
 }
