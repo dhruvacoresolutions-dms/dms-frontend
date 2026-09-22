@@ -74,11 +74,6 @@ function GeographiesContent() {
         description="Manage geographical hierarchy"
         action={
           <div className="flex items-center gap-2">
-            <ExportDropdown
-              permission={PERMISSIONS.GEOGRAPHY.EXPORT}
-              baseFileName="geographies-export"
-              onExport={(format) => exportGeographies(companyUuid, format)}
-            />
             <PermissionGate permission={PERMISSIONS.GEOGRAPHY.IMPORT}>
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <Upload className="mr-2 size-4" />
@@ -100,6 +95,13 @@ function GeographiesContent() {
           defaultValue={search}
           onChange={(v) => { setSearch(v); setPage(0) }}
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ExportDropdown
+            permission={PERMISSIONS.GEOGRAPHY.EXPORT}
+            baseFileName="geographies-export"
+            onExport={(format) => exportGeographies(companyUuid, format)}
+          />
+        </div>
       </div>
 
       {isLoading ? <TableSkeleton rows={5} /> : error ? (

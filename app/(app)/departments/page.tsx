@@ -52,11 +52,6 @@ function DepartmentsContent() {
         description={DEPARTMENT_TEXTS.description}
         action={
           <div className="flex items-center gap-2">
-            <ExportDropdown
-              permission={PERMISSIONS.DEPARTMENT.EXPORT}
-              baseFileName="departments-export"
-              onExport={(format) => exportDepartments(companyUuid, format)}
-            />
             <PermissionGate permission={PERMISSIONS.DEPARTMENT.IMPORT}>
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <Upload className="mr-2 size-4" />
@@ -81,6 +76,13 @@ function DepartmentsContent() {
             setPage(0)
           }}
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ExportDropdown
+            permission={PERMISSIONS.DEPARTMENT.EXPORT}
+            baseFileName="departments-export"
+            onExport={(format) => exportDepartments(companyUuid, format)}
+          />
+        </div>
       </div>
 
       {isLoading ? (

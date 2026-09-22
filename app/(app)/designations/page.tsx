@@ -76,11 +76,6 @@ function DesignationsContent() {
         description="Manage job designations"
         action={
           <div className="flex items-center gap-2">
-            <ExportDropdown
-              permission={PERMISSIONS.DESIGNATION.EXPORT}
-              baseFileName="designations-export"
-              onExport={(format) => exportDesignations(companyUuid, format)}
-            />
             <PermissionGate permission={PERMISSIONS.DESIGNATION.IMPORT}>
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <Upload className="mr-2 size-4" />
@@ -105,6 +100,13 @@ function DesignationsContent() {
             setPage(0)
           }}
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ExportDropdown
+            permission={PERMISSIONS.DESIGNATION.EXPORT}
+            baseFileName="designations-export"
+            onExport={(format) => exportDesignations(companyUuid, format)}
+          />
+        </div>
       </div>
 
       {isLoading ? (
