@@ -342,6 +342,48 @@ export async function getEmployeeGeographyImportResultsCsv(companyUuid: string, 
   return data
 }
 
+// ── Master Data Export ───────────────────────────────────────────────────────
+// Backend (Master Data Export folder):
+//   GET /api/v1/companies/{companyUuid}/employees/export?format=csv|xlsx
+//     (requires EMPLOYEE_EXPORT)
+//   GET /api/v1/companies/{companyUuid}/employee-geography/export?format=csv|xlsx
+//     (requires EMPLOYEE_GEOGRAPHY_EXPORT)
+// Both return a file attachment (CSV text or XLSX binary).
+
+const employeeGeographyBaseUrl = (companyUuid: string) =>
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/employee-geography`
+
+export async function exportEmployees(
+  companyUuid: string,
+  format: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
+    headers: { "X-Company-Context": resolved },
+    params: { format },
+    responseType: "blob",
+    timeout: 60_000,
+  })
+  return data
+}
+
+export async function exportEmployeeGeography(
+  companyUuid: string,
+  format: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${employeeGeographyBaseUrl(companyUuid)}/export`,
+    {
+      headers: { "X-Company-Context": resolved },
+      params: { format },
+      responseType: "blob",
+      timeout: 60_000,
+    }
+  )
+  return data
+}
+
 // ── Employee Login Management ─────────────────────────────────────────────
 
 export async function getEmployeeLoginStatus(

@@ -67,6 +67,11 @@ import { useEmployeeCreationGate } from "@/features/employees/hooks/use-employee
 import { CreationGate } from "@/features/employees/components/CreationGate"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { ExportDropdown } from "@/components/common/ExportDropdown"
+import {
+  exportEmployees,
+  exportEmployeeGeography,
+} from "@/features/employees/api/employee.api"
 import { PERMISSIONS } from "@/lib/permissions"
 import { usePermission } from "@/hooks/use-permission"
 import { toast } from "sonner"
@@ -172,6 +177,19 @@ function EmployeesContent() {
         description="Manage company employees"
         action={
           <div className="flex items-center gap-2">
+            <ExportDropdown
+              permission={PERMISSIONS.EMPLOYEE.EXPORT}
+              baseFileName="employees-export"
+              onExport={(format) => exportEmployees(companyUuid, format)}
+            />
+            <ExportDropdown
+              permission={PERMISSIONS.EMPLOYEE.GEOGRAPHY_EXPORT}
+              baseFileName="employee-geography-export"
+              label="Export Mapping"
+              onExport={(format) =>
+                exportEmployeeGeography(companyUuid, format)
+              }
+            />
             <PermissionGate permission={PERMISSIONS.EMPLOYEE.IMPORT}>
               <CreationGate message={creationGate.message}>
                 <Button

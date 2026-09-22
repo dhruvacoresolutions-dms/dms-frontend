@@ -131,3 +131,22 @@ export async function getDepartmentImportResultsCsv(companyUuid: string, jobUuid
   )
   return data
 }
+
+// ── Master Data Export ───────────────────────────────────────────────────────
+// Backend: GET /api/v1/companies/{companyUuid}/departments/export?format=csv|xlsx
+// (Master Data Export folder). Requires DEPARTMENT_EXPORT. Returns a file
+// attachment (CSV text or XLSX binary).
+
+export async function exportDepartments(
+  companyUuid: string,
+  format: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
+    headers: { "X-Company-Context": resolved },
+    params: { format },
+    responseType: "blob",
+    timeout: 60_000,
+  })
+  return data
+}

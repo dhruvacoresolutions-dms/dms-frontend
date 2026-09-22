@@ -164,3 +164,22 @@ export async function getDesignationImportResultsCsv(companyUuid: string, jobUui
   )
   return data
 }
+
+// ── Master Data Export ───────────────────────────────────────────────────────
+// Backend: GET /api/v1/companies/{companyUuid}/designations/export?format=csv|xlsx
+// (Master Data Export folder). Requires DESIGNATION_EXPORT. Returns a file
+// attachment (CSV text or XLSX binary).
+
+export async function exportDesignations(
+  companyUuid: string,
+  format: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
+    headers: { "X-Company-Context": resolved },
+    params: { format },
+    responseType: "blob",
+    timeout: 60_000,
+  })
+  return data
+}

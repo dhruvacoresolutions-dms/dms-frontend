@@ -32,6 +32,8 @@ import { DesignationFormDialog } from "@/features/designations/components/Design
 import { DesignationBulkUploadDialog } from "@/features/designations/components/DesignationBulkUploadDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { ExportDropdown } from "@/components/common/ExportDropdown"
+import { exportDesignations } from "@/features/designations/api/designation.api"
 import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -74,6 +76,11 @@ function DesignationsContent() {
         description="Manage job designations"
         action={
           <div className="flex items-center gap-2">
+            <ExportDropdown
+              permission={PERMISSIONS.DESIGNATION.EXPORT}
+              baseFileName="designations-export"
+              onExport={(format) => exportDesignations(companyUuid, format)}
+            />
             <PermissionGate permission={PERMISSIONS.DESIGNATION.IMPORT}>
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <Upload className="mr-2 size-4" />
