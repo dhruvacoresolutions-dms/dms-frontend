@@ -51,7 +51,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -315,10 +314,10 @@ function EmployeesContent() {
                   )}
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Designation</TableHead>
+                  <TableHead>Reporting Manager</TableHead>
+                  <TableHead>Mobile Number</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Login</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -337,25 +336,31 @@ function EmployeesContent() {
                     <TableCell className="font-mono text-sm">
                       {emp.employeeCode}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {emp.firstName} {emp.lastName}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          {emp.firstName} {emp.lastName}
+                          {emp.loginStatus === "ACTIVE" && (
+                            <span title="Login enabled">
+                              <KeyRound
+                                className="size-3.5 text-green-600 dark:text-green-400"
+                                aria-label="Login enabled"
+                              />
+                            </span>
+                          )}
+                        </span>
+                        {emp.email && (
+                          <span className="text-xs text-muted-foreground">
+                            {emp.email}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell>{emp.email}</TableCell>
                     <TableCell>{emp.designationName ?? "-"}</TableCell>
+                    <TableCell>{emp.reportsToEmployeeName ?? "-"}</TableCell>
+                    <TableCell>{emp.mobile ?? "-"}</TableCell>
                     <TableCell>
                       <StatusBadge status={emp.status} />
-                    </TableCell>
-                    <TableCell>
-                      {emp.loginStatus === "ACTIVE" ? (
-                        <Badge
-                          variant="outline"
-                          className="border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300"
-                        >
-                          <KeyRound className="mr-1 size-3" /> Enabled
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
