@@ -33,6 +33,8 @@ import { GeographyFormDialog } from "@/features/geographies/components/Geography
 import { GeographyBulkUploadDialog } from "@/features/geographies/components/GeographyBulkUploadDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { ExportDropdown } from "@/components/common/ExportDropdown"
+import { exportGeographies } from "@/features/geographies/api/geography.api"
 import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -93,6 +95,13 @@ function GeographiesContent() {
           defaultValue={search}
           onChange={(v) => { setSearch(v); setPage(0) }}
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ExportDropdown
+            permission={PERMISSIONS.GEOGRAPHY.EXPORT}
+            baseFileName="geographies-export"
+            onExport={(format) => exportGeographies(companyUuid, format)}
+          />
+        </div>
       </div>
 
       {isLoading ? <TableSkeleton rows={5} /> : error ? (

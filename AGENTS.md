@@ -204,3 +204,92 @@ export function ProductList() {
 - Auth session: `useAuthStore` from `@/stores/auth-store`
 - Session cookies: `setSessionCookie`, `clearSessionCookie` from `@/lib/session`
 <!-- END:feature-architecture-rules -->
+
+<!-- BEGIN:permission-gate-rules -->
+# Permission Gate Rules (MANDATORY for every new feature)
+
+Backend `GET /api/v1/me/access` is the authorization source of truth. Frontend gates are UX-only (hide/disable/guidance) — they never replace backend enforcement. Every new page / dialog / action MUST be gated.
+
+## Mandatory imports (never hardcode strings)
+
+- `PERMISSIONS` catalog from `@/lib/permissions` (exact backend codes, e.g. `PERMISSIONS.USER.VIEW`)
+- `RouteGate` from `@/components/auth/RouteGate` — page-level guard
+- `PermissionGate` from `@/components/auth/PermissionGate` — button / row-action / tab / dialog guard
+- `usePermission()` from `@/hooks/use-permission` — only for conditional logic / `disabled` props that can't use a wrapper
+
+If the module's codes are missing from `PERMISSIONS` (`lib/permissions/permissions.ts`), add them FIRST before building UI.
+
+## 1. Page-level gate (required on every route page)
+
+Split into `Page` (gate only) + `*Content` (data hooks + JSX) so denied users never fire queries, and there is never a forbidden flash:
+
+```tsx
+"use client"
+import { RouteGate } from "@/components/auth/RouteGate"
+import { PERMISSIONS } from "@/lib/permissions"
+
+export default function ProductsPage() {
+  return (
+    <RouteGate permission={PERMISSIONS.PRODUCT.VIEW}>
+      <ProductsContent />
+    </RouteGate>
+  )
+}
+```
+
+Sub-page mapping: `new` → `CREATE`, detail/`[id]` → `VIEW`, `edit` → `UPDATE`, assign-style pages → the relevant `*_ASSIGN` code (e.g. `ROLE.PERMISSION_ASSIGN`).
+
+## 2. Action-level gates (required wherever required)
+
+Gate every mutating / sensitive action. Standard mapping:
+
+| UI element | Gate with |
+|---|---|
+| Create button (+ empty-state CTA) | `*.CREATE` |
+| Row Edit / Edit tab / Manage dialog | `*.UPDATE` |
+| Row Delete | `*.DELETE` |
+| Status toggle (Active/Inactive) | `*.STATUS`, or `*.UPDATE` if no STATUS code exists |
+| Import / Export buttons | `*.IMPORT` / `*.EXPORT` |
+| Assign / permission-manage entry points | `*_ASSIGN` (e.g. `ROLE_PERMISSION_ASSIGN`) |
+
+```tsx
+import { PermissionGate } from "@/components/auth/PermissionGate"
+import { PERMISSIONS } from "@/lib/permissions"
+
+<PermissionGate permission={PERMISSIONS.PRODUCT.CREATE}>
+  <Button>Create Product</Button>
+</PermissionGate>
+
+<PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+  <DropdownMenuItem>Edit</DropdownMenuItem>
+</PermissionGate>
+```
+
+Rules:
+- Default `mode="hidden"` (renders `fallback`, default `null`). Use `mode="disabled" + disabledReason` only when the control must stay visible for discoverability (e.g. Export).
+- Do NOT re-gate plain "View" links inside a page already guarded by `*.VIEW`.
+- `PermissionGate` must wrap each gated `DropdownMenuItem` individually (see `app/(app)/users/page.tsx` pattern), not the whole menu.
+- For multi-code cases use `permissions={[...]} require="any"|"all"`. For non-wrapper logic use `const { can } = usePermission()` + `can("MODULE", "ACTION")`.
+- Never pass raw strings when a `PERMISSIONS.*` constant exists.
+
+## 3. Sidebar (required for new nav items)
+
+Add `permission: PERMISSIONS.<MODULE>.VIEW` to every new item in `configs/components/sidebar/index.ts`. Nav filters automatically (hidden + empty-parent pruning, fail-open on access-fetch error).
+
+## 4. Post-mutation refresh
+
+After any grant/revoke/assign mutation, call `refreshCurrentAccess()` from `features/auth/api/auth.api.ts` so the session picks up changes without re-login.
+
+## New-module checklist (do all of these)
+
+1. Add backend-confirmed codes to `PERMISSIONS`.
+2. List page: `RouteGate(VIEW)` + gates for Create / Edit / Delete / Status / Import / Export / bulk actions.
+3. Sub-pages (`new` / detail / `edit` / assign) gated per mapping above.
+4. Sidebar item(s) with `permission`.
+5. Full details: `docs/permission-gate.md`.
+
+## Behavior notes
+
+- Loading → loader/`loadingFallback`, never forbidden UI. Access-fetch error → fail open (render children); backend still enforces.
+- Deny-by-default: missing requirement / empty grants / unknown codes all deny.
+<!-- END:permission-gate-rules -->

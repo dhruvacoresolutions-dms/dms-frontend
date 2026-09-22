@@ -144,3 +144,22 @@ export async function getGeographyImportResultsCsv(companyUuid: string, jobUuid:
   )
   return data
 }
+
+// ── Master Data Export ───────────────────────────────────────────────────────
+// Backend: GET /api/v1/companies/{companyUuid}/geographies/export?format=csv|xlsx
+// (Master Data Export folder). Requires GEOGRAPHY_EXPORT. Returns a file
+// attachment (CSV text or XLSX binary).
+
+export async function exportGeographies(
+  companyUuid: string,
+  format: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
+    headers: { "X-Company-Context": resolved },
+    params: { format },
+    responseType: "blob",
+    timeout: 60_000,
+  })
+  return data
+}

@@ -136,7 +136,7 @@ function UsersContent() {
                   <TableHead>Username</TableHead>
                   <TableHead>Display Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Login Status</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>

@@ -16,6 +16,8 @@ import { DepartmentBulkUploadDialog } from "@/features/departments/components/De
 import { DEPARTMENT_PAGE_SIZE, DEPARTMENT_TEXTS } from "@/features/departments/configs/department.config"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { ExportDropdown } from "@/components/common/ExportDropdown"
+import { exportDepartments } from "@/features/departments/api/department.api"
 import { PERMISSIONS } from "@/lib/permissions"
 
 export default function DepartmentsPage() {
@@ -74,6 +76,13 @@ function DepartmentsContent() {
             setPage(0)
           }}
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ExportDropdown
+            permission={PERMISSIONS.DEPARTMENT.EXPORT}
+            baseFileName="departments-export"
+            onExport={(format) => exportDepartments(companyUuid, format)}
+          />
+        </div>
       </div>
 
       {isLoading ? (

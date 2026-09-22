@@ -32,6 +32,8 @@ import { DesignationFormDialog } from "@/features/designations/components/Design
 import { DesignationBulkUploadDialog } from "@/features/designations/components/DesignationBulkUploadDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { ExportDropdown } from "@/components/common/ExportDropdown"
+import { exportDesignations } from "@/features/designations/api/designation.api"
 import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -98,6 +100,13 @@ function DesignationsContent() {
             setPage(0)
           }}
         />
+        <div className="ml-auto flex items-center gap-2">
+          <ExportDropdown
+            permission={PERMISSIONS.DESIGNATION.EXPORT}
+            baseFileName="designations-export"
+            onExport={(format) => exportDesignations(companyUuid, format)}
+          />
+        </div>
       </div>
 
       {isLoading ? (

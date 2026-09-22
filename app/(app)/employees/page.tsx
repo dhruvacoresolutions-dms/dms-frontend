@@ -51,7 +51,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -67,6 +66,11 @@ import { useEmployeeCreationGate } from "@/features/employees/hooks/use-employee
 import { CreationGate } from "@/features/employees/components/CreationGate"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { ExportDropdown } from "@/components/common/ExportDropdown"
+import {
+  exportEmployees,
+  exportEmployeeGeography,
+} from "@/features/employees/api/employee.api"
 import { PERMISSIONS } from "@/lib/permissions"
 import { usePermission } from "@/hooks/use-permission"
 import { toast } from "sonner"
@@ -185,7 +189,9 @@ function EmployeesContent() {
               </CreationGate>
             </PermissionGate>
             {hasEmployees && (
-              <PermissionGate permission={PERMISSIONS.EMPLOYEE.GEOGRAPHY_IMPORT}>
+              <PermissionGate
+                permission={PERMISSIONS.EMPLOYEE.GEOGRAPHY_IMPORT}
+              >
                 <Button variant="outline" onClick={() => setGeoBulkOpen(true)}>
                   <Upload className="mr-2 size-4" />
                   Geography Upload
@@ -234,14 +240,29 @@ function EmployeesContent() {
           setPage(0)
         }}
         action={
-          <EmployeeBulkActionDropdown
-            companyUuid={companyUuid}
-            selected={selected}
-            onComplete={() => {
-              refetch()
-              setSelected([])
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <EmployeeBulkActionDropdown
+              companyUuid={companyUuid}
+              selected={selected}
+              onComplete={() => {
+                refetch()
+                setSelected([])
+              }}
+            />
+            <ExportDropdown
+              permission={PERMISSIONS.EMPLOYEE.EXPORT}
+              baseFileName="employee-geography-export"
+              label="Geography Export"
+              onExport={(format) =>
+                exportEmployeeGeography(companyUuid, format)
+              }
+            />{" "}
+            <ExportDropdown
+              permission={PERMISSIONS.EMPLOYEE.EXPORT}
+              baseFileName="employees-export"
+              onExport={(format) => exportEmployees(companyUuid, format)}
+            />
+          </div>
         }
       />
 
@@ -293,10 +314,10 @@ function EmployeesContent() {
                   )}
                   <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Designation</TableHead>
+                  <TableHead>Reporting Manager</TableHead>
+                  <TableHead>Mobile Number</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Login</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -315,22 +336,31 @@ function EmployeesContent() {
                     <TableCell className="font-mono text-sm">
                       {emp.employeeCode}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {emp.firstName} {emp.lastName}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          {emp.firstName} {emp.lastName}
+                          {emp.loginStatus === "ACTIVE" && (
+                            <span title="Login enabled">
+                              <KeyRound
+                                className="size-3.5 text-green-600 dark:text-green-400"
+                                aria-label="Login enabled"
+                              />
+                            </span>
+                          )}
+                        </span>
+                        {emp.email && (
+                          <span className="text-xs text-muted-foreground">
+                            {emp.email}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell>{emp.email}</TableCell>
                     <TableCell>{emp.designationName ?? "-"}</TableCell>
+                    <TableCell>{emp.reportsToEmployeeName ?? "-"}</TableCell>
+                    <TableCell>{emp.mobile ?? "-"}</TableCell>
                     <TableCell>
                       <StatusBadge status={emp.status} />
-                    </TableCell>
-                    <TableCell>
-                      {emp.loginStatus === "ACTIVE" ? (
-                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-                          <KeyRound className="mr-1 size-3" /> Enabled
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -348,16 +378,22 @@ function EmployeesContent() {
                           >
                             <Eye className="mr-2 size-4" /> View
                           </DropdownMenuItem>
-                          <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+                          <PermissionGate
+                            permission={PERMISSIONS.EMPLOYEE.UPDATE}
+                          >
                             <DropdownMenuItem
                               onClick={() => {
-                                router.push(`/employees/${emp.employeeUuid}/edit`)
+                                router.push(
+                                  `/employees/${emp.employeeUuid}/edit`
+                                )
                               }}
                             >
                               <Edit className="mr-2 size-4" /> Edit
                             </DropdownMenuItem>
                           </PermissionGate>
-                          <PermissionGate permission={PERMISSIONS.EMPLOYEE.LOGIN_MANAGE}>
+                          <PermissionGate
+                            permission={PERMISSIONS.EMPLOYEE.LOGIN_MANAGE}
+                          >
                             <DropdownMenuSeparator />
                             {emp.loginStatus === "ACTIVE" ? (
                               <DropdownMenuItem
@@ -374,11 +410,14 @@ function EmployeesContent() {
                                   setLoginEnable(emp)
                                 }}
                               >
-                                <KeyRound className="mr-2 size-4" /> Enable Login
+                                <KeyRound className="mr-2 size-4" /> Enable
+                                Login
                               </DropdownMenuItem>
                             )}
                           </PermissionGate>
-                          <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+                          <PermissionGate
+                            permission={PERMISSIONS.EMPLOYEE.UPDATE}
+                          >
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant={
@@ -393,17 +432,18 @@ function EmployeesContent() {
                                 })
                               }}
                             >
-                            {emp.status === "ACTIVE" ? (
-                              <>
-                                <ToggleLeft className="mr-2 size-4" />{" "}
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <ToggleRight className="mr-2 size-4" /> Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
+                              {emp.status === "ACTIVE" ? (
+                                <>
+                                  <ToggleLeft className="mr-2 size-4" />{" "}
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleRight className="mr-2 size-4" />{" "}
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
                           </PermissionGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -538,7 +578,8 @@ function EmployeesContent() {
                       toast.success(
                         `Login enabled${data.username ? ` — ${data.username}` : ""}`
                       )
-                      const label = `${loginEnable.firstName} ${loginEnable.lastName}`.trim()
+                      const label =
+                        `${loginEnable.firstName} ${loginEnable.lastName}`.trim()
                       setLoginCredentials({
                         ...data,
                         employeeLabel: label
