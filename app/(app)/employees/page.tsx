@@ -260,7 +260,14 @@ function EmployeesContent() {
             <ExportDropdown
               permission={PERMISSIONS.EMPLOYEE.EXPORT}
               baseFileName="employees-export"
-              onExport={(format) => exportEmployees(companyUuid, format)}
+              onExport={(format) =>
+                exportEmployees(companyUuid, format, {
+                  search: search || undefined,
+                  status:
+                    statusFilter === "ALL" ? undefined : statusFilter,
+                  designationUuid: designationFilter ?? undefined,
+                })
+              }
             />
           </div>
         }
