@@ -76,18 +76,21 @@ export function CollapsedNavPopup({
             side="right"
             align="start"
             sideOffset={10}
-            className="min-w-48"
+            className="min-w-48 border-sidebar-border bg-sidebar text-sidebar-foreground"
             onMouseEnter={openMenu}
             onMouseLeave={scheduleClose}
           >
             <DropdownMenuGroup className="flex flex-col gap-1">
-              <DropdownMenuLabel>{title}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-sidebar-foreground/70">{title}</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-sidebar-border" />
               {links.map((link) => (
                 <DropdownMenuItem
                   key={link.title}
                   render={<Link href={link.url} />}
-                  className={cn(link.active && "bg-accent font-medium")}
+                  className={cn(
+                    "focus:bg-sidebar-accent focus:text-sidebar-accent-foreground",
+                    link.active && "bg-sidebar-active font-medium text-sidebar-active-foreground"
+                  )}
                 >
                   <span>{link.title}</span>
                 </DropdownMenuItem>

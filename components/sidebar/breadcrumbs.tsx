@@ -48,17 +48,18 @@ export function SidebarBreadcrumbs() {
   })
 
   return (
-    <Breadcrumb className="hidden sm:block">
-      <BreadcrumbList>
+    <Breadcrumb className="hidden text-topbar-foreground sm:block">
+      <BreadcrumbList className="text-topbar-foreground/60">
         {crumbs.map((crumb, index) => (
           <React.Fragment key={`${index}-${crumb.href}`}>
             <BreadcrumbItem>
               {crumb.isCurrent ? (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                <BreadcrumbPage className="text-topbar-foreground">{crumb.label}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink
                   render={<Link href={crumb.href} />}
                   href={crumb.href}
+                  className="text-topbar-foreground/60 hover:text-topbar-foreground"
                 >
                   {crumb.label}
                 </BreadcrumbLink>

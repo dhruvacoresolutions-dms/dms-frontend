@@ -79,7 +79,7 @@ export function NavMain({ items }: { items: MainNav }) {
 
   return (
     <SidebarGroup className="pt-2">
-      <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-primary [&>svg]:text-primary">
+      <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-sidebar-foreground/70 [&>svg]:text-sidebar-foreground/70">
         <LayoutDashboard className="size-3.5" />
         DMS
       </SidebarGroupLabel>

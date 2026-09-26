@@ -66,7 +66,7 @@ export function TopNavBar() {
     <nav
       className={cn(
         "sticky top-(--header-height) z-40 flex h-11 w-full items-center border-b",
-        "border-[var(--sidebar-border)] bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)]",
+        "border-sidebar-border bg-sidebar text-sidebar-foreground",
         "overflow-hidden"
       )}
     >
@@ -86,8 +86,8 @@ export function TopNavBar() {
                       className={cn(
                         "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium transition-colors",
                         directActive
-                          ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
-                          : "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]"
+                          ? "bg-sidebar-active text-sidebar-active-foreground"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       )}
                     >
                       {item.icon && <item.icon className="size-4" />}
@@ -102,7 +102,7 @@ export function TopNavBar() {
                   <NavigationMenuTrigger
                     className={cn(
                       "h-8 gap-1.5 rounded-md px-2.5 text-sm",
-                      "bg-transparent text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)] data-[state=open]:bg-[var(--sidebar-hover)]"
+                      "bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent"
                     )}
                   >
                     {item.icon && <item.icon className="size-4" />}
@@ -120,8 +120,8 @@ export function TopNavBar() {
                               className={cn(
                                 "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm",
                                 subActive
-                                  ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
-                                  : "hover:bg-muted"
+                                  ? "bg-sidebar-active text-sidebar-active-foreground"
+                                  : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                               )}
                             >
                               {sub.icon && <sub.icon className="size-4" />}
@@ -152,9 +152,9 @@ export function TopNavBar() {
                   <NavigationMenuTrigger
                     className={cn(
                       "h-8 gap-1.5 rounded-md px-2.5 text-sm",
-                      "bg-transparent text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)] data-[state=open]:bg-[var(--sidebar-hover)]",
+                      "bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent",
                       isGroupActive &&
-                        "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
+                        "bg-sidebar-active text-sidebar-active-foreground"
                     )}
                   >
                     {group.icon && <group.icon className="size-4" />}
@@ -174,8 +174,8 @@ export function TopNavBar() {
                                 className={cn(
                                   "flex items-center gap-2 rounded-md px-2.5 py-2 text-sm",
                                   subActive
-                                    ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
-                                    : "hover:bg-muted"
+                                    ? "bg-sidebar-active text-sidebar-active-foreground"
+                                    : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                 )}
                               >
                                 {sub.icon && <sub.icon className="size-4" />}
@@ -187,7 +187,7 @@ export function TopNavBar() {
                         // Nested sub-items (rare) — render with indent
                         return (
                           <li key={sub.title} className="grid gap-1">
-                            <div className="px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                            <div className="px-2.5 py-1 text-xs font-medium text-sidebar-foreground/70">
                               {sub.title}
                             </div>
                             {sub.items!.map((nested) => {
@@ -200,8 +200,8 @@ export function TopNavBar() {
                                   className={cn(
                                     "ml-2 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm",
                                     nestedActive
-                                      ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-foreground)]"
-                                      : "hover:bg-muted"
+                                      ? "bg-sidebar-active text-sidebar-active-foreground"
+                                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                   )}
                                 >
                                   {nested.icon && (

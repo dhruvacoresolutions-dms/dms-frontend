@@ -324,7 +324,7 @@ function SidebarInput({
     <Input
       data-slot="sidebar-input"
       data-sidebar="input"
-      className={cn("h-8 w-full bg-background shadow-none", className)}
+      className={cn("h-8 w-full bg-sidebar text-sidebar-foreground shadow-none", className)}
       {...props}
     />
   )
@@ -401,7 +401,7 @@ function SidebarGroupLabel({
     props: mergeProps<"div">(
       {
         className: cn(
-          "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-[11px] font-extrabold tracking-widest uppercase text-primary ring-sidebar-ring outline-hidden transition-[margin,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-primary [&>svg]:opacity-100",
+          "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-[11px] font-extrabold tracking-widest uppercase text-sidebar-foreground/70 ring-sidebar-ring outline-hidden transition-[margin,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-sidebar-foreground/70 [&>svg]:opacity-100",
           className
         ),
       },
@@ -482,7 +482,7 @@ const sidebarMenuButtonVariants = cva(
       variant: {
         default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]",
+          "bg-sidebar shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]",
       },
       size: {
         default: "h-9 text-sm",
@@ -551,7 +551,7 @@ function SidebarMenuButton({
           // Match the collapsed-nav dropdown popup surface; the arrow is the
           // only <div> child since sidebar tooltips always use string titles.
           // Decorative ring replaced with border: ring-1 ring-foreground/10
-          "rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-md [&>div]:hidden",
+          "rounded-lg border border-sidebar-border bg-sidebar px-3 py-1.5 text-sm font-medium text-sidebar-foreground shadow-md [&>div]:hidden",
           tooltip.className
         )}
       />

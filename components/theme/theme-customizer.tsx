@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Paintbrush, RotateCcw } from "lucide-react"
 import { useTheme as useNextTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
@@ -21,6 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ColorSetting } from "@/components/theme/color-setting"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox"
 import { useDynamicTheme } from "@/components/theme/dynamic-theme-provider"
 import { THEME_PRESETS } from "@/lib/theme/default-theme"
 import type { ThemeConfig } from "@/lib/theme/types"
@@ -31,6 +38,29 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
+
+/** Row of color circles previewing the accent colors a preset will apply. */
+function PresetSwatches({ theme }: { theme: ThemeConfig }) {
+  const colors = [
+    theme.primary.color,
+    theme.charts.chart1,
+    theme.charts.chart2,
+    theme.charts.chart3,
+    theme.charts.chart4,
+    theme.charts.chart5,
+  ]
+  return (
+    <span className="flex items-center gap-1">
+      {colors.map((color, i) => (
+        <span
+          key={i}
+          className="size-3 shrink-0 rounded-full border border-border"
+          style={{ backgroundColor: color }}
+        />
+      ))}
+    </span>
+  )
+}
 
 export function ThemeCustomizer({
   open,
@@ -160,40 +190,53 @@ export function ThemeCustomizer({
 
           <section className="space-y-3">
             <h3 className="text-sm font-semibold">Presets</h3>
-            <Select
-              value={currentPreset}
-              onValueChange={(id) => {
-                const preset = THEME_PRESETS.find((p) => p.id === id)
+            <Combobox
+              items={THEME_PRESETS}
+              value={selectedPreset}
+              onValueChange={(preset) => {
                 if (preset) previewTheme(preset.theme)
               }}
+              itemToStringLabel={(preset) => preset?.name ?? ""}
+              filter={null}
             >
-              <SelectTrigger className="w-full">
+              <ComboboxTrigger
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "w-full justify-between gap-2 font-normal"
+                )}
+              >
                 {selectedPreset ? (
-                  <span className="flex items-center gap-2">
-                    <span
-                      className="size-3 rounded-full"
-                      style={{ backgroundColor: selectedPreset.theme.primary.color }}
-                    />
-                    {selectedPreset.name}
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="truncate text-sm">{selectedPreset.name}</span>
+                    <span className="ml-auto">
+                      <PresetSwatches theme={selectedPreset.theme} />
+                    </span>
                   </span>
                 ) : (
-                  <span className="text-muted-foreground">Select a preset</span>
+                  <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">
+                    Select a preset
+                  </span>
                 )}
-              </SelectTrigger>
-              <SelectContent>
-                {THEME_PRESETS.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="size-3 rounded-full"
-                        style={{ backgroundColor: p.theme.primary.color }}
-                      />
-                      {p.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              </ComboboxTrigger>
+              <ComboboxContent>
+                <ComboboxList>
+                  {(preset: (typeof THEME_PRESETS)[number]) => (
+                    <ComboboxItem
+                      key={preset.id}
+                      value={preset}
+                      className="py-2"
+                    >
+                      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+                        <span className="truncate text-sm font-medium">
+                          {preset.name}
+                        </span>
+                        <PresetSwatches theme={preset.theme} />
+                      </span>
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </section>
 
           <Separator />
@@ -232,22 +275,6 @@ export function ThemeCustomizer({
                 set((p) => ({ ...p, primary: { color: hex } }))
               }
             />
-          </section>
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Charts</h3>
-            {(["chart1", "chart2", "chart3", "chart4", "chart5"] as const).map(
-              (key, i) => (
-                <ColorSetting
-                  key={key}
-                  label={`Chart Color ${i + 1}`}
-                  value={theme.charts[key]}
-                  onChange={(hex) =>
-                    set((p) => ({ ...p, charts: { ...p.charts, [key]: hex } }))
-                  }
-                />
-              )
-            )}
           </section>
         </div>
 

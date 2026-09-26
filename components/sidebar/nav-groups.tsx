@@ -83,7 +83,7 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
     <>
       {groups.map((group) => (
         <SidebarGroup key={group.label} className="pt-3">
-          <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-primary [&>svg]:text-primary">
+          <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-sidebar-foreground/70 [&>svg]:text-sidebar-foreground/70">
             {group.icon && <group.icon className="size-3.5" />}
             {group.label}
           </SidebarGroupLabel>

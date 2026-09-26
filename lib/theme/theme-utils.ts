@@ -2,9 +2,10 @@ import type { ThemeConfig } from "./types"
 import {
   adjustSaturation,
   hexToHsl,
-  hoverVariant,
   hslToHex,
+  hoverVariant,
   isDark,
+  isValidHex,
   mix,
   readableForeground,
   rotateHue,
@@ -25,6 +26,7 @@ export interface DerivedTheme {
   sidebarActive: string
   sidebarActiveForeground: string
   sidebarBorder: string
+  sidebarRing: string
 
   primary: string
   primaryForeground: string
@@ -59,11 +61,14 @@ export function deriveTheme(config: ThemeConfig): DerivedTheme {
     sidebarMutedForeground: mix(sidebarFg, sidebar, 0.35),
     sidebarHover: mix(sidebar, sidebarDark ? "#ffffff" : "#000000", 0.07),
     sidebarHoverForeground: sidebarFg,
-    sidebarActive: mix(sidebar, primary, sidebarDark ? 0.42 : 0.16),
+    // Sidebar must never react to primary changes — derive the active
+    // state purely from the sidebar background + its foreground.
+    sidebarActive: mix(sidebar, sidebarFg, sidebarDark ? 0.18 : 0.12),
     sidebarActiveForeground: readableForeground(
-      mix(sidebar, primary, sidebarDark ? 0.42 : 0.16)
+      mix(sidebar, sidebarFg, sidebarDark ? 0.18 : 0.12)
     ),
     sidebarBorder: mix(sidebar, sidebarDark ? "#ffffff" : "#000000", 0.12),
+    sidebarRing: mix(sidebar, sidebarFg, 0.35),
 
     primary,
     primaryForeground: readableForeground(primary),
@@ -100,12 +105,47 @@ function toDarkPrimaryVariant(hex: string): string {
   })
 }
 
-function toDarkChartVariant(hex: string): string {
-  if (!isDark(hex)) return hex
-  const hsl = hexToHsl(hex)
+function toDarkChartVariant(color: string): string {
+  // Chart colors are authored in globals.css (oklch) or per-preset (oklch).
+  // Hex-only transforms must never corrupt non-hex values — pass them through.
+  if (!isValidHex(color)) return color
+  if (!isDark(color)) return color
+  const hsl = hexToHsl(color)
   const brightened =
-    hsl.l < 0.35 ? hslToHex({ ...hsl, l: clamp(hsl.l + 0.14) }) : hex
+    hsl.l < 0.35 ? hslToHex({ ...hsl, l: clamp(hsl.l + 0.14) }) : color
   return adjustSaturation(brightened, 0.03)
+}
+
+/**
+ * Canonical chart palette for a preset.
+ *
+ * Source of truth priority:
+ *  1. Explicit `--chart-1..5` entries in `PRESET_CSS_VARS[presetId][mode]`
+ *     (e.g. royal-indigo defines distinct dark variants).
+ *  2. Otherwise the preset's own `theme.charts` (same hue family as primary).
+ *
+ * When no preset is active, charts fall back to globals.css
+ * (`:root` / `.dark` `--chart-1..5`), which is the default theme.
+ */
+export function resolvePresetChartVars(
+  preset: {
+    theme: ThemeConfig
+  },
+  presetCssVarsForMode?: Record<string, string>
+): Record<string, string> {
+  const fallback = [
+    preset.theme.charts.chart1,
+    preset.theme.charts.chart2,
+    preset.theme.charts.chart3,
+    preset.theme.charts.chart4,
+    preset.theme.charts.chart5,
+  ]
+  const out: Record<string, string> = {}
+  for (let i = 0; i < 5; i += 1) {
+    const key = `--chart-${i + 1}`
+    out[key] = presetCssVarsForMode?.[key] ?? fallback[i]
+  }
+  return out
 }
 
 export function getAdjustedTheme(
@@ -146,7 +186,7 @@ export function themeToCssVars(config: ThemeConfig): Record<string, string> {
     "--sidebar-primary": d.sidebarActive,
     "--sidebar-primary-foreground": d.sidebarActiveForeground,
     "--sidebar-border": d.sidebarBorder,
-    "--sidebar-ring": d.ring,
+    "--sidebar-ring": d.sidebarRing,
 
     "--primary": d.primary,
     "--primary-foreground": d.primaryForeground,
