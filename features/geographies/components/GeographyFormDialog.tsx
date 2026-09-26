@@ -405,7 +405,8 @@ export function GeographyFormDialog({
                               "w-full justify-between font-normal",
                               !selectedParent && "text-muted-foreground",
                               !!errors.parentUuid &&
-                                "border-destructive ring-destructive/20"
+                                // Ring removed in favor of border feedback: ring-destructive/20
+                                "border-destructive"
                             )}
                           />
                         }

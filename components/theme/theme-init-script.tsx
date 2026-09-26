@@ -42,17 +42,27 @@ export function ThemeInitScript() {
     } catch (e) {}
     var vars = cssVars[matched][isDark ? "dark" : "light"];
     var root = document.documentElement;
+    // Background must never change when the theme changes.
+    var preserved = { "--background": 1 };
     for (var k in vars) {
       if (Object.prototype.hasOwnProperty.call(vars, k)) {
+        if (preserved[k]) continue;
         root.style.setProperty(k, vars[k]);
       }
     }
     if (matchedPreset) {
-      root.style.setProperty("--chart-1", matchedPreset.charts.chart1);
-      root.style.setProperty("--chart-2", matchedPreset.charts.chart2);
-      root.style.setProperty("--chart-3", matchedPreset.charts.chart3);
-      root.style.setProperty("--chart-4", matchedPreset.charts.chart4);
-      root.style.setProperty("--chart-5", matchedPreset.charts.chart5);
+      // Chart colors always come from CSS vars: explicit --chart-* in the
+      // preset var set wins (e.g. royal-indigo dark variants), otherwise the
+      // preset's own chart palette. Without a preset, globals.css defaults apply.
+      for (var i = 1; i <= 5; i++) {
+        var ck = "--chart-" + i;
+        var cv = vars[ck];
+        if (!cv) {
+          var map = { 1: "chart1", 2: "chart2", 3: "chart3", 4: "chart4", 5: "chart5" };
+          cv = matchedPreset.charts[map[i]];
+        }
+        if (cv) root.style.setProperty(ck, cv);
+      }
       if (vars["--topbar"]) root.style.setProperty("--topbar-background", vars["--topbar"]);
       if (vars["--sidebar"]) root.style.setProperty("--sidebar-background", vars["--sidebar"]);
     }

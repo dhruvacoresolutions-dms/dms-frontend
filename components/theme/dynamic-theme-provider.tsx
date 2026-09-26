@@ -25,6 +25,7 @@ import {
   applyThemeToElement,
   deriveTheme,
   getAdjustedTheme,
+  resolvePresetChartVars,
   themeToCssVars,
   type DerivedTheme,
 } from "@/lib/theme/theme-utils"
@@ -41,6 +42,11 @@ interface DynamicThemeContextValue {
 }
 
 const DynamicThemeContext = createContext<DynamicThemeContextValue | null>(null)
+
+// Background must never change when the theme changes — these vars are
+// skipped when applying preset var sets (the derived path never writes
+// them, it only touches topbar/sidebar/primary/accent/charts).
+const PRESERVED_VARS = new Set(["--background"])
 
 export function DynamicThemeProvider({
   children,
@@ -82,14 +88,15 @@ export function DynamicThemeProvider({
       if (preset && PRESET_CSS_VARS[preset.id]) {
         const vars = PRESET_CSS_VARS[preset.id][dark ? "dark" : "light"]
         for (const [key, value] of Object.entries(vars)) {
+          if (PRESERVED_VARS.has(key)) continue
           document.documentElement.style.setProperty(key, value)
         }
+        // Chart colors always come from CSS vars: the preset's own chart
+        // palette when a preset is active (explicit --chart-* in
+        // PRESET_CSS_VARS wins, else preset.theme.charts), otherwise the
+        // globals.css :root/.dark --chart-1..5 defaults.
         const chartVars: Record<string, string> = {
-          "--chart-1": preset.theme.charts.chart1,
-          "--chart-2": preset.theme.charts.chart2,
-          "--chart-3": preset.theme.charts.chart3,
-          "--chart-4": preset.theme.charts.chart4,
-          "--chart-5": preset.theme.charts.chart5,
+          ...resolvePresetChartVars(preset, vars),
           "--topbar-background": vars["--topbar"] ?? preset.theme.topbar.background,
           "--sidebar-background": vars["--sidebar"] ?? preset.theme.sidebar.background,
         }
@@ -168,7 +175,8 @@ export function DynamicThemeProvider({
     try {
       return deriveTheme(adjustedForDerived)
     } catch {
-      // For oklch presets, derive fallback to use primary as-is
+      // For oklch presets, derive fallback to use primary as-is.
+      // Sidebar stays independent of primary here as well.
       return {
         topbarBackground: theme.topbar.background,
         topbarForeground: "#ffffff",
@@ -178,12 +186,12 @@ export function DynamicThemeProvider({
         sidebarMutedForeground: theme.sidebar.background,
         sidebarHover: theme.sidebar.background,
         sidebarHoverForeground: "#ffffff",
-        sidebarActive: theme.primary.color,
+        sidebarActive: theme.sidebar.background,
         sidebarActiveForeground: "#ffffff",
         sidebarBorder: theme.sidebar.background,
+        sidebarRing: theme.sidebar.background,
         primary: theme.primary.color,
         primaryForeground: "#ffffff",
-        primaryHover: theme.primary.color,
         accent: theme.primary.color,
         accentForeground: "#ffffff",
         ring: theme.primary.color,

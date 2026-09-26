@@ -25,8 +25,75 @@ export function normalizeHex(value: string): string {
   return `#${v.toLowerCase()}`
 }
 
+export interface OKLCH {
+  l: number
+  c: number
+  h: number
+}
+
+const OKLCH_RE =
+  /^oklch\(\s*([+-]?\d*\.?\d+%?)\s+([+-]?\d*\.?\d+%?)\s+([+-]?\d*\.?\d+(?:deg)?)(?:\s*\/\s*[+-]?\d*\.?\d+%?)?\s*\)$/i
+
+/**
+ * Default/preset themes store colors as `oklch(...)` strings, but derivation
+ * works in sRGB. Parse `oklch(L C H)` (alpha, when present, is ignored).
+ */
+export function parseOklch(value: string): OKLCH | null {
+  const m = OKLCH_RE.exec(value.trim())
+  if (!m) return null
+  const component = (raw: string, isLightness: boolean) => {
+    if (raw.endsWith("%")) return parseFloat(raw) / 100
+    const v = parseFloat(raw)
+    // Tolerate 0-100 lightness written without a % sign.
+    return isLightness && v > 1 ? v / 100 : v
+  }
+  const l = component(m[1], true)
+  const c = component(m[2], false)
+  const h = parseFloat(m[3])
+  if ([l, c, h].some((v) => Number.isNaN(v))) return null
+  return { l, c, h }
+}
+
+function oklchToLinearSrgb({ l, c, h }: OKLCH): RGB {
+  const rad = (h * Math.PI) / 180
+  const a = c * Math.cos(rad)
+  const b = c * Math.sin(rad)
+  const l_ = l + 0.3963377774 * a + 0.2158037573 * b
+  const m_ = l - 0.1055613458 * a - 0.0638541728 * b
+  const s_ = l - 0.0894841775 * a - 1.2914855480 * b
+  const l3 = l_ ** 3
+  const m3 = m_ ** 3
+  const s3 = s_ ** 3
+  return {
+    r: 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3,
+    g: -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3,
+    b: -0.0041960863 * l3 - 0.7034186147 * m3 + 1.707614701 * s3,
+  }
+}
+
+/** Convert any supported color string (hex or oklch) to sRGB hex. */
+export function toHex(value: string): string {
+  if (isValidHex(value)) return normalizeHex(value)
+  const oklch = parseOklch(value)
+  if (oklch) {
+    const lin = oklchToLinearSrgb(oklch)
+    const gamma = (c: number) => {
+      // Clamp the low end pre-gamma: out-of-gamut negatives would NaN via pow.
+      // The high end is clamped by rgbToHex.
+      const v = Math.max(0, c)
+      return v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055
+    }
+    return rgbToHex({
+      r: gamma(lin.r) * 255,
+      g: gamma(lin.g) * 255,
+      b: gamma(lin.b) * 255,
+    })
+  }
+  return "#000000"
+}
+
 export function hexToRgb(hex: string): RGB {
-  const v = normalizeHex(isValidHex(hex) ? hex : "#000000").slice(1)
+  const v = toHex(hex).slice(1)
   return {
     r: parseInt(v.slice(0, 2), 16),
     g: parseInt(v.slice(2, 4), 16),

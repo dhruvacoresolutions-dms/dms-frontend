@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
-import { isValidHex, normalizeHex } from "@/lib/theme/color-utils"
+import { isValidHex, normalizeHex, toHex } from "@/lib/theme/color-utils"
 
 export interface ColorSettingProps {
   label: string
@@ -47,7 +47,7 @@ export function ColorSetting({ label, value, onChange, description, className }:
         <input
           id={`${id}-picker`}
           type="color"
-          value={isValidHex(value) ? normalizeHex(value) : "#000000"}
+          value={toHex(value)}
           onChange={(e) => commit(e.target.value)}
           className="absolute inset-0 cursor-pointer opacity-0"
           aria-label={`${label} color picker`}
@@ -74,7 +74,8 @@ export function ColorSetting({ label, value, onChange, description, className }:
             }
           }}
           className={cn(
-            "w-24 rounded-md border bg-background px-2 py-1.5 text-right font-mono text-xs uppercase outline-none focus:ring-2 focus:ring-ring",
+            // Ring removed in favor of border: focus:ring-2 focus:ring-ring
+            "w-24 rounded-md border bg-background px-2 py-1.5 text-right font-mono text-xs uppercase outline-none",
             invalid && "border-destructive text-destructive"
           )}
           aria-invalid={invalid}

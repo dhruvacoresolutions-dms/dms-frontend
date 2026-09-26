@@ -233,7 +233,8 @@ export function Dropzone({
           compact
             ? "flex-row items-center gap-3 px-4 py-3 text-left"
             : "flex-col items-center justify-center px-6 py-8 text-center",
-          "hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+          // Ring removed in favor of border feedback: focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+          "hover:bg-muted/50 focus-visible:outline-none",
           disabled && "pointer-events-none opacity-50",
           isDragActive
             ? "border-primary bg-primary/5"
