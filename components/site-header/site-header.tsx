@@ -3,14 +3,14 @@
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
-import { PanelLeftIcon } from "lucide-react"
+import { Menu, PanelLeftIcon } from "lucide-react"
 import { HeaderUserMenu } from "./user-menu"
 import { ThemeToggle } from "@/components/theme/theme-toggle"
 import { useNavigationStore } from "@/stores/navigation-store"
 import { SidebarBreadcrumbs } from "@/components/sidebar/breadcrumbs"
 
 export function SiteHeader() {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile } = useSidebar()
   const layout = useNavigationStore((s) => s.layout)
   const isTopNav = layout === "topnav"
 
@@ -20,7 +20,7 @@ export function SiteHeader() {
         {!isTopNav && (
           <>
             <Button className="h-8 w-8" variant="ghost" size="icon" onClick={toggleSidebar}>
-              <PanelLeftIcon />
+              {isMobile ? <Menu /> : <PanelLeftIcon />}
             </Button>
             <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
           </>

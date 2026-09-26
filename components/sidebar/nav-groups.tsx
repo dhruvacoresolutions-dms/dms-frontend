@@ -13,7 +13,6 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -22,6 +21,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
+import { cn } from "@/lib/utils"
 import type { NavGroup, SidebarNavItem } from "@/types/components/sidebar"
 
 function normalizePath(pathname: string) {
@@ -52,11 +52,16 @@ function isItemActive(item: SidebarNavItem, activeUrl: string | null): boolean {
 
 export function NavGroups({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname()
-  const { state, isMobile } = useSidebar()
+  const { state, isMobile, setOpenMobile } = useSidebar()
   // Icon-collapsed (desktop) mode hides inline submenus, so parents with
   // children render a hover popup instead.
   const iconMode = !isMobile && state === "collapsed"
   const activeUrl = getActiveUrl(pathname, groups)
+  // Mobile: close the sheet immediately when a navigation link is tapped.
+  // Parent items with children only expand — they never close.
+  const closeMobileSidebar = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -116,45 +121,44 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
                     <SidebarMenuButton
                       tooltip={item.title}
                       isActive={false}
-                      onClick={() => toggle(key, !isOpen)}
+                      render={<CollapsibleTrigger />}
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
+                      <ChevronRightIcon
+                        className={cn(
+                          "ml-auto transition-transform duration-200",
+                          isOpen && "rotate-90"
+                        )}
+                      />
                     </SidebarMenuButton>
                   ) : (
                     <SidebarMenuButton
                       tooltip={item.title}
                       isActive={active}
                       render={<Link href={item.url} />}
+                      onClick={closeMobileSidebar}
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
                     </SidebarMenuButton>
                   )}
                   {hasChildren ? (
-                    <>
-                      <SidebarMenuAction
-                        render={<CollapsibleTrigger />}
-                        className="aria-expanded:rotate-90"
-                      >
-                        <ChevronRightIcon />
-                        <span className="sr-only">Toggle</span>
-                      </SidebarMenuAction>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items!.map((sub) => (
-                            <SidebarMenuSubItem key={sub.title}>
-                              <SidebarMenuSubButton
-                                isActive={activeUrl === sub.url}
-                                render={<Link href={sub.url} />}
-                              >
-                                <span>{sub.title}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.items!.map((sub) => (
+                          <SidebarMenuSubItem key={sub.title}>
+                            <SidebarMenuSubButton
+                              isActive={activeUrl === sub.url}
+                              render={<Link href={sub.url} />}
+                              onClick={closeMobileSidebar}
+                            >
+                              <span>{sub.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
                   ) : null}
                 </Collapsible>
               )

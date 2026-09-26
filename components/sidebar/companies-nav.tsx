@@ -8,11 +8,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { companiesNav } from "@/configs/components/sidebar"
 
 export function CompaniesNav() {
   const pathname = usePathname()
+  const { isMobile, setOpenMobile } = useSidebar()
+  const closeMobileSidebar = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   return (
     <SidebarGroup className="pt-2">
@@ -28,6 +33,7 @@ export function CompaniesNav() {
                 tooltip={item.title}
                 isActive={isActive}
                 render={<Link href={item.url} />}
+                onClick={closeMobileSidebar}
               >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
