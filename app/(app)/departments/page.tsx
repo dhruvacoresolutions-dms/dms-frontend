@@ -80,7 +80,11 @@ function DepartmentsContent() {
           <ExportDropdown
             permission={PERMISSIONS.DEPARTMENT.EXPORT}
             baseFileName="departments-export"
-            onExport={(format) => exportDepartments(companyUuid, format)}
+            onExport={(format) =>
+              exportDepartments(companyUuid, format, {
+                search: search || undefined,
+              })
+            }
           />
         </div>
       </div>

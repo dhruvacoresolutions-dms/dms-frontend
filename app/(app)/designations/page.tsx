@@ -104,7 +104,11 @@ function DesignationsContent() {
           <ExportDropdown
             permission={PERMISSIONS.DESIGNATION.EXPORT}
             baseFileName="designations-export"
-            onExport={(format) => exportDesignations(companyUuid, format)}
+            onExport={(format) =>
+              exportDesignations(companyUuid, format, {
+                search: search || undefined,
+              })
+            }
           />
         </div>
       </div>

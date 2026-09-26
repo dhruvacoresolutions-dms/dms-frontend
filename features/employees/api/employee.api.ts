@@ -353,14 +353,29 @@ export async function getEmployeeGeographyImportResultsCsv(companyUuid: string, 
 const employeeGeographyBaseUrl = (companyUuid: string) =>
   `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/employee-geography`
 
+export type ExportEmployeesFilters = {
+  search?: string
+  status?: string
+  designationUuid?: string
+}
+
 export async function exportEmployees(
   companyUuid: string,
-  format: "csv" | "xlsx"
+  format: "csv" | "xlsx",
+  filters?: ExportEmployeesFilters
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
     headers: { "X-Company-Context": resolved },
-    params: { format },
+    // Mirror the list filters so applied search/status/designation narrow
+    // the export. Unknown params are ignored by the backend.
+    params: {
+      format,
+      search: filters?.search || undefined,
+      query: filters?.search || undefined,
+      status: filters?.status || undefined,
+      designationUuid: filters?.designationUuid || undefined,
+    },
     responseType: "blob",
     timeout: 60_000,
   })

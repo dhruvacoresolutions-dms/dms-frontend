@@ -150,14 +150,25 @@ export async function getGeographyImportResultsCsv(companyUuid: string, jobUuid:
 // (Master Data Export folder). Requires GEOGRAPHY_EXPORT. Returns a file
 // attachment (CSV text or XLSX binary).
 
+export type ExportGeographiesFilters = {
+  search?: string
+}
+
 export async function exportGeographies(
   companyUuid: string,
-  format: "csv" | "xlsx"
+  format: "csv" | "xlsx",
+  filters?: ExportGeographiesFilters
 ) {
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
     headers: { "X-Company-Context": resolved },
-    params: { format },
+    // Mirror the list filters so an applied search narrows the export.
+    // Unknown params are ignored by the backend.
+    params: {
+      format,
+      query: filters?.search || undefined,
+      search: filters?.search || undefined,
+    },
     responseType: "blob",
     timeout: 60_000,
   })

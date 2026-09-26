@@ -99,7 +99,11 @@ function GeographiesContent() {
           <ExportDropdown
             permission={PERMISSIONS.GEOGRAPHY.EXPORT}
             baseFileName="geographies-export"
-            onExport={(format) => exportGeographies(companyUuid, format)}
+            onExport={(format) =>
+              exportGeographies(companyUuid, format, {
+                search: search || undefined,
+              })
+            }
           />
         </div>
       </div>
