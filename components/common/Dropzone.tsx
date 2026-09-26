@@ -56,6 +56,8 @@ export type DropzoneProps = {
   className?: string
   /** Placeholder when no file */
   placeholder?: string
+  /** Compact single-row layout (~attachment height) instead of the large hero area */
+  compact?: boolean
 }
 
 export function Dropzone({
@@ -74,6 +76,7 @@ export function Dropzone({
   error,
   className,
   placeholder = "No file selected",
+  compact = false,
 }: DropzoneProps) {
   const isControlled = value !== undefined
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -226,7 +229,10 @@ export function Dropzone({
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         className={cn(
-          "group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed bg-card px-6 py-8 text-center transition-colors",
+          "group relative flex rounded-xl border-2 border-dashed bg-card transition-colors",
+          compact
+            ? "flex-row items-center gap-3 px-4 py-3 text-left"
+            : "flex-col items-center justify-center px-6 py-8 text-center",
           "hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
           disabled && "pointer-events-none opacity-50",
           isDragActive
@@ -234,7 +240,7 @@ export function Dropzone({
             : displayError
               ? "border-destructive/50 bg-destructive/5"
               : "border-input",
-          files.length > 0 && "py-6"
+          !compact && files.length > 0 && "py-6"
         )}
       >
         <input
@@ -250,43 +256,57 @@ export function Dropzone({
 
         <div
           className={cn(
-            "mb-3 flex size-10 items-center justify-center rounded-full border bg-muted",
+            "flex items-center justify-center rounded-full border bg-muted",
+            compact ? "size-8 shrink-0" : "mb-3 size-10",
             isDragActive && "border-primary bg-primary/10",
             displayError && "border-destructive/30 bg-destructive/10"
           )}
         >
           <Upload
             className={cn(
-              "size-5 text-muted-foreground",
+              "text-muted-foreground",
+              compact ? "size-4" : "size-5",
               isDragActive && "text-primary",
               displayError && "text-destructive"
             )}
           />
         </div>
 
-        <p className="text-sm font-medium">
-          {isDragActive ? "Drop files here" : label}
-        </p>
-        <p className="mt-1 max-w-lg text-xs text-balance text-muted-foreground">
-          {description}
-        </p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-        {accept && (
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Accepted: {accept}
-            {maxSize ? ` • Max ${formatBytes(maxSize)}` : ""}
-            {multiple && maxFiles ? ` • Up to ${maxFiles} files` : ""}
+        <div className={cn(compact && "min-w-0 flex-1")}>
+          <p className={cn("text-sm font-medium", compact && "truncate")}>
+            {isDragActive ? "Drop files here" : label}
           </p>
-        )}
+          <p
+            className={cn(
+              "text-xs text-muted-foreground",
+              compact ? "truncate" : "mt-1 max-w-lg text-balance"
+            )}
+          >
+            {description}
+          </p>
+          {!compact && hint && (
+            <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+          )}
+          {!compact && accept && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Accepted: {accept}
+              {maxSize ? ` • Max ${formatBytes(maxSize)}` : ""}
+              {multiple && maxFiles ? ` • Up to ${maxFiles} files` : ""}
+            </p>
+          )}
+        </div>
 
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="pointer-events-none mt-4"
+          className={cn(
+            "pointer-events-none",
+            compact ? "ml-auto shrink-0" : "mt-4"
+          )}
           tabIndex={-1}
         >
-          Browse files
+          {compact ? "Browse" : "Browse files"}
         </Button>
       </div>
 
