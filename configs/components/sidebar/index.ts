@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   FileCheck,
   ShieldAlert,
+  Upload,
   // Primary Management
   Package,
   Truck,
@@ -102,6 +103,19 @@ export const mainNav: MainNav = [
         url: "/geographies",
         icon: MapPin,
         permission: PERMISSIONS.GEOGRAPHY.VIEW,
+      },
+      {
+        title: "Master Data Upload",
+        url: "/master-data-upload",
+        icon: Upload,
+        // Visible when ANY master import code is granted; hidden otherwise.
+        permissions: [
+          PERMISSIONS.EMPLOYEE.IMPORT,
+          PERMISSIONS.DEPARTMENT.IMPORT,
+          PERMISSIONS.DESIGNATION.IMPORT,
+          PERMISSIONS.GEOGRAPHY.IMPORT,
+          PERMISSIONS.EMPLOYEE.GEOGRAPHY_IMPORT,
+        ],
       },
     ],
   },
