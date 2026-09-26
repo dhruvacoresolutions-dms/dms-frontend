@@ -68,7 +68,8 @@ export function PhoneInput({
   return (
     <InputGroup
       className={cn(
-        hasError && "border-destructive ring-destructive/20 has-[[data-slot][aria-invalid=true]]:border-destructive",
+        // Ring removed in favor of border feedback: ring-destructive/20
+        hasError && "border-destructive has-[[data-slot][aria-invalid=true]]:border-destructive",
         className
       )}
       data-invalid={hasError ? "true" : undefined}

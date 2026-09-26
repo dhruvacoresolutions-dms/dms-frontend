@@ -74,7 +74,8 @@ export function ColorSetting({ label, value, onChange, description, className }:
             }
           }}
           className={cn(
-            "w-24 rounded-md border bg-background px-2 py-1.5 text-right font-mono text-xs uppercase outline-none focus:ring-2 focus:ring-ring",
+            // Ring removed in favor of border: focus:ring-2 focus:ring-ring
+            "w-24 rounded-md border bg-background px-2 py-1.5 text-right font-mono text-xs uppercase outline-none",
             invalid && "border-destructive text-destructive"
           )}
           aria-invalid={invalid}

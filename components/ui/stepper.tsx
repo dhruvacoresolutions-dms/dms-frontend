@@ -47,7 +47,8 @@ const StepperContext = React.createContext<StepperContextValue | null>(null)
 
 function useStepperContext() {
   const ctx = React.useContext(StepperContext)
-  if (!ctx) throw new Error("Stepper compound components must be used within <Stepper>")
+  if (!ctx)
+    throw new Error("Stepper compound components must be used within <Stepper>")
   return ctx
 }
 
@@ -116,7 +117,8 @@ function Stepper({
             const state = getStepState(index, currentStep, errorSteps)
             const isLast = index === steps.length - 1
             const isClickable =
-              !!onStepChange && (!linear || index <= currentStep || state === "completed")
+              !!onStepChange &&
+              (!linear || index <= currentStep || state === "completed")
 
             return (
               <li
@@ -139,7 +141,7 @@ function Stepper({
                     data-slot="stepper-vertical-separator"
                     aria-hidden
                     className={cn(
-                      "absolute left-[17px] top-[36px] h-[calc(100%-8px)] w-[2px] rounded-full transition-colors duration-300",
+                      "absolute top-[36px] left-[17px] h-[calc(100%-8px)] w-[2px] rounded-full transition-colors duration-300",
                       state === "completed" ? "bg-primary" : "bg-muted"
                     )}
                   >
@@ -169,15 +171,16 @@ function Stepper({
                       }}
                       className={cn(
                         "relative flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-300",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none",
                         state === "completed" &&
                           "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20",
                         state === "current" &&
-                          "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-[6px] ring-primary/15 scale-105",
+                          // Decorative halo removed (was: ring-[6px] ring-primary/15); border + shadow carry the emphasis
+                          "scale-105 border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/25",
                         state === "upcoming" &&
                           "border-muted-foreground/20 bg-muted text-muted-foreground",
                         state === "error" &&
-                          "border-destructive bg-destructive text-destructive-foreground shadow-md",
+                          "text-destructive-foreground border-destructive bg-destructive shadow-md",
                         isClickable
                           ? "cursor-pointer hover:scale-105 hover:shadow-lg"
                           : "cursor-default",
@@ -187,24 +190,30 @@ function Stepper({
                       {state === "current" && (
                         <span
                           aria-hidden
-                          className="absolute inset-0 -z-10 rounded-full bg-primary/20 animate-ping [animation-duration:2s]"
+                          className="absolute inset-0 -z-10 animate-ping rounded-full bg-primary/20 [animation-duration:2s]"
                         />
                       )}
                       {state === "completed" ? (
-                        <Check className="size-4" strokeWidth={2.5} aria-hidden />
+                        <Check
+                          className="size-4"
+                          strokeWidth={2.5}
+                          aria-hidden
+                        />
                       ) : state === "error" ? (
                         <AlertCircle className="size-4" aria-hidden />
                       ) : step.icon ? (
-                        <span className="size-4 [&_svg]:size-4">{step.icon}</span>
+                        <span className="size-4 [&_svg]:size-4">
+                          {step.icon}
+                        </span>
                       ) : (
                         <span>{index + 1}</span>
                       )}
                     </button>
-                    <div className="flex flex-col items-start text-left pt-0.5">
+                    <div className="flex flex-col items-start pt-0.5 text-left">
                       <span
                         data-slot="stepper-title"
                         className={cn(
-                          "text-sm font-medium leading-none transition-colors",
+                          "text-sm leading-none font-medium transition-colors",
                           state === "current" && "text-foreground",
                           state === "completed" && "text-foreground",
                           state === "upcoming" && "text-muted-foreground",
@@ -249,15 +258,16 @@ function Stepper({
                         }}
                         className={cn(
                           "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-background text-sm font-semibold transition-all duration-300",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none",
                           state === "completed" &&
                             "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20",
                           state === "current" &&
-                            "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-[6px] ring-primary/15 scale-105",
+                            // Decorative halo removed (was: ring-[6px] ring-primary/15); border + shadow carry the emphasis
+                            "scale-105 border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/25",
                           state === "upcoming" &&
                             "border-muted-foreground/20 bg-muted text-muted-foreground",
                           state === "error" &&
-                            "border-destructive bg-destructive text-destructive-foreground shadow-md",
+                            "text-destructive-foreground border-destructive bg-destructive shadow-md",
                           isClickable
                             ? "cursor-pointer hover:scale-105 hover:shadow-lg"
                             : "cursor-default",
@@ -267,15 +277,21 @@ function Stepper({
                         {state === "current" && (
                           <span
                             aria-hidden
-                            className="absolute inset-0 -z-10 rounded-full bg-primary/20 animate-ping [animation-duration:2s]"
+                            className="absolute inset-0 -z-10 animate-ping rounded-full bg-primary/20 [animation-duration:2s]"
                           />
                         )}
                         {state === "completed" ? (
-                          <Check className="size-4" strokeWidth={2.5} aria-hidden />
+                          <Check
+                            className="size-4"
+                            strokeWidth={2.5}
+                            aria-hidden
+                          />
                         ) : state === "error" ? (
                           <AlertCircle className="size-4" aria-hidden />
                         ) : step.icon ? (
-                          <span className="size-4 [&_svg]:size-4">{step.icon}</span>
+                          <span className="size-4 [&_svg]:size-4">
+                            {step.icon}
+                          </span>
                         ) : (
                           <span>{index + 1}</span>
                         )}
@@ -285,16 +301,18 @@ function Stepper({
                         <div
                           data-slot="stepper-separator"
                           aria-hidden
-                          className="absolute left-[calc(50%+22px)] right-[calc(-50%+22px)] top-1/2 flex h-[2px] -translate-y-1/2 overflow-hidden rounded-full bg-muted"
+                          className="absolute top-1/2 right-[calc(-50%+22px)] left-[calc(50%+22px)] flex h-[2px] -translate-y-1/2 overflow-hidden rounded-full bg-muted"
                         >
                           <div
                             className={cn(
                               "absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out",
-                              index < currentStep ? "w-full bg-primary" : "w-0 bg-primary"
+                              index < currentStep
+                                ? "w-full bg-primary"
+                                : "w-0 bg-primary"
                             )}
                           />
                           {index === currentStep && (
-                            <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-60 [animation:stepper-shimmer_2s_ease-in-out_infinite]" />
+                            <div className="absolute inset-y-0 left-0 w-full [animation:stepper-shimmer_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-60" />
                           )}
                         </div>
                       )}
@@ -304,7 +322,7 @@ function Stepper({
                       <span
                         data-slot="stepper-title"
                         className={cn(
-                          "text-sm font-medium leading-none transition-colors",
+                          "text-sm leading-none font-medium transition-colors",
                           state === "current" && "text-foreground",
                           state === "completed" && "text-foreground",
                           state === "upcoming" && "text-muted-foreground",
@@ -341,7 +359,6 @@ function Stepper({
             )
           })}
         </ol>
-
       </div>
     </StepperContext.Provider>
   )
@@ -392,12 +409,13 @@ function StepperSeparator({
   )
 }
 
-function StepperContent({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function StepperContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div data-slot="stepper-content" className={cn("mt-4", className)} {...props} />
+    <div
+      data-slot="stepper-content"
+      className={cn("mt-4", className)}
+      {...props}
+    />
   )
 }
 

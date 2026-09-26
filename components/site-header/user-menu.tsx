@@ -44,7 +44,8 @@ export function HeaderUserMenu() {
         )}
       <ThemeCustomizer open={themeOpen} onOpenChange={setThemeOpen} />
       <DropdownMenu>
-      <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {/* Ring removed: focus-visible:ring-2 focus-visible:ring-ring */}
+      <DropdownMenuTrigger className="size-8 cursor-pointer rounded-full outline-none">
         <Avatar className="size-8">
           <AvatarFallback className="bg-primary text-primary-foreground">
             {initials}

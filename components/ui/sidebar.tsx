@@ -242,7 +242,8 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
+          // Decorative ring replaced with border: group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border
+          className="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-sm"
         >
           {children}
         </div>
@@ -549,7 +550,8 @@ function SidebarMenuButton({
         className={cn(
           // Match the collapsed-nav dropdown popup surface; the arrow is the
           // only <div> child since sidebar tooltips always use string titles.
-          "rounded-lg bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-md ring-1 ring-foreground/10 [&>div]:hidden",
+          // Decorative ring replaced with border: ring-1 ring-foreground/10
+          "rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-popover-foreground shadow-md [&>div]:hidden",
           tooltip.className
         )}
       />

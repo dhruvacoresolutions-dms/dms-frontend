@@ -39,7 +39,8 @@ export function StateCombobox({
         id={id}
         placeholder={placeholder}
         aria-invalid={!!hasError}
-        className={hasError ? "border-destructive focus-visible:ring-destructive/20" : ""}
+        // Ring removed in favor of border feedback: focus-visible:ring-destructive/20
+        className={hasError ? "border-destructive" : ""}
       />
       <ComboboxContent>
         <ComboboxEmpty>No state found.</ComboboxEmpty>
