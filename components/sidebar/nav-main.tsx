@@ -119,7 +119,7 @@ export function NavMain({ items }: { items: MainNav }) {
                   <span>{item.title}</span>
                   <ChevronRightIcon
                     className={cn(
-                      "ml-auto transition-transform duration-200",
+                      "ml-auto shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       isOpen && "rotate-90"
                     )}
                   />
