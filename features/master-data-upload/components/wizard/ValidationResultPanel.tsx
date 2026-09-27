@@ -96,7 +96,7 @@ export function ValidationResultPanel({
         </div>
       )}
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
         <Button variant="outline" onClick={onReset}>
           {job.invalidRows > 0 ? "Upload corrected file" : "Upload another file"}
         </Button>

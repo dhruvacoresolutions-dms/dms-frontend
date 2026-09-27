@@ -3,15 +3,23 @@ import {
   adjustSaturation,
   hexToHsl,
   hslToHex,
-  hoverVariant,
   isDark,
   isValidHex,
   mix,
   readableForeground,
-  rotateHue,
 } from "./color-utils"
+import { THEME_PRESETS } from "./default-theme"
 
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v))
+
+/** The preset a theme belongs to, matched by primary color (primaries are preset-owned). */
+export function findPresetByPrimary(
+  primaryColor: string
+): (typeof THEME_PRESETS)[number] | null {
+  return (
+    THEME_PRESETS.find((p) => p.theme.primary.color === primaryColor) ?? null
+  )
+}
 
 export interface DerivedTheme {
   topbarBackground: string
@@ -30,10 +38,6 @@ export interface DerivedTheme {
 
   primary: string
   primaryForeground: string
-  primaryHover: string
-  accent: string
-  accentForeground: string
-  ring: string
 
   charts: [string, string, string, string, string]
 }
@@ -46,11 +50,9 @@ export function deriveTheme(config: ThemeConfig): DerivedTheme {
   const sidebarDark = isDark(sidebar)
   const sidebarFg = readableForeground(sidebar)
 
-  const accentBase = adjustSaturation(rotateHue(primary, 32), 0.05)
-  const accent = isDark(accentBase)
-    ? mix(accentBase, "#ffffff", 0.12)
-    : mix(accentBase, "#ffffff", 0.78)
-
+  // Primary owns only --primary / --primary-foreground. Accent, ring and
+  // hover intentionally stay on the old theme (preset / globals.css values
+  // are left untouched), so tweaking Primary never recolors them.
   return {
     topbarBackground: topbar,
     topbarForeground: readableForeground(topbar),
@@ -72,10 +74,6 @@ export function deriveTheme(config: ThemeConfig): DerivedTheme {
 
     primary,
     primaryForeground: readableForeground(primary),
-    primaryHover: hoverVariant(primary, 0.07),
-    accent,
-    accentForeground: readableForeground(accent),
-    ring: hslToHex({ ...hexToHsl(primary), l: isDark(primary) ? 0.55 : 0.62 }),
 
     charts: [
       config.charts.chart1,
@@ -169,7 +167,7 @@ export function getAdjustedTheme(
 
 export function themeToCssVars(config: ThemeConfig): Record<string, string> {
   const d = deriveTheme(config)
-  return {
+  const vars: Record<string, string> = {
     "--topbar-background": d.topbarBackground,
     "--topbar-foreground": d.topbarForeground,
     "--topbar-border": d.topbarBorder,
@@ -190,10 +188,10 @@ export function themeToCssVars(config: ThemeConfig): Record<string, string> {
 
     "--primary": d.primary,
     "--primary-foreground": d.primaryForeground,
-    "--primary-hover": d.primaryHover,
-    "--accent": d.accent,
-    "--accent-foreground": d.accentForeground,
-    "--ring": d.ring,
+    // NOTE: --primary-hover / --accent / --accent-foreground / --ring are
+    // deliberately not written here. They keep the old theme's values
+    // (preset or globals.css), so changing Primary only recolors
+    // --primary and --primary-foreground.
 
     "--chart-1": d.charts[0],
     "--chart-2": d.charts[1],
@@ -201,23 +199,5 @@ export function themeToCssVars(config: ThemeConfig): Record<string, string> {
     "--chart-4": d.charts[3],
     "--chart-5": d.charts[4],
   }
-}
-
-export function applyThemeToElement(
-  config: ThemeConfig,
-  element: HTMLElement
-): void {
-  const vars = themeToCssVars(config)
-  for (const [key, value] of Object.entries(vars)) {
-    element.style.setProperty(key, value)
-  }
-}
-
-export function clearThemeFromElement(
-  element: HTMLElement,
-  config: ThemeConfig
-): void {
-  for (const key of Object.keys(themeToCssVars(config))) {
-    element.style.removeProperty(key)
-  }
+  return vars
 }

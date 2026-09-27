@@ -152,19 +152,9 @@ export function hslToHex(hsl: HSL): string {
   return rgbToHex(hslToRgb(hsl))
 }
 
-export function adjustLightness(hex: string, amount: number): string {
-  const hsl = hexToHsl(hex)
-  return hslToHex({ ...hsl, l: clamp(hsl.l + amount) })
-}
-
 export function adjustSaturation(hex: string, amount: number): string {
   const hsl = hexToHsl(hex)
   return hslToHex({ ...hsl, s: clamp(hsl.s + amount) })
-}
-
-export function rotateHue(hex: string, degrees: number): string {
-  const hsl = hexToHsl(hex)
-  return hslToHex({ ...hsl, h: (hsl.h + degrees + 360) % 360 })
 }
 
 export function mix(a: string, b: string, weight: number): string {
@@ -207,8 +197,4 @@ export function readableForeground(background: string): string {
   return contrastRatio(background, "#ffffff") >= contrastRatio(background, "#000000")
     ? "#ffffff"
     : "#000000"
-}
-
-export function hoverVariant(hex: string, strength = 0.08): string {
-  return isDark(hex) ? adjustLightness(hex, strength) : adjustLightness(hex, -strength)
 }

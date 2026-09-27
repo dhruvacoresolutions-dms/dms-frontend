@@ -145,7 +145,7 @@ export function UploadWizard({ companyUuid, type, onTypeChange }: Props) {
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
-          <div>
+          <div className="min-w-0">
             <CardTitle>Upload Master Data</CardTitle>
             <CardDescription>
               Select the master data type and upload your file
