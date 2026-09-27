@@ -63,17 +63,10 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
     if (isMobile) setOpenMobile(false)
   }
 
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    for (const g of groups) {
-      for (const item of g.items) {
-        if (item.items?.length && isItemActive(item, activeUrl)) {
-          initial[`${g.label}::${item.title}`] = true
-        }
-      }
-    }
-    return initial
-  })
+  // Manual open/close overrides. Parents with an active child default to
+  // open — derived during render (not in an effect) so it also works when
+  // permission-filtered groups arrive after mount, e.g. on reload.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
 
   const toggle = (key: string, next: boolean) => {
     setOpenMap((prev) => ({ ...prev, [key]: next }))
@@ -91,7 +84,9 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
             {group.items.map((item) => {
               const hasChildren = !!item.items?.length
               const key = `${group.label}::${item.title}`
-              const isOpen = hasChildren ? (openMap[key] ?? false) : false
+              const isOpen = hasChildren
+                ? (openMap[key] ?? isItemActive(item, activeUrl))
+                : false
               const active = activeUrl === item.url
 
               if (hasChildren && iconMode) {

@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ColorSetting } from "@/components/theme/color-setting"
 import {
   Combobox,
   ComboboxContent,
@@ -30,6 +29,7 @@ import {
 } from "@/components/ui/combobox"
 import { useDynamicTheme } from "@/components/theme/dynamic-theme-provider"
 import { THEME_PRESETS } from "@/lib/theme/default-theme"
+import { findPresetByPrimary } from "@/lib/theme/theme-utils"
 import type { ThemeConfig } from "@/lib/theme/types"
 import {
   useNavigationStore,
@@ -88,8 +88,6 @@ export function ThemeCustomizer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const set = (patch: (prev: ThemeConfig) => ThemeConfig) => previewTheme(patch)
-
   const cancel = () => {
     previewTheme(snapshot)
     if (modeSnapshot) setMode(modeSnapshot)
@@ -97,9 +95,9 @@ export function ThemeCustomizer({
     onOpenChange(false)
   }
 
-  const currentPreset =
-    THEME_PRESETS.find((p) => JSON.stringify(p.theme) === JSON.stringify(theme))
-      ?.id ?? ""
+  // Presets are identified by primary color (primaries are preset-owned),
+  // so the selection never drops to empty.
+  const currentPreset = findPresetByPrimary(theme.primary.color)?.id ?? ""
 
   const selectedPreset = THEME_PRESETS.find((p) => p.id === currentPreset) ?? null
 
@@ -120,7 +118,7 @@ export function ThemeCustomizer({
             <Paintbrush className="size-4" /> Theme Customizer
           </SheetTitle>
           <SheetDescription>
-            Pick a few key colors — everything else is derived automatically.
+            Pick a preset — applied across topbar, sidebar and primary.
           </SheetDescription>
         </SheetHeader>
 
@@ -237,44 +235,6 @@ export function ThemeCustomizer({
                 </ComboboxList>
               </ComboboxContent>
             </Combobox>
-          </section>
-
-          <Separator />
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Topbar</h3>
-            <ColorSetting
-              label="Topbar Color"
-              description="Text contrast is handled for you"
-              value={theme.topbar.background}
-              onChange={(hex) =>
-                set((p) => ({ ...p, topbar: { background: hex } }))
-              }
-            />
-          </section>
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Sidebar</h3>
-            <ColorSetting
-              label="Sidebar Color"
-              description="Text, hover and active states derived"
-              value={theme.sidebar.background}
-              onChange={(hex) =>
-                set((p) => ({ ...p, sidebar: { background: hex } }))
-              }
-            />
-          </section>
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Primary</h3>
-            <ColorSetting
-              label="Primary Button Color"
-              description="Hover, accent and ring derived"
-              value={theme.primary.color}
-              onChange={(hex) =>
-                set((p) => ({ ...p, primary: { color: hex } }))
-              }
-            />
           </section>
         </div>
 

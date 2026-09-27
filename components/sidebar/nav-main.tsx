@@ -63,15 +63,10 @@ export function NavMain({ items }: { items: MainNav }) {
   const closeMobileSidebar = () => {
     if (isMobile) setOpenMobile(false)
   }
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    for (const item of items) {
-      if (item.items?.length) {
-        initial[item.title] = isGroupActive(item, pathname, items)
-      }
-    }
-    return initial
-  })
+  // Manual open/close overrides. Parents with an active child default to
+  // open — derived during render (not in an effect) so it also works when
+  // permission-filtered items arrive after mount, e.g. on reload.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
 
   const toggle = (title: string, next: boolean) => {
     setOpenMap((prev) => ({ ...prev, [title]: next }))
@@ -86,7 +81,9 @@ export function NavMain({ items }: { items: MainNav }) {
       <SidebarMenu>
         {items.map((item) => {
           const hasChildren = !!item.items?.length
-          const isOpen = hasChildren ? (openMap[item.title] ?? false) : false
+          const isOpen = hasChildren
+            ? (openMap[item.title] ?? isGroupActive(item, pathname, items))
+            : false
           if (hasChildren && iconMode) {
             return (
               <CollapsedNavPopup

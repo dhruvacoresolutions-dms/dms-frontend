@@ -22,7 +22,6 @@ import {
 } from "@/lib/theme/default-theme"
 import { persistentThemeStorage } from "@/lib/theme/theme-storage"
 import {
-  applyThemeToElement,
   deriveTheme,
   getAdjustedTheme,
   resolvePresetChartVars,
@@ -136,9 +135,6 @@ export function DynamicThemeProvider({
     return () => window.removeEventListener("storage", onStorage)
   }, [])
 
-  // Keep applyThemeToElement as fallback for non-dark case but primary path is mode-aware
-  void applyThemeToElement
-
   const previewTheme = useCallback<DynamicThemeContextValue["previewTheme"]>(
     (updater) => {
       setTheme((prev) =>
@@ -176,7 +172,8 @@ export function DynamicThemeProvider({
       return deriveTheme(adjustedForDerived)
     } catch {
       // For oklch presets, derive fallback to use primary as-is.
-      // Sidebar stays independent of primary here as well.
+      // Sidebar stays independent of primary here as well, and accent /
+      // ring are left untouched (old theme values win).
       return {
         topbarBackground: theme.topbar.background,
         topbarForeground: "#ffffff",
@@ -192,9 +189,6 @@ export function DynamicThemeProvider({
         sidebarRing: theme.sidebar.background,
         primary: theme.primary.color,
         primaryForeground: "#ffffff",
-        accent: theme.primary.color,
-        accentForeground: "#ffffff",
-        ring: theme.primary.color,
         charts: [
           theme.charts.chart1,
           theme.charts.chart2,
