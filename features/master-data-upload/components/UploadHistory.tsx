@@ -112,9 +112,9 @@ export function UploadHistory({ companyUuid, type }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">Upload History</h2>
           <p className="text-sm text-muted-foreground">
             View and track all your master data uploads
@@ -126,7 +126,7 @@ export function UploadHistory({ companyUuid, type }: Props) {
             setSearch(v)
             setPage(0)
           }}
-          className="sm:max-w-xs"
+          className="min-w-0 lg:max-w-xs"
         />
       </div>
 
@@ -146,7 +146,7 @@ export function UploadHistory({ companyUuid, type }: Props) {
         />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-md border">
+          <div className="max-w-full overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -252,12 +252,12 @@ export function UploadHistory({ companyUuid, type }: Props) {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Showing {from}–{to} of {totalElements}
             </p>
             {totalPages > 1 && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm text-muted-foreground">
                   Page {page + 1} of {totalPages}
                 </p>

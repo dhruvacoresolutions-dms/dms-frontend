@@ -25,7 +25,7 @@ function MasterDataUploadContent() {
   const [masterType, setMasterType] = React.useState<MasterDataType>("employee")
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
       <PageHeader
         title="Master Data Upload"
         description="Upload and manage all master data for your organization."

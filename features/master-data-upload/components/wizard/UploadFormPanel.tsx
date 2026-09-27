@@ -38,7 +38,7 @@ export function UploadFormPanel({
 }: Props) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         <Field>
           <FieldLabel>Master Data Type</FieldLabel>
           <MasterTypeCombobox value={type} onValueChange={onTypeChange} />

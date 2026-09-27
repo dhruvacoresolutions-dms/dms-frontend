@@ -20,8 +20,8 @@ const SidebarLayout = ({ children }: Props) => {
         {isTopNav && <TopNavBar />}
         <div className="flex min-h-0 flex-1">
           {!isTopNav && <AppSidebar />}
-          <SidebarInset className="bg-background">
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto rounded-md bg-background p-4">
+          <SidebarInset className="min-w-0 bg-background">
+            <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4 overflow-auto rounded-md bg-background p-4">
               {children}
             </div>
           </SidebarInset>
