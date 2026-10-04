@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-staging.rahulpatel.online}
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

@@ -36,11 +36,9 @@ The template is in `.env.example`. Copy it to `.env.local` and fill in real valu
 cp .env.example .env.local
 ```
 
-| Variable             | Required | Description                                        |
-| -------------------- | -------- | -------------------------------------------------- |
+| Variable              | Required                      | Description                                        |
+| --------------------- | ----------------------------- | -------------------------------------------------- |
 | `NEXT_PUBLIC_API_URL` | When the app talks to a backend | Base URL of the backend/API the frontend calls |
-| `AUTH_SECRET`         | When auth is enabled          | Secret used to sign auth session cookies/tokens  |
-| `AUTH_URL`            | When auth is enabled          | Public URL of the deployed app (auth callbacks)  |
 
 > Env vars are only read once backend/auth is wired up — the app builds and runs today without any of them.
 
