@@ -1,32 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useEffect } from "react"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+  FormTextField,
+  FormDateField,
+  FormTextareaField,
+  FormComboboxField,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import {
   useCreateProductGstMapping,
@@ -34,17 +26,14 @@ import {
   useCreateProductFitment,
   useCreateProductGeographyMapping,
 } from "../hooks/use-product-mappings"
-import { useGstHsns } from "@/features/gst-hsn/hooks/use-gst-hsns"
-import { useGstTaxStructures } from "@/features/gst-tax-structures/hooks/use-gst-tax-structures"
-import { useRelationshipTypes } from "@/features/relationship-types/hooks/use-relationship-types"
-import { getRelationshipTypeId } from "@/features/relationship-types/api/relationship-type.types"
-import { useVehicleVariants } from "@/features/vehicle-variants/hooks/use-vehicle-variants"
-import { useFuelTypes } from "@/features/fuel-types/hooks/use-fuel-types"
-import { getFuelTypeId } from "@/features/fuel-types/api/fuel-type.types"
-import { useFitmentPositions } from "@/features/fitment-positions/hooks/use-fitment-positions"
-import { getFitmentPositionId } from "@/features/fitment-positions/api/fitment-position.types"
-import { useGeographies } from "@/features/geographies/hooks/use-geographies"
-import { useProducts } from "../hooks/use-products"
+import { GstHsnCombobox } from "@/features/gst-hsn/components/GstHsnCombobox"
+import { GstTaxStructureCombobox } from "@/features/gst-tax-structures/components/GstTaxStructureCombobox"
+import { ProductCombobox } from "./ProductCombobox"
+import { RelationshipTypeCombobox } from "@/features/relationship-types/components/RelationshipTypeCombobox"
+import { VehicleVariantCombobox } from "@/features/vehicle-variants/components/VehicleVariantCombobox"
+import { FuelTypeCombobox } from "@/features/fuel-types/components/FuelTypeCombobox"
+import { FitmentPositionCombobox } from "@/features/fitment-positions/components/FitmentPositionCombobox"
+import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
 
 type BaseProps = {
   open: boolean
@@ -68,17 +57,8 @@ export function ProductGstMappingDialog({
   companyUuid,
   productUuid,
 }: BaseProps) {
-  const { data: hsnData } = useGstHsns(companyUuid, { size: 200 })
-  const { data: taxData } = useGstTaxStructures(companyUuid, { size: 200 })
   const createMutation = useCreateProductGstMapping(companyUuid, productUuid)
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<z.infer<typeof gstSchema>>({
+  const { handleSubmit, control, reset } = useForm<z.infer<typeof gstSchema>>({
     resolver: zodResolver(gstSchema),
     defaultValues: { hsnUuid: "", taxStructureUuid: "", effectiveFrom: "", effectiveTo: "" },
   })
@@ -87,9 +67,6 @@ export function ProductGstMappingDialog({
     if (open)
       reset({ hsnUuid: "", taxStructureUuid: "", effectiveFrom: "", effectiveTo: "" })
   }, [open, reset])
-
-  const hsnUuid = useWatch({ control, name: "hsnUuid" })
-  const taxStructureUuid = useWatch({ control, name: "taxStructureUuid" })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,54 +96,30 @@ export function ProductGstMappingDialog({
           className="space-y-4"
         >
           <FieldGroup>
-            <Field>
-              <FieldLabel>HSN *</FieldLabel>
-              <Select
-                value={hsnUuid || ""}
-                onValueChange={(v: string | null) => { if (v) setValue("hsnUuid", v, { shouldValidate: true }) }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select HSN" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(hsnData?.content ?? []).map((h) => (
-                    <SelectItem key={h.hsnUuid} value={h.hsnUuid}>
-                      {h.hsnCode} — {h.description ?? ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError errors={[errors.hsnUuid]} />
-            </Field>
-            <Field>
-              <FieldLabel>Tax Structure *</FieldLabel>
-              <Select
-                value={taxStructureUuid || ""}
-                onValueChange={(v: string | null) => {
-                  if (v) setValue("taxStructureUuid", v, { shouldValidate: true })
-                  }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select tax structure" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(taxData?.content ?? []).map((t) => (
-                    <SelectItem key={t.taxStructureUuid} value={t.taxStructureUuid}>
-                      {t.taxType} — {t.taxCode}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError errors={[errors.taxStructureUuid]} />
-            </Field>
-            <Field>
-              <FieldLabel>Effective From</FieldLabel>
-              <Input type="date" {...register("effectiveFrom")} />
-            </Field>
-            <Field>
-              <FieldLabel>Effective To</FieldLabel>
-              <Input type="date" {...register("effectiveTo")} />
-            </Field>
+            <FormComboboxField
+              control={control}
+              name="hsnUuid"
+              label="HSN *"
+              companyUuid={companyUuid}
+              Combobox={GstHsnCombobox}
+            />
+            <FormComboboxField
+              control={control}
+              name="taxStructureUuid"
+              label="Tax Structure *"
+              companyUuid={companyUuid}
+              Combobox={GstTaxStructureCombobox}
+            />
+            <FormDateField
+              control={control}
+              name="effectiveFrom"
+              label="Effective From"
+            />
+            <FormDateField
+              control={control}
+              name="effectiveTo"
+              label="Effective To"
+            />
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -196,21 +149,8 @@ export function ProductRelationshipDialog({
   companyUuid,
   productUuid,
 }: BaseProps) {
-  const [productSearch, setProductSearch] = useState("")
-  const { data: productsData } = useProducts(companyUuid, {
-    search: productSearch || undefined,
-    size: 50,
-  })
-  const { data: relTypesData } = useRelationshipTypes(companyUuid, { size: 200 })
   const createMutation = useCreateProductRelationship(companyUuid, productUuid)
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<z.infer<typeof relSchema>>({
+  const { handleSubmit, control, reset } = useForm<z.infer<typeof relSchema>>({
     resolver: zodResolver(relSchema),
     defaultValues: { relatedProductUuid: "", relationshipTypeUuid: "", description: "" },
   })
@@ -221,16 +161,10 @@ export function ProductRelationshipDialog({
     }
   }, [open, reset])
 
-  const relatedProductUuid = useWatch({ control, name: "relatedProductUuid" })
-  const relationshipTypeUuid = useWatch({ control, name: "relationshipTypeUuid" })
-
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next) setProductSearch("")
-        onOpenChange(next)
-      }}
+      onOpenChange={onOpenChange}
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -257,63 +191,26 @@ export function ProductRelationshipDialog({
           className="space-y-4"
         >
           <FieldGroup>
-            <Field>
-              <FieldLabel>Related Product *</FieldLabel>
-              <Input
-                placeholder="Type to search products..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-              />
-              <Select
-                value={relatedProductUuid || ""}
-                onValueChange={(v: string | null) => {
-                  if (v) setValue("relatedProductUuid", v, { shouldValidate: true })
-                  }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select product" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(productsData?.content ?? [])
-                    .filter((p) => p.productUuid !== productUuid)
-                    .map((p) => (
-                      <SelectItem key={p.productUuid} value={p.productUuid}>
-                        {p.name} ({p.code})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <FieldError errors={[errors.relatedProductUuid]} />
-            </Field>
-            <Field>
-              <FieldLabel>Relationship Type *</FieldLabel>
-              <Select
-                value={relationshipTypeUuid || ""}
-                onValueChange={(v: string | null) => {
-                  if (v) setValue("relationshipTypeUuid", v, { shouldValidate: true })
-                  }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(relTypesData?.content ?? []).map((t) => (
-                    <SelectItem
-                      key={getRelationshipTypeId(t)}
-                      value={getRelationshipTypeId(t)}
-                    >
-                      {t.name} ({t.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError errors={[errors.relationshipTypeUuid]} />
-            </Field>
-            <Field>
-              <FieldLabel>Description</FieldLabel>
-              <Textarea {...register("description")} />
-              <FieldError errors={[errors.description]} />
-            </Field>
+            <FormComboboxField
+              control={control}
+              name="relatedProductUuid"
+              label="Related Product *"
+              companyUuid={companyUuid}
+              Combobox={ProductCombobox}
+              comboboxProps={{ excludeIds: [productUuid] }}
+            />
+            <FormComboboxField
+              control={control}
+              name="relationshipTypeUuid"
+              label="Relationship Type *"
+              companyUuid={companyUuid}
+              Combobox={RelationshipTypeCombobox}
+            />
+            <FormTextareaField
+              control={control}
+              name="description"
+              label="Description"
+            />
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -346,18 +243,8 @@ export function ProductFitmentDialog({
   companyUuid,
   productUuid,
 }: BaseProps) {
-  const { data: variantsData } = useVehicleVariants(companyUuid, { size: 200 })
-  const { data: fuelsData } = useFuelTypes(companyUuid, { size: 200 })
-  const { data: positionsData } = useFitmentPositions(companyUuid, { size: 200 })
   const createMutation = useCreateProductFitment(companyUuid, productUuid)
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<z.infer<typeof fitmentSchema>>({
+  const { handleSubmit, control, reset } = useForm<z.infer<typeof fitmentSchema>>({
     resolver: zodResolver(fitmentSchema),
     defaultValues: {
       variantUuid: "",
@@ -381,9 +268,6 @@ export function ProductFitmentDialog({
       })
   }, [open, reset])
 
-  const variantUuid = useWatch({ control, name: "variantUuid" })
-  const fuelTypeUuid = useWatch({ control, name: "fuelTypeUuid" })
-  const fitmentPositionUuid = useWatch({ control, name: "fitmentPositionUuid" })
   const orUndefined = (v?: string) => (v === "" ? undefined : v)
 
   return (
@@ -417,79 +301,42 @@ export function ProductFitmentDialog({
         >
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Field>
-                <FieldLabel>Variant *</FieldLabel>
-                <Select
-                  value={variantUuid || ""}
-                  onValueChange={(v: string | null) => { if (v) setValue("variantUuid", v, { shouldValidate: true }) }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select variant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(variantsData?.content ?? []).map((v) => (
-                      <SelectItem key={v.variantUuid} value={v.variantUuid}>
-                        {v.name} ({v.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError errors={[errors.variantUuid]} />
-              </Field>
-              <Field>
-                <FieldLabel>Fuel Type</FieldLabel>
-                <Select
-                  value={fuelTypeUuid || ""}
-                  onValueChange={(v: string | null) => { if (v) setValue("fuelTypeUuid", v) }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select fuel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(fuelsData?.content ?? []).map((f) => (
-                      <SelectItem
-                        key={getFuelTypeId(f)}
-                        value={getFuelTypeId(f)}
-                      >
-                        {f.name} ({f.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>Engine</FieldLabel>
-                <Input placeholder="e.g. 1.5L Petrol" {...register("engine")} />
-              </Field>
-              <Field>
-                <FieldLabel>Fitment Position</FieldLabel>
-                <Select
-                  value={fitmentPositionUuid || ""}
-                  onValueChange={(v: string | null) => { if (v) setValue("fitmentPositionUuid", v) }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(positionsData?.content ?? []).map((p) => (
-                      <SelectItem
-                        key={getFitmentPositionId(p)}
-                        value={getFitmentPositionId(p)}
-                      >
-                        {p.name} ({p.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>Year From</FieldLabel>
-                <Input type="date" {...register("yearFrom")} />
-              </Field>
-              <Field>
-                <FieldLabel>Year To</FieldLabel>
-                <Input type="date" {...register("yearTo")} />
-              </Field>
+              <FormComboboxField
+                control={control}
+                name="variantUuid"
+                label="Variant *"
+                companyUuid={companyUuid}
+                Combobox={VehicleVariantCombobox}
+              />
+              <FormComboboxField
+                control={control}
+                name="fuelTypeUuid"
+                label="Fuel Type"
+                companyUuid={companyUuid}
+                Combobox={FuelTypeCombobox}
+              />
+              <FormTextField
+                control={control}
+                name="engine"
+                label="Engine"
+              />
+              <FormComboboxField
+                control={control}
+                name="fitmentPositionUuid"
+                label="Fitment Position"
+                companyUuid={companyUuid}
+                Combobox={FitmentPositionCombobox}
+              />
+              <FormDateField
+                control={control}
+                name="yearFrom"
+                label="Year From"
+              />
+              <FormDateField
+                control={control}
+                name="yearTo"
+                label="Year To"
+              />
             </div>
           </FieldGroup>
           <div className="flex justify-end gap-2">
@@ -518,18 +365,11 @@ export function ProductGeographyMappingDialog({
   companyUuid,
   productUuid,
 }: BaseProps) {
-  const { data: geoData } = useGeographies(companyUuid, { size: 200 })
   const createMutation = useCreateProductGeographyMapping(
     companyUuid,
     productUuid
   )
-  const {
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<z.infer<typeof geoSchema>>({
+  const { handleSubmit, control, reset } = useForm<z.infer<typeof geoSchema>>({
     resolver: zodResolver(geoSchema),
     defaultValues: { geographyUuid: "" },
   })
@@ -537,8 +377,6 @@ export function ProductGeographyMappingDialog({
   useEffect(() => {
     if (open) reset({ geographyUuid: "" })
   }, [open, reset])
-
-  const geographyUuid = useWatch({ control, name: "geographyUuid" })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -563,27 +401,13 @@ export function ProductGeographyMappingDialog({
           className="space-y-4"
         >
           <FieldGroup>
-            <Field>
-              <FieldLabel>Geography *</FieldLabel>
-              <Select
-                value={geographyUuid || ""}
-                onValueChange={(v: string | null) => {
-                  if (v) setValue("geographyUuid", v, { shouldValidate: true })
-                  }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select geography" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(geoData?.content ?? []).map((g) => (
-                    <SelectItem key={g.geographyUuid} value={g.geographyUuid}>
-                      {g.name} ({g.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError errors={[errors.geographyUuid]} />
-            </Field>
+            <FormComboboxField
+              control={control}
+              name="geographyUuid"
+              label="Geography *"
+              companyUuid={companyUuid}
+              Combobox={GeographyCombobox}
+            />
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

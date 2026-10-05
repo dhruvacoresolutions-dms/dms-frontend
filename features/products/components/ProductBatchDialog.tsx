@@ -6,19 +6,17 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+  FormTextField,
+  FormDateField,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import {
   useCreateProductBatch,
@@ -53,12 +51,7 @@ export function ProductBatchDialog({
   const createMutation = useCreateProductBatch(companyUuid, productUuid)
   const updateMutation = useUpdateProductBatch(companyUuid, productUuid)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<BatchFormValues>({
+  const { handleSubmit, control, reset } = useForm<BatchFormValues>({
     resolver: zodResolver(batchSchema),
     defaultValues: { batchNumber: "", manufacturingDate: "", expiryDate: "" },
   })
@@ -122,26 +115,22 @@ export function ProductBatchDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FieldGroup>
-            <Field>
-              <FieldLabel>Batch Number *</FieldLabel>
-              <Input
-                placeholder="e.g. BATCH-2026-001"
-                {...register("batchNumber")}
-                disabled={isEdit}
-                autoComplete="off"
-              />
-              <FieldError errors={[errors.batchNumber]} />
-            </Field>
-            <Field>
-              <FieldLabel>Manufacturing Date</FieldLabel>
-              <Input type="date" {...register("manufacturingDate")} />
-              <FieldError errors={[errors.manufacturingDate]} />
-            </Field>
-            <Field>
-              <FieldLabel>Expiry Date</FieldLabel>
-              <Input type="date" {...register("expiryDate")} />
-              <FieldError errors={[errors.expiryDate]} />
-            </Field>
+            <FormTextField
+              control={control}
+              name="batchNumber"
+              label="Batch Number *"
+              disabled={isEdit}
+            />
+            <FormDateField
+              control={control}
+              name="manufacturingDate"
+              label="Manufacturing Date"
+            />
+            <FormDateField
+              control={control}
+              name="expiryDate"
+              label="Expiry Date"
+            />
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button

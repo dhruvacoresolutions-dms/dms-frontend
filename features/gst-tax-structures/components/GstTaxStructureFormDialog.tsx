@@ -1,35 +1,33 @@
 "use client"
 
 import { useEffect } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+  FormDateField,
+  FormNumberField,
+  FormSelectField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useGstTaxStructure } from "../hooks/use-gst-tax-structure"
 import { useCreateGstTaxStructure } from "../hooks/use-create-gst-tax-structure"
 import { useUpdateGstTaxStructure } from "../hooks/use-update-gst-tax-structure"
 
-// Optional numeric rate input: blank means null. Coerce via valueAsNumber and
-// map NaN -> null on submit.
-const optionalRate = z.union([z.number(), z.nan()]).optional()
+// Optional numeric rate input: blank means undefined (FormNumberField yields
+// undefined for empty input), mapped to null on submit.
+const optionalRate = z.coerce.number().optional()
 
 const taxStructureSchema = z.object({
   taxType: z.string().min(1, "Tax type is required").max(50),
@@ -97,6 +95,11 @@ const emptyToNull = (v?: string) => (v?.trim() ? v.trim() : null)
 const boolToPayload = (v?: string) =>
   v === "true" ? true : v === "false" ? false : null
 
+const YES_NO_OPTIONS = [
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+] as const
+
 export function GstTaxStructureFormDialog({
   open,
   onOpenChange,
@@ -109,20 +112,10 @@ export function GstTaxStructureFormDialog({
   const createMutation = useCreateGstTaxStructure(companyUuid)
   const updateMutation = useUpdateGstTaxStructure(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<TaxStructureFormValues>({
+  const { handleSubmit, control, reset } = useForm<TaxStructureFormValues>({
     resolver: zodResolver(taxStructureSchema),
     defaultValues: toFormDefaults(),
   })
-
-  const discountBeforeTaxValue = useWatch({ control, name: "discountBeforeTax" })
-  const discountAfterTaxValue = useWatch({ control, name: "discountAfterTax" })
 
   useEffect(() => {
     if (!open) return
@@ -222,32 +215,6 @@ export function GstTaxStructureFormDialog({
     })
   }
 
-  const rateField = (
-    name:
-      | "primaryInputRate"
-      | "primaryOutputRate"
-      | "secondaryInputRate"
-      | "secondaryOutputRate"
-      | "additionalInputRate"
-      | "additionalOutputRate"
-      | "cessRate"
-      | "cessAmount",
-    label: string
-  ) => (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
-      <Input
-        type="number"
-        step="any"
-        min="0"
-        placeholder="e.g. 9.0"
-        aria-invalid={!!errors[name]}
-        {...register(name, { valueAsNumber: true })}
-      />
-      <FieldError errors={[errors[name]]} />
-    </Field>
-  )
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-3xl">
@@ -264,124 +231,106 @@ export function GstTaxStructureFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <Field>
-                  <FieldLabel>Tax Type</FieldLabel>
-                  <Input
-                    placeholder="e.g. CGST"
-                    aria-invalid={!!errors.taxType}
-                    {...register("taxType")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.taxType]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Tax Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. CGST-9"
-                    aria-invalid={!!errors.taxCode}
-                    {...register("taxCode")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.taxCode]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Apply On</FieldLabel>
-                  <Input
-                    placeholder="e.g. Tax Amount"
-                    aria-invalid={!!errors.applyOn}
-                    {...register("applyOn")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.applyOn]} />
-                </Field>
-                {rateField("primaryInputRate", "Primary Input Rate")}
-                {rateField("primaryOutputRate", "Primary Output Rate")}
-                {rateField("secondaryInputRate", "Secondary Input Rate")}
-                {rateField("secondaryOutputRate", "Secondary Output Rate")}
-                {rateField("additionalInputRate", "Additional Input Rate")}
-                {rateField("additionalOutputRate", "Additional Output Rate")}
-                {rateField("cessRate", "Cess Rate")}
-                {rateField("cessAmount", "Cess Amount")}
-                <Field>
-                  <FieldLabel>Discount Before Tax</FieldLabel>
-                  <Select
-                    value={discountBeforeTaxValue ?? ""}
-                    onValueChange={(v: string | null) =>
-                      v &&
-                      setValue(
-                        "discountBeforeTax",
-                        v as TaxStructureFormValues["discountBeforeTax"],
-                        { shouldValidate: true }
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.discountBeforeTax]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Discount After Tax</FieldLabel>
-                  <Select
-                    value={discountAfterTaxValue ?? ""}
-                    onValueChange={(v: string | null) =>
-                      v &&
-                      setValue(
-                        "discountAfterTax",
-                        v as TaxStructureFormValues["discountAfterTax"],
-                        { shouldValidate: true }
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.discountAfterTax]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Effective From</FieldLabel>
-                  <Input type="date" {...register("effectiveFrom")} />
-                  <FieldError errors={[errors.effectiveFrom]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Effective To</FieldLabel>
-                  <Input type="date" {...register("effectiveTo")} />
-                  <FieldError errors={[errors.effectiveTo]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Scheme Discount Effect</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("schemeDiscountEffect")}
-                  />
-                  <FieldError errors={[errors.schemeDiscountEffect]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Cash Discount Effect</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("cashDiscountEffect")}
-                  />
-                  <FieldError errors={[errors.cashDiscountEffect]} />
-                </Field>
-                <Field>
-                  <FieldLabel>DB Discount Effect</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("dbDiscountEffect")}
-                  />
-                  <FieldError errors={[errors.dbDiscountEffect]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="taxType"
+                  label="Tax Type"
+                />
+                <FormTextField
+                  control={control}
+                  name="taxCode"
+                  label="Tax Code"
+                />
+                <FormTextField
+                  control={control}
+                  name="applyOn"
+                  label="Apply On"
+                />
+                <FormNumberField
+                  control={control}
+                  name="primaryInputRate"
+                  label="Primary Input Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="primaryOutputRate"
+                  label="Primary Output Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="secondaryInputRate"
+                  label="Secondary Input Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="secondaryOutputRate"
+                  label="Secondary Output Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="additionalInputRate"
+                  label="Additional Input Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="additionalOutputRate"
+                  label="Additional Output Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="cessRate"
+                  label="Cess Rate"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="cessAmount"
+                  label="Cess Amount"
+                  min={0}
+                />
+                <FormSelectField
+                  control={control}
+                  name="discountBeforeTax"
+                  label="Discount Before Tax"
+                  options={YES_NO_OPTIONS}
+                />
+                <FormSelectField
+                  control={control}
+                  name="discountAfterTax"
+                  label="Discount After Tax"
+                  options={YES_NO_OPTIONS}
+                />
+                <FormDateField
+                  control={control}
+                  name="effectiveFrom"
+                  label="Effective From"
+                />
+                <FormDateField
+                  control={control}
+                  name="effectiveTo"
+                  label="Effective To"
+                />
+                <FormTextField
+                  control={control}
+                  name="schemeDiscountEffect"
+                  label="Scheme Discount Effect"
+                />
+                <FormTextField
+                  control={control}
+                  name="cashDiscountEffect"
+                  label="Cash Discount Effect"
+                />
+                <FormTextField
+                  control={control}
+                  name="dbDiscountEffect"
+                  label="DB Discount Effect"
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

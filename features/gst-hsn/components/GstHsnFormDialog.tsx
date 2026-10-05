@@ -6,14 +6,17 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
+import {
+  FormDateField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useGstHsn } from "../hooks/use-gst-hsn"
@@ -62,12 +65,7 @@ export function GstHsnFormDialog({
   const createMutation = useCreateGstHsn(companyUuid)
   const updateMutation = useUpdateGstHsn(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<HsnFormValues>({
+  const { handleSubmit, control, reset } = useForm<HsnFormValues>({
     resolver: zodResolver(hsnSchema),
     defaultValues: toFormDefaults(),
   })
@@ -168,58 +166,40 @@ export function GstHsnFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Field>
-                  <FieldLabel>HSN Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. 8708301000"
-                    aria-invalid={!!errors.hsnCode}
-                    {...register("hsnCode")}
+                <div>
+                  <FormTextField
+                    control={control}
+                    name="hsnCode"
+                    label="HSN Code"
                     disabled={isEdit}
-                    autoComplete="off"
                   />
                   {isEdit && (
                     <p className="text-xs text-muted-foreground">
                       HSN code cannot be changed after creation.
                     </p>
                   )}
-                  <FieldError errors={[errors.hsnCode]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Product Type</FieldLabel>
-                  <Input
-                    placeholder="e.g. PARTS"
-                    aria-invalid={!!errors.gstProductType}
-                    {...register("gstProductType")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.gstProductType]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Effective From</FieldLabel>
-                  <Input
-                    type="date"
-                    aria-invalid={!!errors.effectiveFrom}
-                    {...register("effectiveFrom")}
-                  />
-                  <FieldError errors={[errors.effectiveFrom]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Effective To</FieldLabel>
-                  <Input
-                    type="date"
-                    aria-invalid={!!errors.effectiveTo}
-                    {...register("effectiveTo")}
-                  />
-                  <FieldError errors={[errors.effectiveTo]} />
-                </Field>
-                <Field className="lg:col-span-2">
-                  <FieldLabel>Description</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("description")}
-                  />
-                  <FieldError errors={[errors.description]} />
-                </Field>
+                </div>
+                <FormTextField
+                  control={control}
+                  name="gstProductType"
+                  label="Product Type"
+                />
+                <FormDateField
+                  control={control}
+                  name="effectiveFrom"
+                  label="Effective From"
+                />
+                <FormDateField
+                  control={control}
+                  name="effectiveTo"
+                  label="Effective To"
+                />
+                <FormTextField
+                  control={control}
+                  name="description"
+                  label="Description"
+                  className="lg:col-span-2"
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

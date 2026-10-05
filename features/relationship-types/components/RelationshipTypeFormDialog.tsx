@@ -6,15 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import { FormTextField } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useRelationshipType } from "../hooks/use-relationship-type"
 import { useCreateRelationshipType } from "../hooks/use-create-relationship-type"
@@ -51,15 +51,11 @@ export function RelationshipTypeFormDialog({
   const createMutation = useCreateRelationshipType(companyUuid)
   const updateMutation = useUpdateRelationshipType(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<RelationshipTypeFormValues>({
-    resolver: zodResolver(relationshipTypeSchema),
-    defaultValues: { code: "", name: "" },
-  })
+  const { handleSubmit, control, reset } =
+    useForm<RelationshipTypeFormValues>({
+      resolver: zodResolver(relationshipTypeSchema),
+      defaultValues: { code: "", name: "" },
+    })
 
   useEffect(() => {
     if (!open) return
@@ -141,27 +137,13 @@ export function RelationshipTypeFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4">
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. SUPERSEDE"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. Supersedes"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="name" label="Name" />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

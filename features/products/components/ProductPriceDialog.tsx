@@ -1,38 +1,29 @@
 "use client"
 
 import { useEffect } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
+  FormTextField,
+  FormDateField,
+  FormComboboxField,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import {
-  usePriceTypes,
   useCreateProductPrice,
   useReviseProductPrice,
 } from "../hooks/use-product-prices"
+import { PriceTypeCombobox } from "./PriceTypeCombobox"
 import type { ProductPriceResponse } from "../api/product.types"
 
 const priceSchema = z.object({
@@ -66,18 +57,10 @@ export function ProductPriceDialog({
   price,
 }: ProductPriceDialogProps) {
   const isRevise = !!price
-  const { data: priceTypesData } = usePriceTypes(companyUuid)
   const createMutation = useCreateProductPrice(companyUuid, productUuid)
   const reviseMutation = useReviseProductPrice(companyUuid, productUuid)
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<PriceFormValues>({
+  const { handleSubmit, control, reset } = useForm<PriceFormValues>({
     resolver: zodResolver(priceSchema),
     defaultValues: {
       priceTypeCode: "",
@@ -112,7 +95,6 @@ export function ProductPriceDialog({
     }
   }, [open, price, reset])
 
-  const priceTypeCode = useWatch({ control, name: "priceTypeCode" })
   const isPending = createMutation.isPending || reviseMutation.isPending
 
   const onSubmit = (values: PriceFormValues) => {
@@ -168,98 +150,66 @@ export function ProductPriceDialog({
             {isRevise ? "Revise Price" : "Add Price"}
           </DialogTitle>
         </DialogHeader>
-        {!priceTypesData ? (
-          <div className="flex items-center justify-center py-8">
-            <Spinner />
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FieldGroup>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Field>
-                  <FieldLabel>Price Type *</FieldLabel>
-                  <Select
-                    value={priceTypeCode || ""}
-                    disabled={isRevise}
-                    onValueChange={(v: string | null) => {
-                      if (v) setValue("priceTypeCode", v, { shouldValidate: true })
-                      }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select price type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(priceTypesData?.content ?? []).map((pt) => (
-                        <SelectItem key={pt.priceTypeUuid} value={pt.code}>
-                          {pt.name} ({pt.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.priceTypeCode]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Amount *</FieldLabel>
-                  <Input
-                    placeholder="e.g. 125.50"
-                    inputMode="decimal"
-                    {...register("amount")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.amount]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Effective From</FieldLabel>
-                  <Input type="date" {...register("effectiveFrom")} />
-                  <FieldError errors={[errors.effectiveFrom]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Effective To</FieldLabel>
-                  <Input type="date" {...register("effectiveTo")} />
-                  <FieldError errors={[errors.effectiveTo]} />
-                </Field>
-                {!isRevise && (
-                  <Field>
-                    <FieldLabel>Batch UUID (optional)</FieldLabel>
-                    <Input
-                      placeholder="Leave empty for base price"
-                      {...register("batchUuid")}
-                      autoComplete="off"
-                    />
-                    <FieldError errors={[errors.batchUuid]} />
-                  </Field>
-                )}
-                <Field>
-                  <FieldLabel>External Reference</FieldLabel>
-                  <Input
-                    placeholder="e.g. ERP-PRICE-0001"
-                    {...register("externalReference")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.externalReference]} />
-                </Field>
-              </div>
-            </FieldGroup>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending
-                  ? isRevise
-                    ? "Revising..."
-                    : "Creating..."
-                  : isRevise
-                    ? "Revise price"
-                    : "Add price"}
-              </Button>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <FieldGroup>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <FormComboboxField
+                control={control}
+                name="priceTypeCode"
+                label="Price Type *"
+                companyUuid={companyUuid}
+                disabled={isRevise}
+                Combobox={PriceTypeCombobox}
+              />
+              <FormTextField
+                control={control}
+                name="amount"
+                label="Amount *"
+                type="text"
+              />
+              <FormDateField
+                control={control}
+                name="effectiveFrom"
+                label="Effective From"
+              />
+              <FormDateField
+                control={control}
+                name="effectiveTo"
+                label="Effective To"
+              />
+              {!isRevise && (
+                <FormTextField
+                  control={control}
+                  name="batchUuid"
+                  label="Batch UUID (optional)"
+                />
+              )}
+              <FormTextField
+                control={control}
+                name="externalReference"
+                label="External Reference"
+              />
             </div>
-          </form>
-        )}
+          </FieldGroup>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending
+                ? isRevise
+                  ? "Revising..."
+                  : "Creating..."
+                : isRevise
+                  ? "Revise price"
+                  : "Add price"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   )

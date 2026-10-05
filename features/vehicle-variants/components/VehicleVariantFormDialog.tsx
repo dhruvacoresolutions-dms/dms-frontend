@@ -1,32 +1,28 @@
 "use client"
 
 import { useEffect } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  FormComboboxField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useVehicleVariant } from "../hooks/use-vehicle-variant"
 import { useCreateVehicleVariant } from "../hooks/use-create-vehicle-variant"
 import { useUpdateVehicleVariant } from "../hooks/use-update-vehicle-variant"
-import { useVehicleModels } from "@/features/vehicle-models/hooks/use-vehicle-models"
+import { VehicleModelCombobox } from "@/features/vehicle-models/components/VehicleModelCombobox"
 
 const variantSchema = z.object({
   modelUuid: z.string().min(1, "Model is required"),
@@ -61,26 +57,11 @@ export function VehicleVariantFormDialog({
   )
   const createMutation = useCreateVehicleVariant(companyUuid)
   const updateMutation = useUpdateVehicleVariant(companyUuid)
-  const { data: modelsData, isLoading: modelsLoading } = useVehicleModels(
-    companyUuid,
-    { size: 100, status: "ACTIVE" },
-    { enabled: open && !!companyUuid }
-  )
-  const modelOptions = modelsData?.content ?? []
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<VariantFormValues>({
+  const { handleSubmit, control, reset } = useForm<VariantFormValues>({
     resolver: zodResolver(variantSchema),
     defaultValues: { modelUuid: "", code: "", name: "" },
   })
-
-  const modelUuidValue = useWatch({ control, name: "modelUuid" })
 
   useEffect(() => {
     if (!open) return
@@ -168,53 +149,20 @@ export function VehicleVariantFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4">
-                <Field>
-                  <FieldLabel>Model</FieldLabel>
-                  <Select
-                    value={modelUuidValue ?? ""}
-                    onValueChange={(v: string | null) =>
-                      v &&
-                      setValue("modelUuid", v, { shouldValidate: true })
-                    }
-                  >
-                    <SelectTrigger aria-invalid={!!errors.modelUuid}>
-                      <SelectValue
-                        placeholder={
-                          modelsLoading ? "Loading..." : "Select model"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modelOptions.map((m) => (
-                        <SelectItem key={m.modelUuid} value={m.modelUuid}>
-                          {m.name} ({m.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.modelUuid]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. SWIFT-VXI"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. Swift VXI"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
+                <FormComboboxField
+                  control={control}
+                  name="modelUuid"
+                  label="Model"
+                  companyUuid={companyUuid}
+                  Combobox={VehicleModelCombobox}
+                />
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="name" label="Name" />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

@@ -6,29 +6,23 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+  FormComboboxField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useProductCategory } from "../hooks/use-product-category"
-import { useProductCategories } from "../hooks/use-product-categories"
 import { useCreateProductCategory } from "../hooks/use-create-product-category"
 import { useUpdateProductCategory } from "../hooks/use-update-product-category"
-
-const NO_PARENT = "__none"
+import { ProductCategoryCombobox } from "./ProductCategoryCombobox"
 
 const categorySchema = z.object({
   code: z
@@ -55,10 +49,13 @@ function toFormDefaults(): CategoryFormValues {
   return {
     code: "",
     name: "",
-    parentCategoryUuid: NO_PARENT,
+    parentCategoryUuid: "",
     description: "",
   }
 }
+
+const orUndefined = (v: unknown) =>
+  v === "" || v === undefined || v === null ? undefined : (v as string)
 
 export function ProductCategoryFormDialog({
   open,
@@ -74,28 +71,10 @@ export function ProductCategoryFormDialog({
   const createMutation = useCreateProductCategory(companyUuid)
   const updateMutation = useUpdateProductCategory(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<CategoryFormValues>({
+  const { handleSubmit, control, reset } = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: toFormDefaults(),
   })
-
-  const parentValue = watch("parentCategoryUuid") ?? NO_PARENT
-
-  const { data: parentOptionsData } = useProductCategories(
-    companyUuid,
-    { status: "ACTIVE", size: 100 },
-    { enabled: open && !isEdit && !!companyUuid }
-  )
-  const parentOptions = (parentOptionsData?.content ?? []).filter(
-    (c) => c.categoryUuid !== categoryUuid
-  )
 
   useEffect(() => {
     if (!open) return
@@ -104,7 +83,7 @@ export function ProductCategoryFormDialog({
         reset({
           code: category.code,
           name: category.name,
-          parentCategoryUuid: NO_PARENT,
+          parentCategoryUuid: "",
           description: category.description ?? "",
         })
       }
@@ -153,9 +132,8 @@ export function ProductCategoryFormDialog({
         code: values.code,
         name: values.name,
         description: values.description || undefined,
-        ...(values.parentCategoryUuid &&
-        values.parentCategoryUuid !== NO_PARENT
-          ? { parentCategoryUuid: values.parentCategoryUuid }
+        ...(orUndefined(values.parentCategoryUuid)
+          ? { parentCategoryUuid: orUndefined(values.parentCategoryUuid) }
           : {}),
       },
       {
@@ -187,61 +165,32 @@ export function ProductCategoryFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. BRAKES"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. Brakes"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="name" label="Name" />
                 {!isEdit && (
-                  <Field className="lg:col-span-2">
-                    <FieldLabel>Parent Category (optional)</FieldLabel>
-                    <Select
-                      value={parentValue}
-                      onValueChange={(v: string | null) =>
-                        v && setValue("parentCategoryUuid", v, { shouldValidate: true })
-                      }
-                    >
-                      <SelectTrigger aria-invalid={!!errors.parentCategoryUuid}>
-                        <SelectValue placeholder="No parent (top level)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_PARENT}>
-                          No parent (top level)
-                        </SelectItem>
-                        {parentOptions.map((c) => (
-                          <SelectItem key={c.categoryUuid} value={c.categoryUuid}>
-                            {c.name} ({c.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.parentCategoryUuid]} />
-                  </Field>
-                )}
-                <Field className="lg:col-span-2">
-                  <FieldLabel>Description</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("description")}
+                  <FormComboboxField
+                    control={control}
+                    name="parentCategoryUuid"
+                    label="Parent Category (optional)"
+                    companyUuid={companyUuid}
+                    Combobox={ProductCategoryCombobox}
+                    comboboxProps={{
+                      excludeIds: categoryUuid ? [categoryUuid] : [],
+                    }}
+                    className="lg:col-span-2"
                   />
-                  <FieldError errors={[errors.description]} />
-                </Field>
+                )}
+                <FormTextField
+                  control={control}
+                  name="description"
+                  label="Description"
+                  className="lg:col-span-2"
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

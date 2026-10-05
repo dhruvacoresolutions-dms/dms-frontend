@@ -6,15 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import { FormTextField } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useFuelType } from "../hooks/use-fuel-type"
 import { useCreateFuelType } from "../hooks/use-create-fuel-type"
@@ -53,12 +53,7 @@ export function FuelTypeFormDialog({
   const createMutation = useCreateFuelType(companyUuid)
   const updateMutation = useUpdateFuelType(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FuelTypeFormValues>({
+  const { handleSubmit, control, reset } = useForm<FuelTypeFormValues>({
     resolver: zodResolver(fuelTypeSchema),
     defaultValues: { code: "", name: "" },
   })
@@ -140,27 +135,13 @@ export function FuelTypeFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4">
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. PETROL"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. Petrol"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="name" label="Name" />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

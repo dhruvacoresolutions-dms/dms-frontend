@@ -7,7 +7,6 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { Pencil, ToggleLeft, ToggleRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -27,8 +26,12 @@ import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  FormNumberField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { PERMISSIONS } from "@/lib/permissions"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -88,12 +91,7 @@ export function ProductAttributeOptionsDialog({
     attributeTemplateUuid ?? ""
   )
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<OptionFormValues>({
+  const { handleSubmit, control, reset } = useForm<OptionFormValues>({
     resolver: zodResolver(optionSchema),
     defaultValues: { code: "", label: "", displayOrder: 0 },
   })
@@ -162,37 +160,24 @@ export function ProductAttributeOptionsDialog({
             >
               <FieldGroup>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <Field>
-                    <FieldLabel>Code</FieldLabel>
-                    <Input
-                      placeholder="e.g. STD"
-                      aria-invalid={!!errors.code}
-                      {...register("code")}
-                      disabled={!!editing}
-                      autoComplete="off"
-                    />
-                    <FieldError errors={[errors.code]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Label</FieldLabel>
-                    <Input
-                      placeholder="e.g. Standard"
-                      aria-invalid={!!errors.label}
-                      {...register("label")}
-                      autoComplete="off"
-                    />
-                    <FieldError errors={[errors.label]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Order</FieldLabel>
-                    <Input
-                      type="number"
-                      min={0}
-                      aria-invalid={!!errors.displayOrder}
-                      {...register("displayOrder")}
-                    />
-                    <FieldError errors={[errors.displayOrder]} />
-                  </Field>
+                  <FormTextField
+                    control={control}
+                    name="code"
+                    label="Code"
+                    disabled={!!editing}
+                  />
+                  <FormTextField
+                    control={control}
+                    name="label"
+                    label="Label"
+                  />
+                  <FormNumberField
+                    control={control}
+                    name="displayOrder"
+                    label="Order"
+                    step="1"
+                    min={0}
+                  />
                 </div>
               </FieldGroup>
               <div className="mt-3 flex justify-end gap-2">

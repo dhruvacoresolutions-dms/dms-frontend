@@ -1,32 +1,28 @@
 "use client"
 
 import { useEffect } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  FormComboboxField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useVehicleModel } from "../hooks/use-vehicle-model"
 import { useCreateVehicleModel } from "../hooks/use-create-vehicle-model"
 import { useUpdateVehicleModel } from "../hooks/use-update-vehicle-model"
-import { useVehicleMakes } from "@/features/vehicle-makes/hooks/use-vehicle-makes"
+import { VehicleMakeCombobox } from "@/features/vehicle-makes/components/VehicleMakeCombobox"
 
 const modelSchema = z.object({
   makeUuid: z.string().min(1, "Make is required"),
@@ -61,26 +57,11 @@ export function VehicleModelFormDialog({
   )
   const createMutation = useCreateVehicleModel(companyUuid)
   const updateMutation = useUpdateVehicleModel(companyUuid)
-  const { data: makesData, isLoading: makesLoading } = useVehicleMakes(
-    companyUuid,
-    { size: 100, status: "ACTIVE" },
-    { enabled: open && !!companyUuid }
-  )
-  const makeOptions = makesData?.content ?? []
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<ModelFormValues>({
+  const { handleSubmit, control, reset } = useForm<ModelFormValues>({
     resolver: zodResolver(modelSchema),
     defaultValues: { makeUuid: "", code: "", name: "" },
   })
-
-  const makeUuidValue = useWatch({ control, name: "makeUuid" })
 
   useEffect(() => {
     if (!open) return
@@ -168,53 +149,20 @@ export function VehicleModelFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4">
-                <Field>
-                  <FieldLabel>Make</FieldLabel>
-                  <Select
-                    value={makeUuidValue ?? ""}
-                    onValueChange={(v: string | null) =>
-                      v &&
-                      setValue("makeUuid", v, { shouldValidate: true })
-                    }
-                  >
-                    <SelectTrigger aria-invalid={!!errors.makeUuid}>
-                      <SelectValue
-                        placeholder={
-                          makesLoading ? "Loading..." : "Select make"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {makeOptions.map((m) => (
-                        <SelectItem key={m.makeUuid} value={m.makeUuid}>
-                          {m.name} ({m.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.makeUuid]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. SWIFT"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. Swift"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
+                <FormComboboxField
+                  control={control}
+                  name="makeUuid"
+                  label="Make"
+                  companyUuid={companyUuid}
+                  Combobox={VehicleMakeCombobox}
+                />
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="name" label="Name" />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

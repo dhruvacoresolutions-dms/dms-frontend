@@ -6,23 +6,20 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  FormCheckboxField,
+  FormNumberField,
+  FormSelectField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useProductAttributeTemplate } from "../hooks/use-product-attribute-template"
 import { useCreateProductAttributeTemplate } from "../hooks/use-create-product-attribute-template"
@@ -30,6 +27,8 @@ import { useUpdateProductAttributeTemplate } from "../hooks/use-update-product-a
 import type { ProductAttributeDataType } from "../api/product-attribute-template.types"
 
 const DATA_TYPES = ["NUMBER", "TEXT", "DATE", "BOOLEAN", "DROPDOWN"] as const
+
+const DATA_TYPE_OPTIONS = DATA_TYPES.map((dt) => ({ value: dt, label: dt }))
 
 function slotsFor(dataType: ProductAttributeDataType): string[] {
   return [1, 2, 3, 4].map((n) => `${dataType}_${n}`)
@@ -85,21 +84,18 @@ export function ProductAttributeTemplateFormDialog({
   const createMutation = useCreateProductAttributeTemplate(companyUuid)
   const updateMutation = useUpdateProductAttributeTemplate(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<TemplateFormValues>({
-    resolver: zodResolver(templateSchema),
-    defaultValues: toFormDefaults(),
-  })
+  const { handleSubmit, setValue, control, reset } =
+    useForm<TemplateFormValues>({
+      resolver: zodResolver(templateSchema),
+      defaultValues: toFormDefaults(),
+    })
 
   const dataTypeValue = useWatch({ control, name: "dataType" })
   const slotValue = useWatch({ control, name: "slotAssignment" })
-  const mandatoryValue = useWatch({ control, name: "mandatory" })
+
+  const slotOptions = dataTypeValue
+    ? slotsFor(dataTypeValue).map((slot) => ({ value: slot, label: slot }))
+    : []
 
   useEffect(() => {
     if (!open) return
@@ -203,127 +199,60 @@ export function ProductAttributeTemplateFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Field>
-                  <FieldLabel>Product Type</FieldLabel>
-                  <Input
-                    placeholder="e.g. GENERAL"
-                    aria-invalid={!!errors.productType}
-                    {...register("productType")}
+                <FormTextField
+                  control={control}
+                  name="productType"
+                  label="Product Type"
+                  disabled={isEdit}
+                />
+                <FormTextField
+                  control={control}
+                  name="attributeKey"
+                  label="Attribute Key"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="label" label="Label" />
+                <FormNumberField
+                  control={control}
+                  name="displayOrder"
+                  label="Display Order"
+                  step="1"
+                  min={0}
+                />
+                <div>
+                  <FormSelectField
+                    control={control}
+                    name="dataType"
+                    label="Data Type"
+                    options={DATA_TYPE_OPTIONS}
                     disabled={isEdit}
-                    autoComplete="off"
                   />
-                  <FieldError errors={[errors.productType]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Attribute Key</FieldLabel>
-                  <Input
-                    placeholder="e.g. COLOR"
-                    aria-invalid={!!errors.attributeKey}
-                    {...register("attributeKey")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.attributeKey]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Label</FieldLabel>
-                  <Input
-                    placeholder="e.g. Colour"
-                    aria-invalid={!!errors.label}
-                    {...register("label")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.label]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Display Order</FieldLabel>
-                  <Input
-                    type="number"
-                    min={0}
-                    aria-invalid={!!errors.displayOrder}
-                    {...register("displayOrder")}
-                  />
-                  <FieldError errors={[errors.displayOrder]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Data Type</FieldLabel>
-                  <Select
-                    value={dataTypeValue ?? ""}
-                    onValueChange={(v: string | null) => {
-                      if (!v || isEdit) return
-                      setValue("dataType", v as ProductAttributeDataType, {
-                        shouldValidate: true,
-                      })
-                    }}
-                    disabled={isEdit}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.dataType}>
-                      <SelectValue placeholder="Select data type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DATA_TYPES.map((dt) => (
-                        <SelectItem key={dt} value={dt}>
-                          {dt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   {isEdit && (
                     <p className="text-xs text-muted-foreground">
                       Data type cannot be changed after creation.
                     </p>
                   )}
-                  <FieldError errors={[errors.dataType]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Slot Assignment</FieldLabel>
-                  <Select
-                    value={slotValue ?? ""}
-                    onValueChange={(v: string | null) => {
-                      if (!v || isEdit) return
-                      setValue("slotAssignment", v, { shouldValidate: true })
-                    }}
+                </div>
+                <div>
+                  <FormSelectField
+                    control={control}
+                    name="slotAssignment"
+                    label="Slot Assignment"
+                    options={slotOptions}
                     disabled={isEdit || !dataTypeValue}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.slotAssignment}>
-                      <SelectValue
-                        placeholder={
-                          dataTypeValue
-                            ? "Select slot"
-                            : "Select data type first"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dataTypeValue &&
-                        slotsFor(dataTypeValue).map((slot) => (
-                          <SelectItem key={slot} value={slot}>
-                            {slot}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  />
                   {isEdit && (
                     <p className="text-xs text-muted-foreground">
                       Slot cannot be changed after creation.
                     </p>
                   )}
-                  <FieldError errors={[errors.slotAssignment]} />
-                </Field>
-                <Field className="lg:col-span-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={mandatoryValue}
-                      onCheckedChange={(checked) =>
-                        setValue("mandatory", checked === true, {
-                          shouldValidate: true,
-                        })
-                      }
-                    />
-                    <FieldLabel className="mb-0">Mandatory</FieldLabel>
-                  </div>
-                  <FieldError errors={[errors.mandatory]} />
-                </Field>
+                </div>
+                <FormCheckboxField
+                  control={control}
+                  name="mandatory"
+                  label="Mandatory"
+                  className="lg:col-span-2"
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

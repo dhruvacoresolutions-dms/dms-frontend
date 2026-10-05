@@ -2,36 +2,28 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  FormTextField,
+  FormNumberField,
+  FormTextareaField,
+  FormSwitchField,
+  FormComboboxField,
+} from "@/components/common/form-fields"
+import { FieldGroup } from "@/components/ui/field"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useProduct } from "../hooks/use-product"
 import { useCreateProduct } from "../hooks/use-product-mutations"
 import { useUpdateProduct } from "../hooks/use-product-mutations"
-import { useProductCategories } from "@/features/product-categories/hooks/use-product-categories"
-import { useProductUoms } from "@/features/product-uoms/hooks/use-product-uoms"
-import { useProductBrands } from "@/features/product-brands/hooks/use-product-brands"
+import { ProductCategoryCombobox } from "@/features/product-categories/components/ProductCategoryCombobox"
+import { ProductUomCombobox } from "@/features/product-uoms/components/ProductUomCombobox"
+import { ProductBrandCombobox } from "@/features/product-brands/components/ProductBrandCombobox"
 import type {
   CreateProductRequest,
   UpdateProductRequest,
@@ -102,20 +94,7 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
   const createMutation = useCreateProduct(companyUuid)
   const updateMutation = useUpdateProduct(companyUuid)
 
-  const { data: categoriesData } = useProductCategories(companyUuid, {
-    size: 200,
-  })
-  const { data: uomsData } = useProductUoms(companyUuid, { size: 200 })
-  const { data: brandsData } = useProductBrands(companyUuid, { size: 200 })
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<ProductFormValues>({
+  const { handleSubmit, control, reset } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: emptyDefaults,
   })
@@ -148,13 +127,6 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
       grossWeight: product.automotiveDetail?.grossWeight,
     })
   }, [isEdit, product, reset])
-
-  const batchTracking = useWatch({ control, name: "batchTrackingEnabled" })
-  const categoryUuidValue = useWatch({ control, name: "categoryUuid" })
-  const brandUuidValue = useWatch({ control, name: "brandUuid" })
-  const baseUomValue = useWatch({ control, name: "baseUomUuid" })
-  const salesUomValue = useWatch({ control, name: "salesUomUuid" })
-  const purchaseUomValue = useWatch({ control, name: "purchaseUomUuid" })
 
   const isPending =
     createMutation.isPending ||
@@ -253,73 +225,41 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
         <CardContent>
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <Field>
-                <FieldLabel>Code *</FieldLabel>
-                <Input
-                  placeholder="e.g. BRK-PAD-001"
-                  {...register("code")}
-                  disabled={isEdit}
-                  autoComplete="off"
-                />
-                <FieldError errors={[errors.code]} />
-              </Field>
-              <Field>
-                <FieldLabel>Name *</FieldLabel>
-                <Input
-                  placeholder="e.g. Front Brake Pad"
-                  {...register("name")}
-                  autoComplete="off"
-                />
-                <FieldError errors={[errors.name]} />
-              </Field>
-              <Field>
-                <FieldLabel>Short Name</FieldLabel>
-                <Input {...register("shortName")} autoComplete="off" />
-                <FieldError errors={[errors.shortName]} />
-              </Field>
-              <Field>
-                <FieldLabel>Product Type</FieldLabel>
-                <Input
-                  placeholder="e.g. SPARE_PART"
-                  {...register("productType")}
-                  autoComplete="off"
-                />
-                <FieldError errors={[errors.productType]} />
-              </Field>
-              <Field>
-                <FieldLabel>Category</FieldLabel>
-                <Select
-                  value={categoryUuidValue || ""}
-                  onValueChange={(v: string | null) => {
-                    if (v) setValue("categoryUuid", v, { shouldValidate: true })
-                    }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(categoriesData?.content ?? []).map((c) => (
-                      <SelectItem key={c.categoryUuid} value={c.categoryUuid}>
-                        {c.name} ({c.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError errors={[errors.categoryUuid]} />
-              </Field>
-              <Field>
-                <FieldLabel>Barcode</FieldLabel>
-                <Input {...register("barcode")} autoComplete="off" />
-                <FieldError errors={[errors.barcode]} />
-              </Field>
-              <Field className="lg:col-span-3">
-                <FieldLabel>Description</FieldLabel>
-                <Textarea
-                  placeholder="Optional product description"
-                  {...register("description")}
-                />
-                <FieldError errors={[errors.description]} />
-              </Field>
+              <FormTextField
+                control={control}
+                name="code"
+                label="Code *"
+                disabled={isEdit}
+              />
+              <FormTextField control={control} name="name" label="Name *" />
+              <FormTextField
+                control={control}
+                name="shortName"
+                label="Short Name"
+              />
+              <FormTextField
+                control={control}
+                name="productType"
+                label="Product Type"
+              />
+              <FormComboboxField
+                control={control}
+                name="categoryUuid"
+                label="Category"
+                companyUuid={companyUuid}
+                Combobox={ProductCategoryCombobox}
+              />
+              <FormTextField
+                control={control}
+                name="barcode"
+                label="Barcode"
+              />
+              <FormTextareaField
+                control={control}
+                name="description"
+                label="Description"
+                className="lg:col-span-3"
+              />
             </div>
           </FieldGroup>
         </CardContent>
@@ -332,63 +272,43 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
         <CardContent>
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {(
-                [
-                  ["baseUomUuid", "Base UOM", baseUomValue],
-                  ["salesUomUuid", "Sales UOM", salesUomValue],
-                  ["purchaseUomUuid", "Purchase UOM", purchaseUomValue],
-                ] as const
-              ).map(([name, label, fieldValue]) => (
-                <Field key={name}>
-                  <FieldLabel>{label}</FieldLabel>
-                  <Select
-                    value={fieldValue || ""}
-                    onValueChange={(v: string | null) => {
-                      if (v) setValue(name, v, { shouldValidate: true })
-                      }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${label}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(uomsData?.content ?? []).map((u) => (
-                        <SelectItem key={u.uomUuid} value={u.uomUuid}>
-                          {u.name} ({u.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors[name]]} />
-                </Field>
-              ))}
-              <Field>
-                <FieldLabel>Net Weight</FieldLabel>
-                <Input
-                  type="number"
-                  step="any"
-                  {...register("netWeight")}
-                />
-                <FieldError errors={[errors.netWeight]} />
-              </Field>
-              <Field>
-                <FieldLabel>Weight UOM</FieldLabel>
-                <Input placeholder="e.g. KG" {...register("weightUom")} />
-                <FieldError errors={[errors.weightUom]} />
-              </Field>
-              <Field>
-                <FieldLabel>Batch Tracking</FieldLabel>
-                <div className="flex items-center gap-2 pt-2">
-                  <Switch
-                    checked={!!batchTracking}
-                    onCheckedChange={(v) =>
-                      setValue("batchTrackingEnabled", v)
-                    }
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Track inventory by batch
-                  </span>
-                </div>
-              </Field>
+              <FormComboboxField
+                control={control}
+                name="baseUomUuid"
+                label="Base UOM"
+                companyUuid={companyUuid}
+                Combobox={ProductUomCombobox}
+              />
+              <FormComboboxField
+                control={control}
+                name="salesUomUuid"
+                label="Sales UOM"
+                companyUuid={companyUuid}
+                Combobox={ProductUomCombobox}
+              />
+              <FormComboboxField
+                control={control}
+                name="purchaseUomUuid"
+                label="Purchase UOM"
+                companyUuid={companyUuid}
+                Combobox={ProductUomCombobox}
+              />
+              <FormNumberField
+                control={control}
+                name="netWeight"
+                label="Net Weight"
+              />
+              <FormTextField
+                control={control}
+                name="weightUom"
+                label="Weight UOM"
+              />
+              <FormSwitchField
+                control={control}
+                name="batchTrackingEnabled"
+                label="Batch Tracking"
+                hint="Track inventory by batch"
+              />
             </div>
           </FieldGroup>
         </CardContent>
@@ -401,60 +321,40 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
         <CardContent>
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <Field>
-                <FieldLabel>Brand</FieldLabel>
-                <Select
-                  value={brandUuidValue || ""}
-                  onValueChange={(v: string | null) => {
-                    if (v) setValue("brandUuid", v, { shouldValidate: true })
-                    }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(brandsData?.content ?? []).map((b) => (
-                      <SelectItem key={b.brandUuid} value={b.brandUuid}>
-                        {b.name} ({b.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError errors={[errors.brandUuid]} />
-              </Field>
-              <Field>
-                <FieldLabel>Manufacturer</FieldLabel>
-                <Input {...register("manufacturer")} autoComplete="off" />
-                <FieldError errors={[errors.manufacturer]} />
-              </Field>
-              <Field>
-                <FieldLabel>Part Number</FieldLabel>
-                <Input {...register("partNumber")} autoComplete="off" />
-                <FieldError errors={[errors.partNumber]} />
-              </Field>
-              <Field>
-                <FieldLabel>OEM Part Number</FieldLabel>
-                <Input {...register("oemPartNumber")} autoComplete="off" />
-                <FieldError errors={[errors.oemPartNumber]} />
-              </Field>
-              <Field>
-                <FieldLabel>Pack Quantity</FieldLabel>
-                <Input
-                  type="number"
-                  step="1"
-                  {...register("packQuantity")}
-                />
-                <FieldError errors={[errors.packQuantity]} />
-              </Field>
-              <Field>
-                <FieldLabel>Gross Weight</FieldLabel>
-                <Input
-                  type="number"
-                  step="any"
-                  {...register("grossWeight")}
-                />
-                <FieldError errors={[errors.grossWeight]} />
-              </Field>
+              <FormComboboxField
+                control={control}
+                name="brandUuid"
+                label="Brand"
+                companyUuid={companyUuid}
+                Combobox={ProductBrandCombobox}
+              />
+              <FormTextField
+                control={control}
+                name="manufacturer"
+                label="Manufacturer"
+              />
+              <FormTextField
+                control={control}
+                name="partNumber"
+                label="Part Number"
+              />
+              <FormTextField
+                control={control}
+                name="oemPartNumber"
+                label="OEM Part Number"
+              />
+              <FormNumberField
+                control={control}
+                name="packQuantity"
+                label="Pack Quantity"
+                step="1"
+                min={1}
+              />
+              <FormNumberField
+                control={control}
+                name="grossWeight"
+                label="Gross Weight"
+              />
             </div>
           </FieldGroup>
         </CardContent>

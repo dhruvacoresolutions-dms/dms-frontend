@@ -6,14 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
+import { FormTextField } from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useProductUom } from "../hooks/use-product-uom"
@@ -62,12 +62,7 @@ export function ProductUomFormDialog({
   const createMutation = useCreateProductUom(companyUuid)
   const updateMutation = useUpdateProductUom(companyUuid)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<UomFormValues>({
+  const { handleSubmit, control, reset } = useForm<UomFormValues>({
     resolver: zodResolver(uomSchema),
     defaultValues: toFormDefaults(),
   })
@@ -156,35 +151,19 @@ export function ProductUomFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. PCS"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
-                    disabled={isEdit}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. Pieces"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
-                <Field className="lg:col-span-2">
-                  <FieldLabel>Description</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("description")}
-                  />
-                  <FieldError errors={[errors.description]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  disabled={isEdit}
+                />
+                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="description"
+                  label="Description"
+                  className="lg:col-span-2"
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">
