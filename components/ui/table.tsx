@@ -6,10 +6,7 @@ import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
+    <div data-slot="table-container" className="relative w-full">
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
@@ -24,7 +21,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
     <thead
       data-slot="table-header"
       className={cn(
-        "[&_th]:bg-accent [&_th]:text-accent-foreground [&_th:first-child]:rounded-tl-md [&_th:last-child]:rounded-tr-md [&_tr]:border-b",
+        "sticky top-0 z-10 bg-accent shadow-[0_1px_0_0_var(--border)] [&_th]:bg-accent [&_th]:text-accent-foreground [&_th:first-child]:rounded-tl-md [&_th:last-child]:rounded-tr-md [&_tr]:border-b [&_tr]:hover:bg-transparent",
         className
       )}
       {...props}
@@ -73,7 +70,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "sticky top-0 z-10 h-10 bg-accent px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

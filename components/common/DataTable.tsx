@@ -31,6 +31,7 @@ import {
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 const dataTableFeatures = tableFeatures({
@@ -217,7 +218,17 @@ export function DataTable<TData extends RowData>({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={cn("overflow-hidden rounded-md border", wrapperClassName)}>
+      <ScrollArea
+        orientations={["vertical", "horizontal"]}
+        className={cn("rounded-md border bg-background", wrapperClassName)}
+        viewportClassName={cn(
+          "max-h-[min(62svh,36rem)]",
+          wrapperClassName
+        )}
+        // Track starts below the sticky header (h-10) so the floating
+        // thumb only ever overlaps body rows, never the header.
+        verticalScrollBarClassName="mt-10"
+      >
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -288,7 +299,7 @@ export function DataTable<TData extends RowData>({
             )}
           </TableBody>
         </Table>
-      </div>
+      </ScrollArea>
 
       {effectivePagination ? (
         <DataTablePagination

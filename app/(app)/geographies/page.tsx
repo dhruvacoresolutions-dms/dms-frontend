@@ -1,7 +1,15 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, MapPin, Upload } from "lucide-react"
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  ToggleLeft,
+  ToggleRight,
+  MapPin,
+  Upload,
+} from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
@@ -39,14 +47,18 @@ export default function GeographiesPage() {
 }
 
 function GeographiesContent() {
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
-  const [statusToggle, setStatusToggle] = useState<{ uuid: string; currentStatus: string } | null>(null)
+  const [statusToggle, setStatusToggle] = useState<{
+    uuid: string
+    currentStatus: string
+  } | null>(null)
 
   const { data, isLoading, error, refetch } = useGeographies(companyUuid, {
     search: search || undefined,
@@ -68,22 +80,25 @@ function GeographiesContent() {
           <span className="font-mono text-sm">{row.original.code}</span>
         ),
       },
+
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.type}</Badge>
+        ),
+      },
+      {
+        id: "parent",
+        header: "Parent",
+        cell: ({ row }) => row.original.parentName ?? "-",
+      },
       {
         id: "name",
         header: "Name",
         cell: ({ row }) => (
           <span className="font-medium">{row.original.name}</span>
         ),
-      },
-      {
-        id: "type",
-        header: "Type",
-        cell: ({ row }) => <Badge variant="secondary">{row.original.type}</Badge>,
-      },
-      {
-        id: "parent",
-        header: "Parent",
-        cell: ({ row }) => row.original.parentName ?? "-",
       },
       {
         id: "status",
@@ -97,25 +112,37 @@ function GeographiesContent() {
           const g = row.original
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-auto min-w-40"
-              >
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-40">
                 <PermissionGate permission={PERMISSIONS.GEOGRAPHY.UPDATE}>
-                  <DropdownMenuItem onClick={() => setEditingUuid(g.geographyUuid)}>
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(g.geographyUuid)}
+                  >
                     <Pencil className="mr-2 size-4" /> Edit
                   </DropdownMenuItem>
                 </PermissionGate>
                 <DropdownMenuSeparator />
                 <PermissionGate permission={PERMISSIONS.GEOGRAPHY.UPDATE}>
                   <DropdownMenuItem
-                    variant={
-                      g.status === "ACTIVE" ? "destructive" : "default"
+                    variant={g.status === "ACTIVE" ? "destructive" : "default"}
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: g.geographyUuid,
+                        currentStatus: g.status,
+                      })
                     }
-                    onClick={() => setStatusToggle({ uuid: g.geographyUuid, currentStatus: g.status })}
                   >
-                    {g.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                    {g.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" /> Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" /> Activate
+                      </>
+                    )}
                   </DropdownMenuItem>
                 </PermissionGate>
               </DropdownMenuContent>
@@ -153,7 +180,10 @@ function GeographiesContent() {
         <SearchInput
           placeholder="Search geographies..."
           defaultValue={search}
-          onChange={(v) => { setSearch(v); setPage(0) }}
+          onChange={(v) => {
+            setSearch(v)
+            setPage(0)
+          }}
         />
         <div className="ml-auto flex items-center gap-2">
           <ExportDropdown
@@ -178,9 +208,20 @@ function GeographiesContent() {
         empty={{
           icon: MapPin,
           title: "No geographies found",
-          description: search ? "Try a different search." : "Create a geography to get started.",
+          description: search
+            ? "Try a different search."
+            : "Create a geography to get started.",
         }}
-        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          pageSize: size,
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
+        }}
       />
 
       <GeographyFormDialog
@@ -206,10 +247,23 @@ function GeographiesContent() {
         onConfirm={() => {
           if (!statusToggle) return
           updateStatusMutation.mutate(
-            { geographyUuid: statusToggle.uuid, input: { status: statusToggle.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE" } },
             {
-              onSuccess: () => { toast.success("Status updated"); setStatusToggle(null) },
-              onError: (error) => { toast.error(getApiErrorMessage(error, "Failed")) },
+              geographyUuid: statusToggle.uuid,
+              input: {
+                status:
+                  statusToggle.currentStatus === "ACTIVE"
+                    ? "INACTIVE"
+                    : "ACTIVE",
+              },
+            },
+            {
+              onSuccess: () => {
+                toast.success("Status updated")
+                setStatusToggle(null)
+              },
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed"))
+              },
             }
           )
         }}
