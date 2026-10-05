@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
+import { GeographyTypeBadge } from "@/features/geographies/components/GeographyTypeBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
@@ -84,9 +84,7 @@ function GeographiesContent() {
       {
         id: "type",
         header: "Type",
-        cell: ({ row }) => (
-          <Badge variant="secondary">{row.original.type}</Badge>
-        ),
+        cell: ({ row }) => <GeographyTypeBadge type={row.original.type} />,
       },
       {
         id: "parent",
