@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Plus,
   MoreHorizontal,
@@ -13,14 +13,7 @@ import {
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { BulkImportDialog } from "@/components/common/BulkImportDialog"
 import { ExportDropdown } from "@/components/common/ExportDropdown"
@@ -51,6 +41,7 @@ import {
   uploadFuelTypeImport,
 } from "@/features/fuel-types/api/fuel-type.api"
 import { getFuelTypeId } from "@/features/fuel-types/api/fuel-type.types"
+import type { FuelTypeResponse } from "@/features/fuel-types/api/fuel-type.types"
 import { useFitmentPositions } from "@/features/fitment-positions/hooks/use-fitment-positions"
 import { useUpdateFitmentPositionStatus } from "@/features/fitment-positions/hooks/use-update-fitment-position-status"
 import { FitmentPositionFormDialog } from "@/features/fitment-positions/components/FitmentPositionFormDialog"
@@ -60,6 +51,7 @@ import {
   uploadFitmentPositionImport,
 } from "@/features/fitment-positions/api/fitment-position.api"
 import { getFitmentPositionId } from "@/features/fitment-positions/api/fitment-position.types"
+import type { FitmentPositionResponse } from "@/features/fitment-positions/api/fitment-position.types"
 import { useRelationshipTypes } from "@/features/relationship-types/hooks/use-relationship-types"
 import { useUpdateRelationshipTypeStatus } from "@/features/relationship-types/hooks/use-update-relationship-type-status"
 import { RelationshipTypeFormDialog } from "@/features/relationship-types/components/RelationshipTypeFormDialog"
@@ -69,6 +61,7 @@ import {
   uploadRelationshipTypeImport,
 } from "@/features/relationship-types/api/relationship-type.api"
 import { getRelationshipTypeId } from "@/features/relationship-types/api/relationship-type.types"
+import type { RelationshipTypeResponse } from "@/features/relationship-types/api/relationship-type.types"
 
 const SM = PERMISSIONS.PRODUCT
 
@@ -118,48 +111,12 @@ function SupportMastersContent() {
   )
 }
 
-function Pagination({
-  page,
-  totalPages,
-  onPage,
-}: {
-  page: number
-  totalPages: number
-  onPage: (p: number) => void
-}) {
-  if (totalPages <= 1) return null
-  return (
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">
-        Page {page + 1} of {totalPages}
-      </p>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === 0}
-          onClick={() => onPage(page - 1)}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages - 1}
-          onClick={() => onPage(page + 1)}
-        >
-          Next
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 // ── Fuel Types ─────────────────────────────────────────────────────────────
 
 function FuelTypesTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -168,12 +125,97 @@ function FuelTypesTab({ companyUuid }: { companyUuid: string }) {
   const { data, isLoading, error, refetch } = useFuelTypes(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
   const statusMutation = useUpdateFuelTypeStatus(companyUuid)
 
   const fuelTypes = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<FuelTypeResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const f = row.original
+          const id = getFuelTypeId(f)
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(id)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_STATUS}
+                >
+                  <DropdownMenuItem
+                    variant={
+                      f.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: id,
+                        currentStatus: f.status,
+                        version: f.version,
+                      })
+                    }
+                  >
+                    {f.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -213,105 +255,22 @@ function FuelTypesTab({ companyUuid }: { companyUuid: string }) {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : fuelTypes.length === 0 ? (
-        <EmptyState
-          icon={Wrench}
-          title="No fuel types found"
-          description={
-            search
-              ? "Try a different search."
-              : "Create a fuel type to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fuelTypes.map((f) => {
-                  const id = getFuelTypeId(f)
-                  return (
-                    <TableRow key={id}>
-                      <TableCell className="font-mono text-sm">
-                        {f.code}
-                      </TableCell>
-                      <TableCell className="font-medium">{f.name}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={f.status} />
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="cursor-pointer">
-                            <MoreHorizontal className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-auto min-w-40"
-                          >
-                            <PermissionGate
-                              permission={SM.SUPPORTING_MASTER_UPDATE}
-                            >
-                              <DropdownMenuItem
-                                onClick={() => setEditingUuid(id)}
-                              >
-                                <Pencil className="mr-2 size-4" /> Edit
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                            <DropdownMenuSeparator />
-                            <PermissionGate
-                              permission={SM.SUPPORTING_MASTER_STATUS}
-                            >
-                              <DropdownMenuItem
-                                variant={
-                                  f.status === "ACTIVE"
-                                    ? "destructive"
-                                    : "default"
-                                }
-                                onClick={() =>
-                                  setStatusToggle({
-                                    uuid: id,
-                                    currentStatus: f.status,
-                                    version: f.version,
-                                  })
-                                }
-                              >
-                                {f.status === "ACTIVE" ? (
-                                  <>
-                                    <ToggleLeft className="mr-2 size-4" />{" "}
-                                    Deactivate
-                                  </>
-                                ) : (
-                                  <>
-                                    <ToggleRight className="mr-2 size-4" />{" "}
-                                    Activate
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={fuelTypes}
+        getRowId={(f) => getFuelTypeId(f)}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Wrench,
+          title: "No fuel types found",
+          description: search
+            ? "Try a different search."
+            : "Create a fuel type to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <FuelTypeFormDialog
         open={createOpen}
@@ -382,6 +341,7 @@ function FuelTypesTab({ companyUuid }: { companyUuid: string }) {
 function FitmentPositionsTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -390,12 +350,97 @@ function FitmentPositionsTab({ companyUuid }: { companyUuid: string }) {
   const { data, isLoading, error, refetch } = useFitmentPositions(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
   const statusMutation = useUpdateFitmentPositionStatus(companyUuid)
 
   const positions = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<FitmentPositionResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const p = row.original
+          const id = getFitmentPositionId(p)
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(id)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_STATUS}
+                >
+                  <DropdownMenuItem
+                    variant={
+                      p.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: id,
+                        currentStatus: p.status,
+                        version: p.version,
+                      })
+                    }
+                  >
+                    {p.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -435,105 +480,22 @@ function FitmentPositionsTab({ companyUuid }: { companyUuid: string }) {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : positions.length === 0 ? (
-        <EmptyState
-          icon={Wrench}
-          title="No fitment positions found"
-          description={
-            search
-              ? "Try a different search."
-              : "Create a fitment position to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {positions.map((p) => {
-                  const id = getFitmentPositionId(p)
-                  return (
-                    <TableRow key={id}>
-                      <TableCell className="font-mono text-sm">
-                        {p.code}
-                      </TableCell>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={p.status} />
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="cursor-pointer">
-                            <MoreHorizontal className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-auto min-w-40"
-                          >
-                            <PermissionGate
-                              permission={SM.SUPPORTING_MASTER_UPDATE}
-                            >
-                              <DropdownMenuItem
-                                onClick={() => setEditingUuid(id)}
-                              >
-                                <Pencil className="mr-2 size-4" /> Edit
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                            <DropdownMenuSeparator />
-                            <PermissionGate
-                              permission={SM.SUPPORTING_MASTER_STATUS}
-                            >
-                              <DropdownMenuItem
-                                variant={
-                                  p.status === "ACTIVE"
-                                    ? "destructive"
-                                    : "default"
-                                }
-                                onClick={() =>
-                                  setStatusToggle({
-                                    uuid: id,
-                                    currentStatus: p.status,
-                                    version: p.version,
-                                  })
-                                }
-                              >
-                                {p.status === "ACTIVE" ? (
-                                  <>
-                                    <ToggleLeft className="mr-2 size-4" />{" "}
-                                    Deactivate
-                                  </>
-                                ) : (
-                                  <>
-                                    <ToggleRight className="mr-2 size-4" />{" "}
-                                    Activate
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={positions}
+        getRowId={(p) => getFitmentPositionId(p)}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Wrench,
+          title: "No fitment positions found",
+          description: search
+            ? "Try a different search."
+            : "Create a fitment position to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <FitmentPositionFormDialog
         open={createOpen}
@@ -604,6 +566,7 @@ function FitmentPositionsTab({ companyUuid }: { companyUuid: string }) {
 function RelationshipTypesTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -614,13 +577,98 @@ function RelationshipTypesTab({ companyUuid }: { companyUuid: string }) {
     {
       search: search || undefined,
       page,
-      size: 20,
+      size,
     }
   )
   const statusMutation = useUpdateRelationshipTypeStatus(companyUuid)
 
   const types = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<RelationshipTypeResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const t = row.original
+          const id = getRelationshipTypeId(t)
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(id)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_STATUS}
+                >
+                  <DropdownMenuItem
+                    variant={
+                      t.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: id,
+                        currentStatus: t.status,
+                        version: t.version,
+                      })
+                    }
+                  >
+                    {t.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -660,105 +708,22 @@ function RelationshipTypesTab({ companyUuid }: { companyUuid: string }) {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : types.length === 0 ? (
-        <EmptyState
-          icon={Wrench}
-          title="No relationship types found"
-          description={
-            search
-              ? "Try a different search."
-              : "Create a relationship type to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {types.map((t) => {
-                  const id = getRelationshipTypeId(t)
-                  return (
-                    <TableRow key={id}>
-                      <TableCell className="font-mono text-sm">
-                        {t.code}
-                      </TableCell>
-                      <TableCell className="font-medium">{t.name}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={t.status} />
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="cursor-pointer">
-                            <MoreHorizontal className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-auto min-w-40"
-                          >
-                            <PermissionGate
-                              permission={SM.SUPPORTING_MASTER_UPDATE}
-                            >
-                              <DropdownMenuItem
-                                onClick={() => setEditingUuid(id)}
-                              >
-                                <Pencil className="mr-2 size-4" /> Edit
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                            <DropdownMenuSeparator />
-                            <PermissionGate
-                              permission={SM.SUPPORTING_MASTER_STATUS}
-                            >
-                              <DropdownMenuItem
-                                variant={
-                                  t.status === "ACTIVE"
-                                    ? "destructive"
-                                    : "default"
-                                }
-                                onClick={() =>
-                                  setStatusToggle({
-                                    uuid: id,
-                                    currentStatus: t.status,
-                                    version: t.version,
-                                  })
-                                }
-                              >
-                                {t.status === "ACTIVE" ? (
-                                  <>
-                                    <ToggleLeft className="mr-2 size-4" />{" "}
-                                    Deactivate
-                                  </>
-                                ) : (
-                                  <>
-                                    <ToggleRight className="mr-2 size-4" />{" "}
-                                    Activate
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={types}
+        getRowId={(t) => getRelationshipTypeId(t)}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Wrench,
+          title: "No relationship types found",
+          description: search
+            ? "Try a different search."
+            : "Create a relationship type to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <RelationshipTypeFormDialog
         open={createOpen}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
@@ -35,14 +35,7 @@ import type {
   EmployeeStatus,
   EnableEmployeeLoginResponse,
 } from "@/features/employees/api/employee.types"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,9 +45,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { LoginCredentialsDialog } from "@/components/common/LoginCredentialsDialog"
 import { useEmployees } from "@/features/employees/hooks/use-employees"
@@ -90,6 +80,7 @@ function EmployeesContent() {
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [statusFilter, setStatusFilter] = useState<"ALL" | EmployeeStatus>(
     "ALL"
   )
@@ -118,7 +109,7 @@ function EmployeesContent() {
     status: statusFilter === "ALL" ? undefined : statusFilter,
     designationUuid: designationFilter ?? undefined,
     page,
-    size: 20,
+    size,
   })
 
   const hasActiveFilters =
@@ -168,6 +159,171 @@ function EmployeesContent() {
         ...employees.filter((emp) => !prevIds.includes(employeeId(emp))),
       ]
     })
+
+  const columns = useMemo<DataTableColumn<EmployeeResponse>[]>(
+    () => [
+      ...(canBulkAction
+        ? [
+            {
+              id: "select",
+              header: (
+                <Checkbox
+                  checked={allPageSelected}
+                  indeterminate={somePageSelected}
+                  onCheckedChange={() => toggleAllOnPage()}
+                  aria-label="Select all employees on this page"
+                />
+              ),
+              cell: ({ row }: { row: { original: EmployeeResponse } }) => {
+                const emp = row.original
+                return (
+                  <Checkbox
+                    checked={selectedIds.includes(employeeId(emp))}
+                    onCheckedChange={() => toggleOne(emp)}
+                    aria-label={`Select ${emp.firstName} ${emp.lastName}`}
+                  />
+                )
+              },
+            } satisfies DataTableColumn<EmployeeResponse>,
+          ]
+        : []),
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.employeeCode}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => {
+          const emp = row.original
+          return (
+            <div className="flex flex-col">
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                {emp.firstName} {emp.lastName}
+                {emp.loginStatus === "ACTIVE" && (
+                  <span title="Login enabled">
+                    <KeyRound
+                      className="size-3.5 text-green-600 dark:text-green-400"
+                      aria-label="Login enabled"
+                    />
+                  </span>
+                )}
+              </span>
+              {emp.email && (
+                <span className="text-xs text-muted-foreground">
+                  {emp.email}
+                </span>
+              )}
+            </div>
+          )
+        },
+      },
+      {
+        id: "designation",
+        header: "Designation",
+        cell: ({ row }) => row.original.designationName ?? "-",
+      },
+      {
+        id: "reportingManager",
+        header: "Reporting Manager",
+        cell: ({ row }) => row.original.reportsToEmployeeName ?? "-",
+      },
+      {
+        id: "mobile",
+        header: "Mobile Number",
+        cell: ({ row }) => row.original.mobile ?? "-",
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const emp = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-40">
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push(`/employees/${emp.employeeUuid}`)
+                  }}
+                >
+                  <Eye className="mr-2 size-4" /> View
+                </DropdownMenuItem>
+                <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      router.push(`/employees/${emp.employeeUuid}/edit`)
+                    }}
+                  >
+                    <Edit className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate
+                  permission={PERMISSIONS.EMPLOYEE.LOGIN_MANAGE}
+                >
+                  <DropdownMenuSeparator />
+                  {emp.loginStatus === "ACTIVE" ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setLoginDisable(emp)
+                      }}
+                    >
+                      <UserX className="mr-2 size-4" /> Disable Login
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setEnableRoleUuid(null)
+                        setLoginEnable(emp)
+                      }}
+                    >
+                      <KeyRound className="mr-2 size-4" /> Enable Login
+                    </DropdownMenuItem>
+                  )}
+                </PermissionGate>
+                <PermissionGate permission={PERMISSIONS.EMPLOYEE.UPDATE}>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant={
+                      emp.status === "ACTIVE" ? "destructive" : "default"
+                    }
+                    onClick={() => {
+                      setStatusToggle({
+                        employeeUuid: emp.employeeUuid,
+                        currentStatus: emp.status,
+                      })
+                    }}
+                  >
+                    {emp.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" /> Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" /> Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canBulkAction, allPageSelected, somePageSelected, selected, employees, router]
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -273,21 +429,20 @@ function EmployeesContent() {
         }
       />
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : employees.length === 0 ? (
-        <EmptyState
-          icon={Briefcase}
-          title="No employees found"
-          description={
-            hasActiveFilters
-              ? "Try a different search or clear filters."
-              : "Get started by creating an employee."
-          }
-        >
-          {!hasActiveFilters && (
+      <DataTable
+        columns={columns}
+        data={employees}
+        getRowId={(emp) => emp.employeeUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Briefcase,
+          title: "No employees found",
+          description: hasActiveFilters
+            ? "Try a different search or clear filters."
+            : "Get started by creating an employee.",
+          action: !hasActiveFilters ? (
             <PermissionGate permission={PERMISSIONS.EMPLOYEE.CREATE}>
               <CreationGate message={creationGate.message}>
                 <Button
@@ -301,192 +456,10 @@ function EmployeesContent() {
                 </Button>
               </CreationGate>
             </PermissionGate>
-          )}
-        </EmptyState>
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {canBulkAction && (
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={allPageSelected}
-                        indeterminate={somePageSelected}
-                        onCheckedChange={() => toggleAllOnPage()}
-                        aria-label="Select all employees on this page"
-                      />
-                    </TableHead>
-                  )}
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Designation</TableHead>
-                  <TableHead>Reporting Manager</TableHead>
-                  <TableHead>Mobile Number</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((emp) => (
-                  <TableRow key={emp.employeeUuid}>
-                    {canBulkAction && (
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.includes(employeeId(emp))}
-                          onCheckedChange={() => toggleOne(emp)}
-                          aria-label={`Select ${emp.firstName} ${emp.lastName}`}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell className="font-mono text-sm">
-                      {emp.employeeCode}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1.5 font-medium">
-                          {emp.firstName} {emp.lastName}
-                          {emp.loginStatus === "ACTIVE" && (
-                            <span title="Login enabled">
-                              <KeyRound
-                                className="size-3.5 text-green-600 dark:text-green-400"
-                                aria-label="Login enabled"
-                              />
-                            </span>
-                          )}
-                        </span>
-                        {emp.email && (
-                          <span className="text-xs text-muted-foreground">
-                            {emp.email}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{emp.designationName ?? "-"}</TableCell>
-                    <TableCell>{emp.reportsToEmployeeName ?? "-"}</TableCell>
-                    <TableCell>{emp.mobile ?? "-"}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={emp.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => {
-                              router.push(`/employees/${emp.employeeUuid}`)
-                            }}
-                          >
-                            <Eye className="mr-2 size-4" /> View
-                          </DropdownMenuItem>
-                          <PermissionGate
-                            permission={PERMISSIONS.EMPLOYEE.UPDATE}
-                          >
-                            <DropdownMenuItem
-                              onClick={() => {
-                                router.push(
-                                  `/employees/${emp.employeeUuid}/edit`
-                                )
-                              }}
-                            >
-                              <Edit className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <PermissionGate
-                            permission={PERMISSIONS.EMPLOYEE.LOGIN_MANAGE}
-                          >
-                            <DropdownMenuSeparator />
-                            {emp.loginStatus === "ACTIVE" ? (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setLoginDisable(emp)
-                                }}
-                              >
-                                <UserX className="mr-2 size-4" /> Disable Login
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setEnableRoleUuid(null)
-                                  setLoginEnable(emp)
-                                }}
-                              >
-                                <KeyRound className="mr-2 size-4" /> Enable
-                                Login
-                              </DropdownMenuItem>
-                            )}
-                          </PermissionGate>
-                          <PermissionGate
-                            permission={PERMISSIONS.EMPLOYEE.UPDATE}
-                          >
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant={
-                                emp.status === "ACTIVE"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              onClick={() => {
-                                setStatusToggle({
-                                  employeeUuid: emp.employeeUuid,
-                                  currentStatus: emp.status,
-                                })
-                              }}
-                            >
-                              {emp.status === "ACTIVE" ? (
-                                <>
-                                  <ToggleLeft className="mr-2 size-4" />{" "}
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 size-4" />{" "}
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page + 1} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+          ) : undefined,
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <ConfirmDialog
         open={!!statusToggle}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Plus, Trash2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -13,16 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { LoadingState } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
@@ -32,6 +24,7 @@ import {
   useAssignEmployeeGeography,
   useRemoveEmployeeGeography,
 } from "@/features/employees/hooks/use-employee-geographies"
+import type { EmployeeGeographyResponse } from "@/features/employees/api/employee.types"
 import { toast } from "sonner"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -47,6 +40,50 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
   const assignMutation = useAssignEmployeeGeography(companyUuid, employeeUuid)
   const removeMutation = useRemoveEmployeeGeography(companyUuid, employeeUuid)
   const assignedUuids = geographies.data?.map((a) => a.geographyUuid) ?? []
+
+  const columns = useMemo<DataTableColumn<EmployeeGeographyResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.geographyCode}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.geographyName}</span>
+        ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) => row.original.geographyType,
+      },
+      {
+        id: "primary",
+        header: "Primary",
+        cell: ({ row }) => (row.original.primaryAssignment ? "Yes" : "No"),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const g = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.GEOGRAPHY.ASSIGN}>
+              <Button variant="ghost" size="icon-sm" onClick={() => setRemoveTarget({ uuid: g.geographyUuid, name: g.geographyName })}>
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   if (geographies.isLoading) return <LoadingState />
   if (geographies.error) return <ErrorState />
@@ -129,40 +166,16 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
         </PermissionGate>
       </div>
 
-      {!geographies.data || geographies.data.length === 0 ? (
-        <EmptyState icon={MapPin} title="No geographies assigned" description="Assign a geography to this employee." />
-      ) : (
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Primary</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {geographies.data.map((g) => (
-                <TableRow key={g.assignmentUuid}>
-                  <TableCell className="font-mono">{g.geographyCode}</TableCell>
-                  <TableCell className="font-medium">{g.geographyName}</TableCell>
-                  <TableCell>{g.geographyType}</TableCell>
-                  <TableCell>{g.primaryAssignment ? "Yes" : "No"}</TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.GEOGRAPHY.ASSIGN}>
-                      <Button variant="ghost" size="icon-sm" onClick={() => setRemoveTarget({ uuid: g.geographyUuid, name: g.geographyName })}>
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={geographies.data ?? []}
+        getRowId={(g) => g.assignmentUuid}
+        empty={{
+          icon: MapPin,
+          title: "No geographies assigned",
+          description: "Assign a geography to this employee.",
+        }}
+      />
 
       <ConfirmDialog
         open={!!removeTarget}

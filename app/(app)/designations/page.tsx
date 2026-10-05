@@ -1,18 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,10 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import type { DesignationResponse } from "@/features/designations/api/designation.types"
 import { useDesignations } from "@/features/designations/hooks/use-designations"
 import { useUpdateDesignationStatus } from "@/features/designations/hooks/use-update-designation-status"
 import { DesignationFormDialog } from "@/features/designations/components/DesignationFormDialog"
@@ -50,6 +41,7 @@ function DesignationsContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -61,13 +53,98 @@ function DesignationsContent() {
   const { data, isLoading, error, refetch } = useDesignations(companyUuid, {
     query: search || undefined,
     page,
-    size: 20,
+    size,
   })
 
   const updateStatusMutation = useUpdateDesignationStatus(companyUuid)
 
   const designations = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<DesignationResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "description",
+        header: "Description",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{row.original.description ?? "-"}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const d = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate permission={PERMISSIONS.DESIGNATION.UPDATE}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      setEditingUuid(d.publicId ?? d.designationUuid)
+                    }
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate permission={PERMISSIONS.DESIGNATION.UPDATE}>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant={
+                      d.status === "ACTIVE" ? "destructive" : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: d.publicId ?? d.designationUuid,
+                        currentStatus: d.status,
+                      })
+                    }
+                  >
+                  {d.status === "ACTIVE" ? (
+                    <>
+                      <ToggleLeft className="mr-2 size-4" />{" "}
+                      Deactivate
+                    </>
+                  ) : (
+                    <>
+                      <ToggleRight className="mr-2 size-4" /> Activate
+                    </>
+                  )}
+                </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -113,119 +190,19 @@ function DesignationsContent() {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : designations.length === 0 ? (
-        <EmptyState
-          title="No designations found"
-          description={
-            search ? "Try a different search." : "Create a designation to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {designations.map((d) => (
-                  <TableRow key={d.publicId ?? d.designationUuid}>
-                    <TableCell className="font-mono text-sm">{d.code}</TableCell>
-                    <TableCell className="font-medium">{d.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {d.description ?? "-"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={d.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate permission={PERMISSIONS.DESIGNATION.UPDATE}>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                setEditingUuid(d.publicId ?? d.designationUuid)
-                              }
-                            >
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <PermissionGate permission={PERMISSIONS.DESIGNATION.UPDATE}>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant={
-                                d.status === "ACTIVE" ? "destructive" : "default"
-                              }
-                              onClick={() =>
-                                setStatusToggle({
-                                  uuid: d.publicId ?? d.designationUuid,
-                                  currentStatus: d.status,
-                                })
-                              }
-                            >
-                            {d.status === "ACTIVE" ? (
-                              <>
-                                <ToggleLeft className="mr-2 size-4" />{" "}
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <ToggleRight className="mr-2 size-4" /> Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page + 1} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={designations}
+        getRowId={(d) => d.publicId ?? d.designationUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          title: "No designations found",
+          description: search ? "Try a different search." : "Create a designation to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <DesignationFormDialog
         open={createOpen}

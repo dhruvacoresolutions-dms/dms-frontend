@@ -10,15 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import type { BulkOperationSummary } from "../api/employee.types"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
+import type {
+  BulkLoginResultEntry,
+  BulkOperationSummary,
+} from "../api/employee.types"
 
 type Props = {
   /** Null hides the dialog */
@@ -77,6 +73,132 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
     return "Skipped"
   }
 
+  const columns = React.useMemo<DataTableColumn<BulkLoginResultEntry>[]>(
+    () => [
+      {
+        id: "employee",
+        header: "Employee",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <span className="flex flex-col">
+              <span className="font-medium">{r.employeeName ?? "—"}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {r.employeeCode ?? r.employeeUuid}
+              </span>
+            </span>
+          )
+        },
+      },
+      {
+        id: "username",
+        header: "Username",
+        cell: ({ row }) => {
+          const r = row.original
+          return r.username ? (
+            <span className="flex items-center gap-1 font-mono text-sm">
+              {r.username}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Copy username ${r.username}`}
+                onClick={() =>
+                  void copyText(r.username as string, `u:${r.employeeUuid}`)
+                }
+              >
+                {copiedKey === `u:${r.employeeUuid}` ? (
+                  <Check className="size-3.5 text-emerald-600" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
+              </Button>
+            </span>
+          ) : (
+            "—"
+          )
+        },
+      },
+      {
+        id: "password",
+        header: "Temporary Password",
+        cell: ({ row }) => {
+          const r = row.original
+          return r.temporaryPassword ? (
+            <span className="flex items-center gap-1 font-mono text-sm">
+              {r.temporaryPassword}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Copy temporary password for ${r.employeeName ?? r.employeeCode ?? r.employeeUuid}`}
+                onClick={() =>
+                  void copyText(
+                    r.temporaryPassword as string,
+                    `p:${r.employeeUuid}`
+                  )
+                }
+              >
+                {copiedKey === `p:${r.employeeUuid}` ? (
+                  <Check className="size-3.5 text-emerald-600" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
+              </Button>
+            </span>
+          ) : (
+            "—"
+          )
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const r = row.original
+          const ok = r.status === "SUCCESS"
+          const statusCode = r.status ?? ""
+          const isSkipped = statusCode.startsWith("SKIPPED")
+          const failureReason = r.message ?? r.error ?? r.errorCode ?? r.reason
+          // Skipped rows (e.g. SKIPPED_ALREADY_ENABLED): show the
+          // human message in destructive red instead of the raw code.
+          const skippedDetail = r.error ?? r.errorCode ?? r.reason
+          return ok ? (
+            <span className="flex flex-col text-sm">
+              <span className="font-medium text-emerald-600">Success</span>
+              {r.emailDispatched != null && (
+                <span className="text-xs text-muted-foreground">
+                  Email {r.emailDispatched ? "sent" : "not sent"}
+                </span>
+              )}
+            </span>
+          ) : isSkipped ? (
+            <span className="flex flex-col text-sm">
+              <span className="font-medium text-destructive">
+                {r.message ?? skippedLabel(statusCode)}
+              </span>
+              {skippedDetail && skippedDetail !== r.message && (
+                <span className="text-xs text-muted-foreground">
+                  {skippedDetail}
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="flex flex-col text-sm">
+              <span className="font-medium text-destructive">
+                {r.status ?? "Failed"}
+              </span>
+              {failureReason && (
+                <span className="text-xs text-muted-foreground">
+                  {failureReason}
+                </span>
+              )}
+            </span>
+          )
+        },
+      },
+    ],
+    [copiedKey]
+  )
+
   return (
     <Dialog open={!!data} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-7xl min-w-4xl">
@@ -91,132 +213,16 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
           Share these temporary passwords with the employees. They are shown
           only once.
         </p>
-        <div className="max-h-80 overflow-y-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Temporary Password</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.results.map((r) => {
-                const ok = r.status === "SUCCESS"
-                const statusCode = r.status ?? ""
-                const isSkipped = statusCode.startsWith("SKIPPED")
-                const failureReason =
-                  r.message ?? r.error ?? r.errorCode ?? r.reason
-                // Skipped rows (e.g. SKIPPED_ALREADY_ENABLED): show the
-                // human message in destructive red instead of the raw code.
-                const skippedDetail = r.error ?? r.errorCode ?? r.reason
-                return (
-                  <TableRow key={r.employeeUuid}>
-                    <TableCell>
-                      <span className="flex flex-col">
-                        <span className="font-medium">
-                          {r.employeeName ?? "—"}
-                        </span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {r.employeeCode ?? r.employeeUuid}
-                        </span>
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {r.username ? (
-                        <span className="flex items-center gap-1 font-mono text-sm">
-                          {r.username}
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={`Copy username ${r.username}`}
-                            onClick={() =>
-                              void copyText(
-                                r.username as string,
-                                `u:${r.employeeUuid}`
-                              )
-                            }
-                          >
-                            {copiedKey === `u:${r.employeeUuid}` ? (
-                              <Check className="size-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="size-3.5" />
-                            )}
-                          </Button>
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {r.temporaryPassword ? (
-                        <span className="flex items-center gap-1 font-mono text-sm">
-                          {r.temporaryPassword}
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            aria-label={`Copy temporary password for ${r.employeeName ?? r.employeeCode ?? r.employeeUuid}`}
-                            onClick={() =>
-                              void copyText(
-                                r.temporaryPassword as string,
-                                `p:${r.employeeUuid}`
-                              )
-                            }
-                          >
-                            {copiedKey === `p:${r.employeeUuid}` ? (
-                              <Check className="size-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="size-3.5" />
-                            )}
-                          </Button>
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {ok ? (
-                        <span className="flex flex-col text-sm">
-                          <span className="font-medium text-emerald-600">
-                            Success
-                          </span>
-                          {r.emailDispatched != null && (
-                            <span className="text-xs text-muted-foreground">
-                              Email {r.emailDispatched ? "sent" : "not sent"}
-                            </span>
-                          )}
-                        </span>
-                      ) : isSkipped ? (
-                        <span className="flex flex-col text-sm">
-                          <span className="font-medium text-destructive">
-                            {r.message ?? skippedLabel(statusCode)}
-                          </span>
-                          {skippedDetail && skippedDetail !== r.message && (
-                            <span className="text-xs text-muted-foreground">
-                              {skippedDetail}
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="flex flex-col text-sm">
-                          <span className="font-medium text-destructive">
-                            {r.status ?? "Failed"}
-                          </span>
-                          {failureReason && (
-                            <span className="text-xs text-muted-foreground">
-                              {failureReason}
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <DataTable
+          columns={columns}
+          data={data?.results ?? []}
+          getRowId={(r) => r.employeeUuid}
+          empty={{
+            title: "No results",
+            description: "No credential results to show.",
+          }}
+          wrapperClassName="max-h-80 overflow-y-auto"
+        />
         <div className="flex justify-end gap-2">
           {hasCopyable && (
             <Button variant="outline" onClick={copyAllCredentials}>

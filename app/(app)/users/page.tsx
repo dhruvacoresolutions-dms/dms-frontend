@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
@@ -14,14 +14,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,14 +24,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
 import { useUsers } from "@/features/users/hooks/use-users"
+import type { UserResponse } from "@/features/users/api/user.types"
 import { useUpdateUserStatus } from "@/features/users/hooks/use-update-user-status"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -58,6 +49,7 @@ function UsersContent() {
 
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [statusToggle, setStatusToggle] = useState<{
     userUuid: string
     currentStatus: string
@@ -66,13 +58,109 @@ function UsersContent() {
   const { data, isLoading, error, refetch } = useUsers(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
 
   const updateStatusMutation = useUpdateUserStatus(companyUuid)
 
   const users = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<UserResponse>[]>(
+    () => [
+      {
+        id: "username",
+        header: "Username",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.username}</span>
+        ),
+      },
+      {
+        id: "displayName",
+        header: "Display Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.displayName}</span>
+        ),
+      },
+      {
+        id: "email",
+        header: "Email",
+        cell: ({ row }) => row.original.email ?? "—",
+      },
+      {
+        id: "status",
+        header: "Login Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const user = row.original
+          const uid = user.userUuid ?? user.publicId
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push(`/users/${uid}`)
+                  }}
+                >
+                  <Eye className="mr-2 size-4" />
+                  View
+                </DropdownMenuItem>
+                <PermissionGate permission={PERMISSIONS.USER.UPDATE}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      router.push(`/users/${uid}/edit`)
+                    }}
+                  >
+                    <Edit className="mr-2 size-4" />
+                    Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate permission={PERMISSIONS.USER.STATUS}>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant={
+                      user.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() => {
+                      setStatusToggle({
+                        userUuid: uid,
+                        currentStatus: user.status,
+                      })
+                    }}
+                  >
+                    {user.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    [router]
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -100,153 +188,30 @@ function UsersContent() {
         />
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : users.length === 0 ? (
-        <EmptyState
-          icon={UserPlus}
-          title="No users found"
-          description={
-            search
-              ? "Try a different search term."
-              : "Get started by creating a user."
-          }
-        >
-          {!search && (
+      <DataTable
+        columns={columns}
+        data={users}
+        getRowId={(user) => user.userUuid ?? user.publicId}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: UserPlus,
+          title: "No users found",
+          description: search
+            ? "Try a different search term."
+            : "Get started by creating a user.",
+          action: !search ? (
             <PermissionGate permission={PERMISSIONS.USER.CREATE}>
-              <Button
-                nativeButton={false}
-                render={<Link href={`/users/new`} />}
-                className="mt-2"
-              >
+              <Button nativeButton={false} render={<Link href={`/users/new`} />}>
                 <UserPlus className="mr-2 size-4" />
                 Create User
               </Button>
             </PermissionGate>
-          )}
-        </EmptyState>
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Display Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Login Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => {
-                  const uid = user.userUuid ?? user.publicId
-                  return (
-                    <TableRow key={uid}>
-                      <TableCell className="font-mono text-sm">
-                        {user.username}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {user.displayName}
-                      </TableCell>
-                      <TableCell>{user.email ?? "—"}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={user.status} />
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="cursor-pointer">
-                            <MoreHorizontal className="size-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-auto min-w-40"
-                          >
-                            <DropdownMenuItem
-                              onClick={() => {
-                                router.push(`/users/${uid}`)
-                              }}
-                            >
-                              <Eye className="mr-2 size-4" />
-                              View
-                            </DropdownMenuItem>
-                            <PermissionGate permission={PERMISSIONS.USER.UPDATE}>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  router.push(`/users/${uid}/edit`)
-                                }}
-                              >
-                                <Edit className="mr-2 size-4" />
-                                Edit
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                            <PermissionGate permission={PERMISSIONS.USER.STATUS}>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                variant={
-                                  user.status === "ACTIVE"
-                                    ? "destructive"
-                                    : "default"
-                                }
-                                onClick={() => {
-                                  setStatusToggle({
-                                    userUuid: uid,
-                                    currentStatus: user.status,
-                                  })
-                                }}
-                              >
-                              {user.status === "ACTIVE" ? (
-                                <>
-                                  <ToggleLeft className="mr-2 size-4" />{" "}
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 size-4" />{" "}
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            </PermissionGate>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page + 1} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+          ) : undefined,
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <ConfirmDialog
         open={!!statusToggle}

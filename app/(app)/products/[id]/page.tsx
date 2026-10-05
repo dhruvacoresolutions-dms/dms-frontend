@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useMemo, useState } from "react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import {
@@ -15,22 +15,14 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/common/PageHeader"
-import { LoadingState, TableSkeleton } from "@/components/common/LoadingState"
+import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
-import { EmptyState } from "@/components/common/EmptyState"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,7 +69,12 @@ import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import type {
   ProductBatchResponse,
+  ProductFitmentResponse,
+  ProductGeographyMappingResponse,
+  ProductGstMappingResponse,
   ProductPriceResponse,
+  ProductRelationshipResponse,
+  UomConversion,
 } from "@/features/products/api/product.types"
 
 export default function ProductDetailPage({
@@ -301,34 +298,16 @@ function ProductDetailContent({
                 <CardTitle>UOM Conversions</CardTitle>
               </CardHeader>
               <CardContent>
-                {(product.uomConversions ?? []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No conversions defined.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>UOM</TableHead>
-                        <TableHead>Factor</TableHead>
-                        <TableHead>Default</TableHead>
-                        <TableHead>Report</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(product.uomConversions ?? []).map((c, i) => (
-                        <TableRow key={c.uuid ?? c.uomUuid ?? i}>
-                          <TableCell>
-                            {c.uom?.name ?? c.uom?.code ?? "—"}
-                          </TableCell>
-                          <TableCell>{c.conversionFactor}</TableCell>
-                          <TableCell>{c.isDefault ? "Yes" : "—"}</TableCell>
-                          <TableCell>{c.isReportUom ? "Yes" : "—"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                <DataTable
+                  columns={uomConversionColumns}
+                  data={product.uomConversions ?? []}
+                  getRowId={(c, i) => c.uuid ?? c.uomUuid ?? String(i)}
+                  emptyContent={
+                    <p className="text-sm text-muted-foreground">
+                      No conversions defined.
+                    </p>
+                  }
+                />
               </CardContent>
             </Card>
           </div>
@@ -398,6 +377,29 @@ function InfoRow({
 
 // ── Prices ───────────────────────────────────────────────────────────────────
 
+const uomConversionColumns: DataTableColumn<UomConversion>[] = [
+  {
+    id: "uom",
+    header: "UOM",
+    cell: ({ row }) => row.original.uom?.name ?? row.original.uom?.code ?? "—",
+  },
+  {
+    id: "factor",
+    header: "Factor",
+    cell: ({ row }) => row.original.conversionFactor,
+  },
+  {
+    id: "default",
+    header: "Default",
+    cell: ({ row }) => (row.original.isDefault ? "Yes" : "—"),
+  },
+  {
+    id: "report",
+    header: "Report",
+    cell: ({ row }) => (row.original.isReportUom ? "Yes" : "—"),
+  },
+]
+
 function PricesSection({
   companyUuid,
   productUuid,
@@ -421,6 +423,86 @@ function PricesSection({
   const deactivateMutation = useDeactivateProductPrice(companyUuid, productUuid)
 
   const prices = data?.content ?? []
+
+  const columns = useMemo<DataTableColumn<ProductPriceResponse>[]>(
+    () => [
+      {
+        id: "priceType",
+        header: "Price Type",
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.priceTypeName ?? row.original.priceTypeCode}
+          </span>
+        ),
+      },
+      {
+        id: "amount",
+        header: "Amount",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.amount}</span>
+        ),
+      },
+      {
+        id: "effective",
+        header: "Effective",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.effectiveFrom ?? "—"} → {row.original.effectiveTo ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <StatusBadge status={row.original.priceStatus ?? "—"} />
+        ),
+      },
+      {
+        id: "reference",
+        header: "Reference",
+        cell: ({ row }) => (
+          <span className="text-sm">{row.original.externalReference ?? "—"}</span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const pr = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="cursor-pointer">
+                  <MoreHorizontal className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-40">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setRevisePrice(pr)
+                      setDialogOpen(true)
+                    }}
+                  >
+                    <Pencil className="mr-2 size-4" />
+                    Revise
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setDeactivate(pr)}
+                  >
+                    <Ban className="mr-2 size-4" />
+                    Deactivate
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -447,78 +529,19 @@ function PricesSection({
           </PermissionGate>
         </div>
       </div>
-      {isLoading ? (
-        <TableSkeleton rows={3} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : prices.length === 0 ? (
-        <EmptyState
-          title="No prices yet"
-          description="Add the first price for this product."
-        />
-      ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Price Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Effective</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {prices.map((pr) => (
-                <TableRow key={pr.priceUuid}>
-                  <TableCell className="font-medium">
-                    {pr.priceTypeName ?? pr.priceTypeCode}
-                  </TableCell>
-                  <TableCell className="font-mono">{pr.amount}</TableCell>
-                  <TableCell className="text-sm">
-                    {pr.effectiveFrom ?? "—"} → {pr.effectiveTo ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={pr.priceStatus ?? "—"} />
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {pr.externalReference ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-40">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setRevisePrice(pr)
-                              setDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="mr-2 size-4" />
-                            Revise
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeactivate(pr)}
-                          >
-                            <Ban className="mr-2 size-4" />
-                            Deactivate
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={prices}
+        getRowId={(pr) => pr.priceUuid}
+        isLoading={isLoading}
+        skeletonRows={3}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          title: "No prices yet",
+          description: "Add the first price for this product.",
+        }}
+      />
       <ProductPriceDialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -579,6 +602,71 @@ function BatchesSection({
 
   const batches = data?.content ?? []
 
+  const columns = useMemo<DataTableColumn<ProductBatchResponse>[]>(
+    () => [
+      {
+        id: "batchNumber",
+        header: "Batch Number",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.batchNumber}</span>
+        ),
+      },
+      {
+        id: "manufacturing",
+        header: "Manufacturing",
+        cell: ({ row }) => row.original.manufacturingDate ?? "—",
+      },
+      {
+        id: "expiry",
+        header: "Expiry",
+        cell: ({ row }) => row.original.expiryDate ?? "—",
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status ?? "—"} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const b = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="cursor-pointer">
+                  <MoreHorizontal className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-40">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setEditing(b)
+                      setDialogOpen(true)
+                    }}
+                  >
+                    <Pencil className="mr-2 size-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant={
+                      b.status === "ACTIVE" ? "destructive" : "default"
+                    }
+                    onClick={() => setToggle(b)}
+                  >
+                    <Ban className="mr-2 size-4" />
+                    {b.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
@@ -598,74 +686,19 @@ function BatchesSection({
           </PermissionGate>
         </div>
       </div>
-      {isLoading ? (
-        <TableSkeleton rows={3} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : batches.length === 0 ? (
-        <EmptyState
-          title="No batches yet"
-          description="Add the first batch for this product."
-        />
-      ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Batch Number</TableHead>
-                <TableHead>Manufacturing</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {batches.map((b) => (
-                <TableRow key={b.batchUuid}>
-                  <TableCell className="font-mono">{b.batchNumber}</TableCell>
-                  <TableCell>{b.manufacturingDate ?? "—"}</TableCell>
-                  <TableCell>{b.expiryDate ?? "—"}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={b.status ?? "—"} />
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-40">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditing(b)
-                              setDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="mr-2 size-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant={
-                              b.status === "ACTIVE" ? "destructive" : "default"
-                            }
-                            onClick={() => setToggle(b)}
-                          >
-                            <Ban className="mr-2 size-4" />
-                            {b.status === "ACTIVE"
-                              ? "Deactivate"
-                              : "Activate"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={batches}
+        getRowId={(b) => b.batchUuid}
+        isLoading={isLoading}
+        skeletonRows={3}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          title: "No batches yet",
+          description: "Add the first batch for this product.",
+        }}
+      />
       <ProductBatchDialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -797,6 +830,64 @@ function GstMappingsCard({
   } | null>(null)
   const rows = data?.content ?? []
 
+  const columns = useMemo<DataTableColumn<ProductGstMappingResponse>[]>(
+    () => [
+      {
+        id: "hsn",
+        header: "HSN",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">
+            {row.original.hsnCode ?? row.original.hsnUuid ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "taxCode",
+        header: "Tax Code",
+        cell: ({ row }) => row.original.taxCode ?? "—",
+      },
+      {
+        id: "effective",
+        header: "Effective",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.effectiveFrom ?? "—"} → {row.original.effectiveTo ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status ?? "—"} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setToggle({
+                    uuid: r.gstMappingUuid,
+                    version: r.version,
+                    current: r.status ?? "ACTIVE",
+                  })
+                }
+              >
+                Toggle
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -809,58 +900,18 @@ function GstMappingsCard({
         </PermissionGate>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <TableSkeleton rows={2} />
-        ) : error ? (
-          <ErrorState onRetry={refetch} />
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No GST mappings.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>HSN</TableHead>
-                <TableHead>Tax Code</TableHead>
-                <TableHead>Effective</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.gstMappingUuid}>
-                  <TableCell className="font-mono text-sm">
-                    {r.hsnCode ?? r.hsnUuid ?? "—"}
-                  </TableCell>
-                  <TableCell>{r.taxCode ?? "—"}</TableCell>
-                  <TableCell className="text-sm">
-                    {r.effectiveFrom ?? "—"} → {r.effectiveTo ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={r.status ?? "—"} />
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          setToggle({
-                            uuid: r.gstMappingUuid,
-                            version: r.version,
-                            current: r.status ?? "ACTIVE",
-                          })
-                        }
-                      >
-                        Toggle
-                      </Button>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable
+          columns={columns}
+          data={rows}
+          getRowId={(r) => r.gstMappingUuid}
+          isLoading={isLoading}
+          skeletonRows={2}
+          error={error}
+          onRetry={() => void refetch()}
+          emptyContent={
+            <p className="text-sm text-muted-foreground">No GST mappings.</p>
+          }
+        />
         <ConfirmDialog
           open={!!toggle}
           onOpenChange={(open) => !open && setToggle(null)}
@@ -919,6 +970,62 @@ function RelationshipsCard({
   } | null>(null)
   const rows = data?.content ?? []
 
+  const columns = useMemo<DataTableColumn<ProductRelationshipResponse>[]>(
+    () => [
+      {
+        id: "relatedProduct",
+        header: "Related Product",
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.relatedProductName ?? row.original.relatedProductCode ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) => row.original.relationshipTypeCode ?? "—",
+      },
+      {
+        id: "description",
+        header: "Description",
+        cell: ({ row }) => (
+          <span className="text-sm">{row.original.description ?? "—"}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status ?? "—"} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setToggle({
+                    uuid: r.relationshipUuid,
+                    version: r.version,
+                    current: r.status ?? "ACTIVE",
+                  })
+                }
+              >
+                Toggle
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -931,58 +1038,18 @@ function RelationshipsCard({
         </PermissionGate>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <TableSkeleton rows={2} />
-        ) : error ? (
-          <ErrorState onRetry={refetch} />
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No relationships.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Related Product</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.relationshipUuid}>
-                  <TableCell className="font-medium">
-                    {r.relatedProductName ?? r.relatedProductCode ?? "—"}
-                  </TableCell>
-                  <TableCell>{r.relationshipTypeCode ?? "—"}</TableCell>
-                  <TableCell className="text-sm">
-                    {r.description ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={r.status ?? "—"} />
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          setToggle({
-                            uuid: r.relationshipUuid,
-                            version: r.version,
-                            current: r.status ?? "ACTIVE",
-                          })
-                        }
-                      >
-                        Toggle
-                      </Button>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable
+          columns={columns}
+          data={rows}
+          getRowId={(r) => r.relationshipUuid}
+          isLoading={isLoading}
+          skeletonRows={2}
+          error={error}
+          onRetry={() => void refetch()}
+          emptyContent={
+            <p className="text-sm text-muted-foreground">No relationships.</p>
+          }
+        />
         <ConfirmDialog
           open={!!toggle}
           onOpenChange={(open) => !open && setToggle(null)}
@@ -1041,6 +1108,67 @@ function FitmentsCard({
   } | null>(null)
   const rows = data?.content ?? []
 
+  const columns = useMemo<DataTableColumn<ProductFitmentResponse>[]>(
+    () => [
+      {
+        id: "variant",
+        header: "Variant",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.variantName ?? "—"}</span>
+        ),
+      },
+      {
+        id: "fuel",
+        header: "Fuel",
+        cell: ({ row }) => row.original.fuelTypeName ?? "—",
+      },
+      {
+        id: "engine",
+        header: "Engine",
+        cell: ({ row }) => row.original.engine ?? "—",
+      },
+      {
+        id: "years",
+        header: "Years",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.yearFrom ?? "—"} → {row.original.yearTo ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status ?? "—"} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setToggle({
+                    uuid: r.fitmentUuid,
+                    version: r.version,
+                    current: r.status ?? "ACTIVE",
+                  })
+                }
+              >
+                Toggle
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -1053,60 +1181,18 @@ function FitmentsCard({
         </PermissionGate>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <TableSkeleton rows={2} />
-        ) : error ? (
-          <ErrorState onRetry={refetch} />
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No fitments.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Variant</TableHead>
-                <TableHead>Fuel</TableHead>
-                <TableHead>Engine</TableHead>
-                <TableHead>Years</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.fitmentUuid}>
-                  <TableCell className="font-medium">
-                    {r.variantName ?? "—"}
-                  </TableCell>
-                  <TableCell>{r.fuelTypeName ?? "—"}</TableCell>
-                  <TableCell>{r.engine ?? "—"}</TableCell>
-                  <TableCell className="text-sm">
-                    {r.yearFrom ?? "—"} → {r.yearTo ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={r.status ?? "—"} />
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          setToggle({
-                            uuid: r.fitmentUuid,
-                            version: r.version,
-                            current: r.status ?? "ACTIVE",
-                          })
-                        }
-                      >
-                        Toggle
-                      </Button>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable
+          columns={columns}
+          data={rows}
+          getRowId={(r) => r.fitmentUuid}
+          isLoading={isLoading}
+          skeletonRows={2}
+          error={error}
+          onRetry={() => void refetch()}
+          emptyContent={
+            <p className="text-sm text-muted-foreground">No fitments.</p>
+          }
+        />
         <ConfirmDialog
           open={!!toggle}
           onOpenChange={(open) => !open && setToggle(null)}
@@ -1165,6 +1251,50 @@ function GeographyMappingsCard({
   } | null>(null)
   const rows = data?.content ?? []
 
+  const columns = useMemo<DataTableColumn<ProductGeographyMappingResponse>[]>(
+    () => [
+      {
+        id: "geography",
+        header: "Geography",
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.geographyName ?? row.original.geographyCode ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status ?? "—"} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setToggle({
+                    uuid: r.geographyMappingUuid,
+                    version: r.version,
+                    current: r.status ?? "ACTIVE",
+                  })
+                }
+              >
+                Toggle
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -1177,54 +1307,20 @@ function GeographyMappingsCard({
         </PermissionGate>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <TableSkeleton rows={2} />
-        ) : error ? (
-          <ErrorState onRetry={refetch} />
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No geography mappings.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Geography</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.geographyMappingUuid}>
-                  <TableCell className="font-medium">
-                    {r.geographyName ?? r.geographyCode ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={r.status ?? "—"} />
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          setToggle({
-                            uuid: r.geographyMappingUuid,
-                            version: r.version,
-                            current: r.status ?? "ACTIVE",
-                          })
-                        }
-                      >
-                        Toggle
-                      </Button>
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable
+          columns={columns}
+          data={rows}
+          getRowId={(r) => r.geographyMappingUuid}
+          isLoading={isLoading}
+          skeletonRows={2}
+          error={error}
+          onRetry={() => void refetch()}
+          emptyContent={
+            <p className="text-sm text-muted-foreground">
+              No geography mappings.
+            </p>
+          }
+        />
         <ConfirmDialog
           open={!!toggle}
           onOpenChange={(open) => !open && setToggle(null)}

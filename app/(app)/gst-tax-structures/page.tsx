@@ -1,18 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, Percent, Upload } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,10 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import type { GstTaxStructureResponse } from "@/features/gst-tax-structures/api/gst-tax-structures.types"
 import { useGstTaxStructures } from "@/features/gst-tax-structures/hooks/use-gst-tax-structures"
 import { useUpdateGstTaxStructureStatus } from "@/features/gst-tax-structures/hooks/use-update-gst-tax-structure-status"
 import { GstTaxStructureFormDialog } from "@/features/gst-tax-structures/components/GstTaxStructureFormDialog"
@@ -45,10 +36,15 @@ export default function GstTaxStructuresPage() {
   )
 }
 
+function formatRate(v: number | null) {
+  return typeof v === "number" ? `${v}%` : "-"
+}
+
 function GstTaxStructuresContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -57,7 +53,7 @@ function GstTaxStructuresContent() {
   const { data, isLoading, error, refetch } = useGstTaxStructures(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
 
   const updateStatusMutation = useUpdateGstTaxStructureStatus(companyUuid)
@@ -65,8 +61,81 @@ function GstTaxStructuresContent() {
   const taxStructures = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
 
-  const formatRate = (v: number | null) =>
-    typeof v === "number" ? `${v}%` : "-"
+  const columns = useMemo<DataTableColumn<GstTaxStructureResponse>[]>(
+    () => [
+      {
+        id: "taxCode",
+        header: "Tax Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.taxCode}</span>
+        ),
+      },
+      {
+        id: "taxType",
+        header: "Tax Type",
+        cell: ({ row }) => <Badge variant="secondary">{row.original.taxType}</Badge>,
+      },
+      {
+        id: "primaryInputRate",
+        header: "Primary In",
+        cell: ({ row }) => formatRate(row.original.primaryInputRate),
+      },
+      {
+        id: "primaryOutputRate",
+        header: "Primary Out",
+        cell: ({ row }) => formatRate(row.original.primaryOutputRate),
+      },
+      {
+        id: "applyOn",
+        header: "Apply On",
+        cell: ({ row }) => row.original.applyOn ?? "-",
+      },
+      {
+        id: "effectiveFrom",
+        header: "Effective From",
+        cell: ({ row }) => row.original.effectiveFrom ?? "-",
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const t = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}>
+                  <DropdownMenuItem onClick={() => setEditingUuid(t.taxStructureUuid)}>
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}>
+                  <DropdownMenuItem
+                    variant={
+                      t.status === "ACTIVE" ? "destructive" : "default"
+                    }
+                    onClick={() => setStatusToggle({ uuid: t.taxStructureUuid, currentStatus: t.status, version: t.version })}
+                  >
+                    {t.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -98,78 +167,20 @@ function GstTaxStructuresContent() {
         />
       </div>
 
-      {isLoading ? <TableSkeleton rows={5} /> : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : taxStructures.length === 0 ? (
-        <EmptyState icon={Percent} title="No tax structures found" description={search ? "Try a different search." : "Create a tax structure to get started."} />
-      ) : (
-        <>
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tax Code</TableHead>
-                  <TableHead>Tax Type</TableHead>
-                  <TableHead>Primary In</TableHead>
-                  <TableHead>Primary Out</TableHead>
-                  <TableHead>Apply On</TableHead>
-                  <TableHead>Effective From</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {taxStructures.map((t) => (
-                  <TableRow key={t.taxStructureUuid}>
-                    <TableCell className="font-mono text-sm">{t.taxCode}</TableCell>
-                    <TableCell><Badge variant="secondary">{t.taxType}</Badge></TableCell>
-                    <TableCell>{formatRate(t.primaryInputRate)}</TableCell>
-                    <TableCell>{formatRate(t.primaryOutputRate)}</TableCell>
-                    <TableCell>{t.applyOn ?? "-"}</TableCell>
-                    <TableCell>{t.effectiveFrom ?? "-"}</TableCell>
-                    <TableCell><StatusBadge status={t.status} /></TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}>
-                            <DropdownMenuItem onClick={() => setEditingUuid(t.taxStructureUuid)}>
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <DropdownMenuSeparator />
-                          <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}>
-                            <DropdownMenuItem
-                              variant={
-                                t.status === "ACTIVE" ? "destructive" : "default"
-                              }
-                              onClick={() => setStatusToggle({ uuid: t.taxStructureUuid, currentStatus: t.status, version: t.version })}
-                            >
-                              {t.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>Next</Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={taxStructures}
+        getRowId={(t) => t.taxStructureUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Percent,
+          title: "No tax structures found",
+          description: search ? "Try a different search." : "Create a tax structure to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <GstTaxStructureFormDialog
         open={createOpen}

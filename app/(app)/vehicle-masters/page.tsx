@@ -13,14 +13,7 @@ import {
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { BulkImportDialog } from "@/components/common/BulkImportDialog"
 import { ExportDropdown } from "@/components/common/ExportDropdown"
@@ -50,6 +40,7 @@ import {
   getVehicleMakeImportTemplate,
   uploadVehicleMakeImport,
 } from "@/features/vehicle-makes/api/vehicle-make.api"
+import type { VehicleMakeResponse } from "@/features/vehicle-makes/api/vehicle-make.types"
 import { useVehicleModels } from "@/features/vehicle-models/hooks/use-vehicle-models"
 import { useUpdateVehicleModelStatus } from "@/features/vehicle-models/hooks/use-update-vehicle-model-status"
 import { VehicleModelFormDialog } from "@/features/vehicle-models/components/VehicleModelFormDialog"
@@ -58,6 +49,7 @@ import {
   getVehicleModelImportTemplate,
   uploadVehicleModelImport,
 } from "@/features/vehicle-models/api/vehicle-model.api"
+import type { VehicleModelResponse } from "@/features/vehicle-models/api/vehicle-model.types"
 import { useVehicleVariants } from "@/features/vehicle-variants/hooks/use-vehicle-variants"
 import { useUpdateVehicleVariantStatus } from "@/features/vehicle-variants/hooks/use-update-vehicle-variant-status"
 import { VehicleVariantFormDialog } from "@/features/vehicle-variants/components/VehicleVariantFormDialog"
@@ -66,6 +58,7 @@ import {
   getVehicleVariantImportTemplate,
   uploadVehicleVariantImport,
 } from "@/features/vehicle-variants/api/vehicle-variant.api"
+import type { VehicleVariantResponse } from "@/features/vehicle-variants/api/vehicle-variant.types"
 
 const SM = PERMISSIONS.PRODUCT
 
@@ -113,48 +106,12 @@ function VehicleMastersContent() {
   )
 }
 
-function Pagination({
-  page,
-  totalPages,
-  onPage,
-}: {
-  page: number
-  totalPages: number
-  onPage: (p: number) => void
-}) {
-  if (totalPages <= 1) return null
-  return (
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">
-        Page {page + 1} of {totalPages}
-      </p>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === 0}
-          onClick={() => onPage(page - 1)}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages - 1}
-          onClick={() => onPage(page + 1)}
-        >
-          Next
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 // ── Makes ──────────────────────────────────────────────────────────────────
 
 function MakesTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -163,12 +120,101 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
   const { data, isLoading, error, refetch } = useVehicleMakes(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
   const statusMutation = useUpdateVehicleMakeStatus(companyUuid)
 
   const makes = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<VehicleMakeResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "description",
+        header: "Description",
+        cell: ({ row }) => row.original.description ?? "-",
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const m = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(m.makeUuid)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_STATUS}
+                >
+                  <DropdownMenuItem
+                    variant={
+                      m.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: m.makeUuid,
+                        currentStatus: m.status,
+                        version: m.version,
+                      })
+                    }
+                  >
+                    {m.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -208,102 +254,22 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : makes.length === 0 ? (
-        <EmptyState
-          icon={Car}
-          title="No vehicle makes found"
-          description={
-            search ? "Try a different search." : "Create a make to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {makes.map((m) => (
-                  <TableRow key={m.makeUuid}>
-                    <TableCell className="font-mono text-sm">
-                      {m.code}
-                    </TableCell>
-                    <TableCell className="font-medium">{m.name}</TableCell>
-                    <TableCell>{m.description ?? "-"}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={m.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate
-                            permission={SM.SUPPORTING_MASTER_UPDATE}
-                          >
-                            <DropdownMenuItem
-                              onClick={() => setEditingUuid(m.makeUuid)}
-                            >
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <DropdownMenuSeparator />
-                          <PermissionGate
-                            permission={SM.SUPPORTING_MASTER_STATUS}
-                          >
-                            <DropdownMenuItem
-                              variant={
-                                m.status === "ACTIVE"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              onClick={() =>
-                                setStatusToggle({
-                                  uuid: m.makeUuid,
-                                  currentStatus: m.status,
-                                  version: m.version,
-                                })
-                              }
-                            >
-                              {m.status === "ACTIVE" ? (
-                                <>
-                                  <ToggleLeft className="mr-2 size-4" />{" "}
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 size-4" />{" "}
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={makes}
+        getRowId={(m) => m.makeUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Car,
+          title: "No vehicle makes found",
+          description: search
+            ? "Try a different search."
+            : "Create a make to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <VehicleMakeFormDialog
         open={createOpen}
@@ -374,6 +340,7 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
 function ModelsTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -382,7 +349,7 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
   const { data, isLoading, error, refetch } = useVehicleModels(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
   const statusMutation = useUpdateVehicleModelStatus(companyUuid)
   const { data: makesData } = useVehicleMakes(companyUuid, {
@@ -397,6 +364,98 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
 
   const models = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<VehicleModelResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "make",
+        header: "Make",
+        cell: ({ row }) => {
+          const m = row.original
+          return m.makeName ?? makeNameByUuid.get(m.makeUuid) ?? "-"
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const m = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(m.modelUuid)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_STATUS}
+                >
+                  <DropdownMenuItem
+                    variant={
+                      m.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: m.modelUuid,
+                        currentStatus: m.status,
+                        version: m.version,
+                      })
+                    }
+                  >
+                    {m.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    [makeNameByUuid]
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -436,108 +495,22 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : models.length === 0 ? (
-        <EmptyState
-          icon={Car}
-          title="No vehicle models found"
-          description={
-            search
-              ? "Try a different search."
-              : "Create a model to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Make</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {models.map((m) => (
-                  <TableRow key={m.modelUuid}>
-                    <TableCell className="font-mono text-sm">
-                      {m.code}
-                    </TableCell>
-                    <TableCell className="font-medium">{m.name}</TableCell>
-                    <TableCell>
-                      {m.makeName ??
-                        makeNameByUuid.get(m.makeUuid) ??
-                        "-"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={m.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate
-                            permission={SM.SUPPORTING_MASTER_UPDATE}
-                          >
-                            <DropdownMenuItem
-                              onClick={() => setEditingUuid(m.modelUuid)}
-                            >
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <DropdownMenuSeparator />
-                          <PermissionGate
-                            permission={SM.SUPPORTING_MASTER_STATUS}
-                          >
-                            <DropdownMenuItem
-                              variant={
-                                m.status === "ACTIVE"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              onClick={() =>
-                                setStatusToggle({
-                                  uuid: m.modelUuid,
-                                  currentStatus: m.status,
-                                  version: m.version,
-                                })
-                              }
-                            >
-                              {m.status === "ACTIVE" ? (
-                                <>
-                                  <ToggleLeft className="mr-2 size-4" />{" "}
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 size-4" />{" "}
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={models}
+        getRowId={(m) => m.modelUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Car,
+          title: "No vehicle models found",
+          description: search
+            ? "Try a different search."
+            : "Create a model to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <VehicleModelFormDialog
         open={createOpen}
@@ -608,6 +581,7 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
 function VariantsTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -616,7 +590,7 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
   const { data, isLoading, error, refetch } = useVehicleVariants(companyUuid, {
     search: search || undefined,
     page,
-    size: 20,
+    size,
   })
   const statusMutation = useUpdateVehicleVariantStatus(companyUuid)
   const { data: modelsData } = useVehicleModels(companyUuid, {
@@ -631,6 +605,98 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
 
   const variants = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<VehicleVariantResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "model",
+        header: "Model",
+        cell: ({ row }) => {
+          const v = row.original
+          return v.modelName ?? modelNameByUuid.get(v.modelUuid) ?? "-"
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const v = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(v.variantUuid)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={SM.SUPPORTING_MASTER_STATUS}
+                >
+                  <DropdownMenuItem
+                    variant={
+                      v.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: v.variantUuid,
+                        currentStatus: v.status,
+                        version: v.version,
+                      })
+                    }
+                  >
+                    {v.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    [modelNameByUuid]
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -670,108 +736,22 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : variants.length === 0 ? (
-        <EmptyState
-          icon={Car}
-          title="No vehicle variants found"
-          description={
-            search
-              ? "Try a different search."
-              : "Create a variant to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {variants.map((v) => (
-                  <TableRow key={v.variantUuid}>
-                    <TableCell className="font-mono text-sm">
-                      {v.code}
-                    </TableCell>
-                    <TableCell className="font-medium">{v.name}</TableCell>
-                    <TableCell>
-                      {v.modelName ??
-                        modelNameByUuid.get(v.modelUuid) ??
-                        "-"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={v.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate
-                            permission={SM.SUPPORTING_MASTER_UPDATE}
-                          >
-                            <DropdownMenuItem
-                              onClick={() => setEditingUuid(v.variantUuid)}
-                            >
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <DropdownMenuSeparator />
-                          <PermissionGate
-                            permission={SM.SUPPORTING_MASTER_STATUS}
-                          >
-                            <DropdownMenuItem
-                              variant={
-                                v.status === "ACTIVE"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              onClick={() =>
-                                setStatusToggle({
-                                  uuid: v.variantUuid,
-                                  currentStatus: v.status,
-                                  version: v.version,
-                                })
-                              }
-                            >
-                              {v.status === "ACTIVE" ? (
-                                <>
-                                  <ToggleLeft className="mr-2 size-4" />{" "}
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 size-4" />{" "}
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={variants}
+        getRowId={(v) => v.variantUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Car,
+          title: "No vehicle variants found",
+          description: search
+            ? "Try a different search."
+            : "Create a variant to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <VehicleVariantFormDialog
         open={createOpen}
