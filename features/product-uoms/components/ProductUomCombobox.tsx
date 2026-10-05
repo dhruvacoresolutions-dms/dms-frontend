@@ -17,6 +17,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: ProductUomResponse): ComboboxOption {
@@ -30,6 +32,7 @@ export function ProductUomCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select UOM...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -96,6 +99,7 @@ export function ProductUomCombobox({
       loading={listQuery.isFetching}
       emptyText="No UOMs found."
       clearLabel="Clear UOM"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

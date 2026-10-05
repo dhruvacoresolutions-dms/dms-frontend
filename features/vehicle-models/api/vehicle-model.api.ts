@@ -133,6 +133,8 @@ export async function uploadVehicleModelImport(
 
 export type ExportVehicleModelsFilters = {
   search?: string
+  status?: string
+  makeUuid?: string
 }
 
 export async function exportVehicleModels(
@@ -147,6 +149,8 @@ export async function exportVehicleModels(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
+      makeUuid: filters?.makeUuid || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

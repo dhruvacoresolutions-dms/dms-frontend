@@ -13,6 +13,7 @@ import {
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
+import { StatusFilterSelect } from "@/components/common/StatusFilterSelect"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
@@ -59,6 +60,8 @@ import {
   uploadVehicleVariantImport,
 } from "@/features/vehicle-variants/api/vehicle-variant.api"
 import type { VehicleVariantResponse } from "@/features/vehicle-variants/api/vehicle-variant.types"
+import { VehicleMakeCombobox } from "@/features/vehicle-makes/components/VehicleMakeCombobox"
+import { VehicleModelCombobox } from "@/features/vehicle-models/components/VehicleModelCombobox"
 
 const SM = PERMISSIONS.PRODUCT
 
@@ -110,6 +113,7 @@ function VehicleMastersContent() {
 
 function MakesTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
@@ -119,6 +123,7 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
 
   const { data, isLoading, error, refetch } = useVehicleMakes(companyUuid, {
     search: search || undefined,
+    status: statusFilter === "ALL" ? undefined : (statusFilter as "ACTIVE" | "INACTIVE"),
     page,
     size,
   })
@@ -232,12 +237,19 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
         </PermissionGate>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search makes..."
           defaultValue={search}
           onChange={(v) => {
             setSearch(v)
+            setPage(0)
+          }}
+        />
+        <StatusFilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v)
             setPage(0)
           }}
         />
@@ -248,6 +260,7 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
             onExport={(format) =>
               exportVehicleMakes(companyUuid, format, {
                 search: search || undefined,
+                status: statusFilter === "ALL" ? undefined : statusFilter,
               })
             }
           />
@@ -264,8 +277,8 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
         empty={{
           icon: Car,
           title: "No vehicle makes found",
-          description: search
-            ? "Try a different search."
+          description: search || statusFilter !== "ALL"
+            ? "Try a different search or clear filters."
             : "Create a make to get started.",
         }}
         pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
@@ -339,6 +352,8 @@ function MakesTab({ companyUuid }: { companyUuid: string }) {
 
 function ModelsTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [makeFilter, setMakeFilter] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
@@ -348,6 +363,8 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
 
   const { data, isLoading, error, refetch } = useVehicleModels(companyUuid, {
     search: search || undefined,
+    status: statusFilter === "ALL" ? undefined : (statusFilter as "ACTIVE" | "INACTIVE"),
+    makeUuid: makeFilter ?? undefined,
     page,
     size,
   })
@@ -473,12 +490,31 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
         </PermissionGate>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search models..."
           defaultValue={search}
           onChange={(v) => {
             setSearch(v)
+            setPage(0)
+          }}
+        />
+        <div className="w-full sm:w-64">
+          <VehicleMakeCombobox
+            companyUuid={companyUuid}
+            value={makeFilter}
+            onValueChange={(uuid) => {
+              setMakeFilter(uuid)
+              setPage(0)
+            }}
+            placeholder="Filter by make..."
+            size={100}
+          />
+        </div>
+        <StatusFilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v)
             setPage(0)
           }}
         />
@@ -489,6 +525,8 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
             onExport={(format) =>
               exportVehicleModels(companyUuid, format, {
                 search: search || undefined,
+                status: statusFilter === "ALL" ? undefined : statusFilter,
+                makeUuid: makeFilter ?? undefined,
               })
             }
           />
@@ -505,8 +543,8 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
         empty={{
           icon: Car,
           title: "No vehicle models found",
-          description: search
-            ? "Try a different search."
+          description: search || statusFilter !== "ALL" || makeFilter !== null
+            ? "Try a different search or clear filters."
             : "Create a model to get started.",
         }}
         pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
@@ -580,6 +618,8 @@ function ModelsTab({ companyUuid }: { companyUuid: string }) {
 
 function VariantsTab({ companyUuid }: { companyUuid: string }) {
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [modelFilter, setModelFilter] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
@@ -589,6 +629,8 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
 
   const { data, isLoading, error, refetch } = useVehicleVariants(companyUuid, {
     search: search || undefined,
+    status: statusFilter === "ALL" ? undefined : (statusFilter as "ACTIVE" | "INACTIVE"),
+    modelUuid: modelFilter ?? undefined,
     page,
     size,
   })
@@ -714,12 +756,31 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
         </PermissionGate>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search variants..."
           defaultValue={search}
           onChange={(v) => {
             setSearch(v)
+            setPage(0)
+          }}
+        />
+        <div className="w-full sm:w-64">
+          <VehicleModelCombobox
+            companyUuid={companyUuid}
+            value={modelFilter}
+            onValueChange={(uuid) => {
+              setModelFilter(uuid)
+              setPage(0)
+            }}
+            placeholder="Filter by model..."
+            size={100}
+          />
+        </div>
+        <StatusFilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v)
             setPage(0)
           }}
         />
@@ -730,6 +791,8 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
             onExport={(format) =>
               exportVehicleVariants(companyUuid, format, {
                 search: search || undefined,
+                status: statusFilter === "ALL" ? undefined : statusFilter,
+                modelUuid: modelFilter ?? undefined,
               })
             }
           />
@@ -746,8 +809,8 @@ function VariantsTab({ companyUuid }: { companyUuid: string }) {
         empty={{
           icon: Car,
           title: "No vehicle variants found",
-          description: search
-            ? "Try a different search."
+          description: search || statusFilter !== "ALL" || modelFilter !== null
+            ? "Try a different search or clear filters."
             : "Create a variant to get started.",
         }}
         pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}

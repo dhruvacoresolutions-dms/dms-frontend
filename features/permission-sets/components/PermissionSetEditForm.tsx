@@ -7,14 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+  FormTextField,
+  FormTextareaField,
+} from "@/components/common/form-fields"
 import { Card, CardContent } from "@/components/ui/card"
 import { useUpdatePermissionSet } from "../hooks/use-update-permission-set"
 import { getPermissionSetErrorMessage } from "../utils/permission-set.utils"
@@ -63,10 +60,9 @@ export function PermissionSetEditForm({
   const updateMutation = useUpdatePermissionSet(companyUuid, setUuid)
 
   const {
-    register,
+    control,
     handleSubmit,
     reset,
-    formState: { errors },
   } = useForm<PermissionSetEditValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
@@ -103,24 +99,24 @@ export function PermissionSetEditForm({
       <Card>
         <CardContent className="space-y-4 pt-6">
           <FieldGroup>
-            <Field>
-              <FieldLabel>Code</FieldLabel>
-              <Input
-                aria-invalid={!!errors.code}
-                className="font-mono"
-                {...register("code")}
-              />
-              <FieldError errors={[errors.code]} />
-            </Field>
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input aria-invalid={!!errors.name} {...register("name")} />
-              <FieldError errors={[errors.name]} />
-            </Field>
-            <Field>
-              <FieldLabel>Description</FieldLabel>
-              <Textarea {...register("description")} />
-            </Field>
+            <FormTextField
+              control={control}
+              name="code"
+              label="Code"
+              placeholder="Enter code"
+            />
+            <FormTextField
+              control={control}
+              name="name"
+              label="Name"
+              placeholder="Enter name"
+            />
+            <FormTextareaField
+              control={control}
+              name="description"
+              label="Description"
+              placeholder="Enter description"
+            />
           </FieldGroup>
         </CardContent>
       </Card>

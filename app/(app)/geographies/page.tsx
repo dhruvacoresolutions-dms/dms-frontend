@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
-import { SearchInput } from "@/components/common/SearchInput"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
@@ -26,6 +25,11 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import type { GeographyResponse } from "@/features/geographies/api/geography.types"
+import type {
+  GeographyStatus,
+  GeographyType,
+} from "@/features/geographies/api/geography.types"
+import { GeographyFilters } from "@/features/geographies/components/GeographyFilters"
 import { useGeographies } from "@/features/geographies/hooks/use-geographies"
 import { useUpdateGeographyStatus } from "@/features/geographies/hooks/use-update-geography-status"
 import { GeographyFormDialog } from "@/features/geographies/components/GeographyFormDialog"
@@ -50,6 +54,10 @@ function GeographiesContent() {
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
+  const [typeFilter, setTypeFilter] = useState<"ALL" | GeographyType>("ALL")
+  const [statusFilter, setStatusFilter] = useState<"ALL" | GeographyStatus>(
+    "ALL"
+  )
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
@@ -62,9 +70,14 @@ function GeographiesContent() {
 
   const { data, isLoading, error, refetch } = useGeographies(companyUuid, {
     search: search || undefined,
+    type: typeFilter === "ALL" ? undefined : typeFilter,
+    status: statusFilter === "ALL" ? undefined : statusFilter,
     page,
     size,
   })
+
+  const hasActiveFilters =
+    search !== "" || typeFilter !== "ALL" || statusFilter !== "ALL"
 
   const updateStatusMutation = useUpdateGeographyStatus(companyUuid)
 
@@ -174,27 +187,40 @@ function GeographiesContent() {
         }
       />
 
-      <div className="flex items-center gap-2">
-        <SearchInput
-          placeholder="Search geographies..."
-          defaultValue={search}
-          onChange={(v) => {
-            setSearch(v)
-            setPage(0)
-          }}
-        />
-        <div className="ml-auto flex items-center gap-2">
+      <GeographyFilters
+        values={{ search, type: typeFilter, status: statusFilter }}
+        onSearchChange={(v) => {
+          setSearch(v)
+          setPage(0)
+        }}
+        onTypeChange={(v) => {
+          setTypeFilter(v)
+          setPage(0)
+        }}
+        onStatusChange={(v) => {
+          setStatusFilter(v)
+          setPage(0)
+        }}
+        onClear={() => {
+          setSearch("")
+          setTypeFilter("ALL")
+          setStatusFilter("ALL")
+          setPage(0)
+        }}
+        action={
           <ExportDropdown
             permission={PERMISSIONS.GEOGRAPHY.EXPORT}
             baseFileName="geographies-export"
             onExport={(format) =>
               exportGeographies(companyUuid, format, {
                 search: search || undefined,
+                type: typeFilter === "ALL" ? undefined : typeFilter,
+                status: statusFilter === "ALL" ? undefined : statusFilter,
               })
             }
           />
-        </div>
-      </div>
+        }
+      />
 
       <DataTable
         columns={columns}
@@ -206,8 +232,8 @@ function GeographiesContent() {
         empty={{
           icon: MapPin,
           title: "No geographies found",
-          description: search
-            ? "Try a different search."
+          description: hasActiveFilters
+            ? "Try a different search or clear filters."
             : "Create a geography to get started.",
         }}
         pagination={{

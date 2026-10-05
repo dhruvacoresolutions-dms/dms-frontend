@@ -386,7 +386,7 @@ export function DataTablePagination({
               onValueChange={(v) => onPageSizeChange(Number(v))}
             >
               <SelectTrigger size="sm" className="h-8 min-w-16 gap-2">
-                <SelectValue />
+                <SelectValue placeholder="Rows per page" />
               </SelectTrigger>
               <SelectContent className="p-1.5">
                 {pageSizeOptions.map((o) => (

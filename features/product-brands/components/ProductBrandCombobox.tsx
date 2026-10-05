@@ -17,6 +17,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: ProductBrandResponse): ComboboxOption {
@@ -30,6 +32,7 @@ export function ProductBrandCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select brand...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -96,6 +99,7 @@ export function ProductBrandCombobox({
       loading={listQuery.isFetching}
       emptyText="No brands found."
       clearLabel="Clear brand"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

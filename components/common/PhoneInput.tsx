@@ -30,7 +30,7 @@ export function PhoneInput({
   defaultValue,
   onValueChange,
   onBlur,
-  placeholder = "98765 43210",
+  placeholder = "Enter mobile number",
   disabled,
   hasError,
   autoComplete = "tel",

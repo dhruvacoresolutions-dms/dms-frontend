@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -8,14 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { FormSelectField } from "@/components/common/form-fields"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useUpdateCompanyStatus } from "../hooks/use-update-company-status"
@@ -33,6 +27,10 @@ type CompanyStatusDialogProps = {
   currentStatus?: string
 }
 
+type StatusFormValues = {
+  status: CompanyStatus
+}
+
 function statusLabel(status: string): string {
   return (
     (COMPANY_STATUS_OPTIONS as readonly CompanyStatusOption[]).find(
@@ -48,7 +46,10 @@ export function CompanyStatusDialog({
   companyName,
   currentStatus,
 }: CompanyStatusDialogProps) {
-  const [status, setStatus] = useState<CompanyStatus>("ACTIVE")
+  const { control, getValues, reset, watch } = useForm<StatusFormValues>({
+    defaultValues: { status: "ACTIVE" },
+  })
+  const status = watch("status")
   const [initKey, setInitKey] = useState<string | null>(null)
   const updateMutation = useUpdateCompanyStatus()
 
@@ -59,21 +60,22 @@ export function CompanyStatusDialog({
     setInitKey(openKey)
     if (openKey) {
       const valid: CompanyStatus[] = ["ACTIVE", "INACTIVE", "SUSPENDED"]
-      setStatus(
-        valid.includes(currentStatus as CompanyStatus)
+      reset({
+        status: valid.includes(currentStatus as CompanyStatus)
           ? (currentStatus as CompanyStatus)
-          : "ACTIVE"
-      )
+          : "ACTIVE",
+      })
     }
   }
 
   const handleConfirm = () => {
     if (!companyUuid) return
+    const selected = getValues("status")
     updateMutation.mutate(
-      { companyUuid, input: { status } },
+      { companyUuid, input: { status: selected } },
       {
         onSuccess: () => {
-          toast.success(`Company status updated to ${statusLabel(status)}`)
+          toast.success(`Company status updated to ${statusLabel(selected)}`)
           onOpenChange(false)
         },
         onError: (error) => {
@@ -110,28 +112,13 @@ export function CompanyStatusDialog({
               "Select the new lifecycle status for this company."
             )}
           </p>
-          <Field>
-            <FieldLabel>Status</FieldLabel>
-            <Select
-              value={status}
-              onValueChange={(v: string | null) => {
-                if (v) setStatus(v as CompanyStatus)
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {(
-                  COMPANY_STATUS_OPTIONS as readonly CompanyStatusOption[]
-                ).map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          <FormSelectField
+            control={control}
+            name="status"
+            label="Status"
+            placeholder="Select status"
+            options={COMPANY_STATUS_OPTIONS}
+          />
           <div className="flex justify-end gap-2">
             <Button
               type="button"

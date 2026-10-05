@@ -37,6 +37,8 @@ type Props<T> = {
   emptyText?: string
   /** Accessible label for the clear button */
   clearLabel?: string
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
   /** Called as the user types (parent debounces + refetches) */
   onSearchChange?: (query: string) => void
 }
@@ -55,6 +57,7 @@ export function EntityCombobox<T>({
   loading,
   emptyText = "No results found.",
   clearLabel = "Clear selection",
+  placeholder = "Select an option",
   onSearchChange,
 }: Props<T>) {
   const [inputValue, setInputValue] = React.useState("")
@@ -108,7 +111,7 @@ export function EntityCombobox<T>({
               : "min-w-0 flex-1 truncate text-left text-muted-foreground"
           }
         >
-          <ComboboxValue />
+          <ComboboxValue placeholder={placeholder} />
         </span>
         {selected && !disabled && (
           <span

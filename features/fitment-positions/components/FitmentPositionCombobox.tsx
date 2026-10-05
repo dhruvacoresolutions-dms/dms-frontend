@@ -18,6 +18,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: FitmentPositionResponse): ComboboxOption {
@@ -31,6 +33,7 @@ export function FitmentPositionCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select fitment position...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 

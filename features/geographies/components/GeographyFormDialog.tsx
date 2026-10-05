@@ -9,7 +9,6 @@ import { toast } from "sonner"
 import { ChevronsUpDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -17,12 +16,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  FormSelectField,
+  FormTextareaField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Command,
@@ -48,6 +45,15 @@ const GEOGRAPHY_HIERARCHY = [
   "REGION",
   "TERRITORY",
   "BEAT",
+] as const
+
+const GEOGRAPHY_TYPE_OPTIONS = [
+  { value: "COUNTRY", label: "Country" },
+  { value: "ZONE", label: "Zone" },
+  { value: "STATE", label: "State" },
+  { value: "REGION", label: "Region" },
+  { value: "TERRITORY", label: "Territory" },
+  { value: "BEAT", label: "Beat" },
 ] as const
 
 const geoSchema = z
@@ -139,7 +145,6 @@ export function GeographyFormDialog({
   const [parentOpen, setParentOpen] = useState(false)
 
   const {
-    register,
     handleSubmit,
     setValue,
     control,
@@ -200,6 +205,20 @@ export function GeographyFormDialog({
     }
   }, [typeValue, allowedParentTypes, parentTypeValue, setValue])
 
+  // Clear the selected parent when the parent type itself changes
+  // (FormSelectField has no per-change side-effect hook). Skips the initial
+  // undefined -> value transition so edit-mode prefills are preserved.
+  const prevParentTypeRef = React.useRef<typeof parentTypeValue>(undefined)
+  useEffect(() => {
+    if (
+      prevParentTypeRef.current !== undefined &&
+      prevParentTypeRef.current !== parentTypeValue
+    ) {
+      setValue("parentUuid", undefined, { shouldValidate: true })
+    }
+    prevParentTypeRef.current = parentTypeValue
+  }, [parentTypeValue, setValue])
+
   const { data: parentOptionsData, isLoading: parentOptionsLoading } =
     useGeographies(
       companyUuid,
@@ -230,13 +249,6 @@ export function GeographyFormDialog({
       setParentOpen(false)
     }
     onOpenChange(next)
-  }
-
-  const handleParentTypeChange = (v: string | null) => {
-    if (!v) return
-    setValue("parentType", v as GeographyType, { shouldValidate: true })
-    setValue("parentUuid", undefined, { shouldValidate: true })
-    setParentOpen(false)
   }
 
   const isPending =
@@ -308,79 +320,45 @@ export function GeographyFormDialog({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Field>
-                  <FieldLabel>Code</FieldLabel>
-                  <Input
-                    placeholder="e.g. IND"
-                    aria-invalid={!!errors.code}
-                    {...register("code")}
+                <FormTextField
+                  control={control}
+                  name="code"
+                  label="Code"
+                  placeholder="Enter code"
+                  disabled={isEdit}
+                />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label="Name"
+                  placeholder="Enter name"
+                />
+                <div>
+                  <FormSelectField
+                    control={control}
+                    name="type"
+                    label="Type"
+                    placeholder="Select type"
                     disabled={isEdit}
-                    autoComplete="off"
+                    options={GEOGRAPHY_TYPE_OPTIONS}
                   />
-                  <FieldError errors={[errors.code]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Name</FieldLabel>
-                  <Input
-                    placeholder="e.g. India"
-                    aria-invalid={!!errors.name}
-                    {...register("name")}
-                    autoComplete="off"
-                  />
-                  <FieldError errors={[errors.name]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Type</FieldLabel>
-                  <Select
-                    value={typeValue ?? ""}
-                    onValueChange={(v: string | null) =>
-                      v &&
-                      !isEdit &&
-                      setValue("type", v as GeographyType, {
-                        shouldValidate: true,
-                      })
-                    }
-                    disabled={isEdit}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.type}>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="COUNTRY">Country</SelectItem>
-                      <SelectItem value="ZONE">Zone</SelectItem>
-                      <SelectItem value="STATE">State</SelectItem>
-                      <SelectItem value="REGION">Region</SelectItem>
-                      <SelectItem value="TERRITORY">Territory</SelectItem>
-                      <SelectItem value="BEAT">Beat</SelectItem>
-                    </SelectContent>
-                  </Select>
                   {isEdit && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Type cannot be changed after creation.
                     </p>
                   )}
-                  <FieldError errors={[errors.type]} />
-                </Field>
+                </div>
                 {needsParent && (
-                  <Field>
-                    <FieldLabel>Parent Type</FieldLabel>
-                    <Select
-                      value={parentTypeValue ?? ""}
-                      onValueChange={handleParentTypeChange}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.parentType}>
-                        <SelectValue placeholder="Select parent type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allowedParentTypes.map((pt) => (
-                          <SelectItem key={pt} value={pt}>
-                            {pt.charAt(0) + pt.slice(1).toLowerCase()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.parentType]} />
-                  </Field>
+                  <FormSelectField
+                    control={control}
+                    name="parentType"
+                    label="Parent Type"
+                    placeholder="Select parent type"
+                    options={allowedParentTypes.map((pt) => ({
+                      value: pt,
+                      label: pt.charAt(0) + pt.slice(1).toLowerCase(),
+                    }))}
+                  />
                 )}
                 {needsParent && parentTypeValue && (
                   <Field className="lg:col-span-2">
@@ -464,14 +442,13 @@ export function GeographyFormDialog({
                     <FieldError errors={[errors.parentUuid]} />
                   </Field>
                 )}
-                <Field className="lg:col-span-2">
-                  <FieldLabel>Description</FieldLabel>
-                  <Input
-                    placeholder="Optional"
-                    {...register("description")}
-                  />
-                  <FieldError errors={[errors.description]} />
-                </Field>
+                <FormTextareaField
+                  control={control}
+                  name="description"
+                  label="Description"
+                  placeholder="Enter description"
+                  className="lg:col-span-2"
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

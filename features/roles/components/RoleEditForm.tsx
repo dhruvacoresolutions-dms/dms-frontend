@@ -8,25 +8,17 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  FormTextField,
+  FormTextareaField,
+  FormSelectField,
+} from "@/components/common/form-fields"
 import { Card, CardContent } from "@/components/ui/card"
 import { useUpdateRole } from "../hooks/use-update-role"
 import { getRoleErrorMessage } from "../utils/role.utils"
 import { ROLE_STATUS_OPTIONS } from "../configs/role.constants"
-import type { RoleDetail, RoleStatus } from "../api/role.types"
+import type { RoleDetail } from "../api/role.types"
 
 const editSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -53,12 +45,9 @@ export function RoleEditForm({
   const updateMutation = useUpdateRole(companyUuid, roleUuid)
 
   const {
-    register,
+    control,
     handleSubmit,
     reset,
-    setValue,
-    watch,
-    formState: { errors },
   } = useForm<RoleEditValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
@@ -75,8 +64,6 @@ export function RoleEditForm({
       status: role.status,
     })
   }, [role, reset])
-
-  const status = watch("status")
 
   return (
     <form
@@ -99,40 +86,25 @@ export function RoleEditForm({
               <FieldLabel>Code</FieldLabel>
               <Input value={role.code} disabled className="font-mono" />
             </Field>
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input aria-invalid={!!errors.name} {...register("name")} />
-              <FieldError errors={[errors.name]} />
-            </Field>
-            <Field>
-              <FieldLabel>Description</FieldLabel>
-              <Textarea {...register("description")} />
-            </Field>
-            <Field>
-              <FieldLabel>Status</FieldLabel>
-              <Select
-                value={status}
-                onValueChange={(v) => {
-                  if (v === "ACTIVE" || v === "INACTIVE") {
-                    setValue("status", v as RoleStatus, {
-                      shouldDirty: true,
-                    })
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError errors={[errors.status]} />
-            </Field>
+            <FormTextField
+              control={control}
+              name="name"
+              label="Name"
+              placeholder="Enter name"
+            />
+            <FormTextareaField
+              control={control}
+              name="description"
+              label="Description"
+              placeholder="Enter description"
+            />
+            <FormSelectField
+              control={control}
+              name="status"
+              label="Status"
+              placeholder="Select status"
+              options={ROLE_STATUS_OPTIONS}
+            />
           </FieldGroup>
         </CardContent>
       </Card>

@@ -17,6 +17,7 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  placeholder?: string
 };
 
 function toOption(item: ProductCategoryResponse): ComboboxOption {
@@ -30,6 +31,7 @@ export function ProductCategoryCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select category...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -96,6 +98,7 @@ export function ProductCategoryCombobox({
       loading={listQuery.isFetching}
       emptyText="No categories found."
       clearLabel="Clear category"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

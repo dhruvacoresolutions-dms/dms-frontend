@@ -17,6 +17,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: GstHsnResponse): ComboboxOption {
@@ -30,6 +32,7 @@ export function GstHsnCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select HSN...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 

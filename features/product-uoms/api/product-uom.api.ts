@@ -104,6 +104,7 @@ export async function updateProductUomStatus(
 
 export type ExportProductUomsFilters = {
   search?: string
+  status?: string
 }
 
 export async function exportProductUoms(
@@ -118,6 +119,7 @@ export async function exportProductUoms(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

@@ -130,6 +130,7 @@ export async function uploadVehicleMakeImport(companyUuid: string, file: File) {
 
 export type ExportVehicleMakesFilters = {
   search?: string
+  status?: string
 }
 
 export async function exportVehicleMakes(
@@ -144,6 +145,7 @@ export async function exportVehicleMakes(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

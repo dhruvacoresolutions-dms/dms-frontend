@@ -78,6 +78,7 @@ function ProductAttributesContent() {
 function AttributeTemplatesTab() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
+  const [productType, setProductType] = useState("")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
@@ -92,10 +93,13 @@ function AttributeTemplatesTab() {
     companyUuid,
     {
       search: search || undefined,
+      productType: productType || undefined,
       page,
       size,
     }
   )
+
+  const hasActiveFilters = search !== "" || productType !== ""
 
   const updateStatusMutation =
     useUpdateProductAttributeTemplateStatus(companyUuid)
@@ -232,7 +236,7 @@ function AttributeTemplatesTab() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search attribute templates..."
           defaultValue={search}
@@ -240,6 +244,15 @@ function AttributeTemplatesTab() {
             setSearch(v)
             setPage(0)
           }}
+        />
+        <Input
+          placeholder="Filter by product type..."
+          defaultValue={productType}
+          onChange={(e) => {
+            setProductType(e.target.value)
+            setPage(0)
+          }}
+          className="w-full sm:w-52"
         />
         <div className="ml-auto flex items-center gap-2">
           <PermissionGate
@@ -270,8 +283,8 @@ function AttributeTemplatesTab() {
         empty={{
           icon: ListTree,
           title: "No attribute templates found",
-          description: search
-            ? "Try a different search."
+          description: hasActiveFilters
+            ? "Try a different search or clear filters."
             : "Create an attribute template to get started.",
         }}
         pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}

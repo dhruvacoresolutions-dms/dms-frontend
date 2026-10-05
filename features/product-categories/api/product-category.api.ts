@@ -123,6 +123,7 @@ export async function updateProductCategoryStatus(
 
 export type ExportProductCategoriesFilters = {
   search?: string
+  status?: string
 }
 
 export async function exportProductCategories(
@@ -137,6 +138,7 @@ export async function exportProductCategories(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

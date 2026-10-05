@@ -130,6 +130,7 @@ export async function uploadGstHsnImport(companyUuid: string, file: File) {
 // (GET {base}/export?format=csv|xlsx) in case the backend supports it.
 export type ExportGstHsnsFilters = {
   search?: string
+  status?: string
 }
 
 export async function exportGstHsns(
@@ -144,6 +145,7 @@ export async function exportGstHsns(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

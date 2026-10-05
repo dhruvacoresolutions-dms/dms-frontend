@@ -5,6 +5,7 @@ import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, ReceiptText, Upl
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
+import { StatusFilterSelect } from "@/components/common/StatusFilterSelect"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ export default function GstHsnPage() {
 function GstHsnContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
@@ -48,6 +50,7 @@ function GstHsnContent() {
 
   const { data, isLoading, error, refetch } = useGstHsns(companyUuid, {
     search: search || undefined,
+    status: statusFilter === "ALL" ? undefined : (statusFilter as "ACTIVE" | "INACTIVE"),
     page,
     size,
   })
@@ -153,11 +156,15 @@ function GstHsnContent() {
         }
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search GST HSN..."
           defaultValue={search}
           onChange={(v) => { setSearch(v); setPage(0) }}
+        />
+        <StatusFilterSelect
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(0) }}
         />
       </div>
 
@@ -171,7 +178,7 @@ function GstHsnContent() {
         empty={{
           icon: ReceiptText,
           title: "No GST HSN found",
-          description: search ? "Try a different search." : "Create an HSN entry to get started.",
+          description: search || statusFilter !== "ALL" ? "Try a different search or clear filters." : "Create an HSN entry to get started.",
         }}
         pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
       />

@@ -99,6 +99,7 @@ export async function updateProductBrandStatus(
 
 export type ExportProductBrandsFilters = {
   search?: string
+  status?: string
 }
 
 export async function exportProductBrands(
@@ -113,6 +114,7 @@ export async function exportProductBrands(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

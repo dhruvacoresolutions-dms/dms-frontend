@@ -9,6 +9,7 @@ export function FormComboboxField<T extends FieldValues>({
   control,
   name,
   label,
+  placeholder,
   companyUuid,
   disabled,
   className,
@@ -31,6 +32,7 @@ export function FormComboboxField<T extends FieldValues>({
             value={field.value ? String(field.value) : null}
             disabled={disabled}
             onValueChange={(v) => field.onChange(v ?? "")}
+            {...(placeholder ? { placeholder } : {})}
             {...comboboxProps}
           />
           <FieldError errors={[fieldState.error]} />

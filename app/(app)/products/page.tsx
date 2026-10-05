@@ -15,7 +15,6 @@ import {
   RotateCcw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { SearchInput } from "@/components/common/SearchInput"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
@@ -39,6 +38,7 @@ import {
 } from "@/features/products/hooks/use-product-mutations"
 import { exportProducts } from "@/features/products/api/product.api"
 import { ProductImportDialog } from "@/features/products/components/ProductImportDialog"
+import { ProductFilters } from "@/features/products/components/ProductFilters"
 import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -63,6 +63,8 @@ function ProductsContent() {
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
 
   const [search, setSearch] = useState("")
+  const [lifecycleStatus, setLifecycleStatus] = useState("ALL")
+  const [categoryUuid, setCategoryUuid] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [importOpen, setImportOpen] = useState(false)
@@ -70,9 +72,14 @@ function ProductsContent() {
 
   const { data, isLoading, error, refetch } = useProducts(companyUuid, {
     search: search || undefined,
+    lifecycleStatus: lifecycleStatus === "ALL" ? undefined : lifecycleStatus,
+    categoryUuid: categoryUuid ?? undefined,
     page,
     size,
   })
+
+  const hasActiveFilters =
+    search !== "" || lifecycleStatus !== "ALL" || categoryUuid !== null
 
   const publishMutation = usePublishProduct(companyUuid)
   const deactivateMutation = useDeactivateProduct(companyUuid)
@@ -91,7 +98,12 @@ function ProductsContent() {
         id: "code",
         header: "Code",
         cell: ({ row }) => (
-          <span className="font-mono text-sm">{row.original.code}</span>
+          <Link
+            href={`/products/${row.original.productUuid}`}
+            className="font-mono text-sm text-primary underline-offset-4 hover:underline"
+          >
+            {row.original.code}
+          </Link>
         ),
       },
       {
@@ -258,27 +270,42 @@ function ProductsContent() {
         }
       />
 
-      <div className="flex items-center gap-2">
-        <SearchInput
-          placeholder="Search products..."
-          defaultValue={search}
-          onChange={(v) => {
-            setSearch(v)
-            setPage(0)
-          }}
-        />
-        <div className="ml-auto flex items-center gap-2">
+      <ProductFilters
+        companyUuid={companyUuid}
+        values={{ search, lifecycleStatus, categoryUuid }}
+        onSearchChange={(v) => {
+          setSearch(v)
+          setPage(0)
+        }}
+        onLifecycleStatusChange={(v) => {
+          setLifecycleStatus(v)
+          setPage(0)
+        }}
+        onCategoryChange={(uuid) => {
+          setCategoryUuid(uuid)
+          setPage(0)
+        }}
+        onClear={() => {
+          setSearch("")
+          setLifecycleStatus("ALL")
+          setCategoryUuid(null)
+          setPage(0)
+        }}
+        action={
           <ExportDropdown
             permission={PERMISSIONS.PRODUCT.EXPORT}
             baseFileName="products-export"
             onExport={(format) =>
               exportProducts(companyUuid, format, {
                 search: search || undefined,
+                lifecycleStatus:
+                  lifecycleStatus === "ALL" ? undefined : lifecycleStatus,
+                categoryUuid: categoryUuid ?? undefined,
               })
             }
           />
-        </div>
-      </div>
+        }
+      />
 
       <DataTable
         columns={columns}
@@ -290,10 +317,10 @@ function ProductsContent() {
         empty={{
           icon: Plus,
           title: "No products found",
-          description: search
-            ? "Try a different search term."
+          description: hasActiveFilters
+            ? "Try a different search or clear filters."
             : "Get started by creating a product.",
-          action: !search ? (
+          action: !hasActiveFilters ? (
             <PermissionGate permission={PERMISSIONS.PRODUCT.CREATE}>
               <Button nativeButton={false} render={<Link href="/products/new" />}>
                 <Plus className="mr-2 size-4" />

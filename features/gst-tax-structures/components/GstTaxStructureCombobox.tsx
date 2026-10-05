@@ -17,6 +17,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: GstTaxStructureResponse): ComboboxOption {
@@ -30,6 +32,7 @@ export function GstTaxStructureCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select tax structure...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -96,6 +99,7 @@ export function GstTaxStructureCombobox({
       loading={listQuery.isFetching}
       emptyText="No tax structures found."
       clearLabel="Clear tax structure"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )
