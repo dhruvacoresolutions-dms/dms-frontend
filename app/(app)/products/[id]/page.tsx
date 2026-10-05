@@ -409,9 +409,12 @@ function PricesSection({
   productUuid: string
   onImport: () => void
 }) {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const { data, isLoading, error, refetch } = useProductPrices(
     companyUuid,
-    productUuid
+    productUuid,
+    { page, size }
   )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [revisePrice, setRevisePrice] = useState<ProductPriceResponse | null>(
@@ -423,6 +426,8 @@ function PricesSection({
   const deactivateMutation = useDeactivateProductPrice(companyUuid, productUuid)
 
   const prices = data?.content ?? []
+  const totalPages = data?.totalPages ?? 0
+  const totalElements = data?.totalElements ?? 0
 
   const columns = useMemo<DataTableColumn<ProductPriceResponse>[]>(
     () => [
@@ -541,6 +546,17 @@ function PricesSection({
           title: "No prices yet",
           description: "Add the first price for this product.",
         }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          totalElements,
+          pageSize: size,
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
+        }}
       />
       <ProductPriceDialog
         open={dialogOpen}
@@ -591,9 +607,12 @@ function BatchesSection({
   companyUuid: string
   productUuid: string
 }) {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const { data, isLoading, error, refetch } = useProductBatches(
     companyUuid,
-    productUuid
+    productUuid,
+    { page, size }
   )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ProductBatchResponse | null>(null)
@@ -601,6 +620,8 @@ function BatchesSection({
   const statusMutation = useUpdateProductBatchStatus(companyUuid, productUuid)
 
   const batches = data?.content ?? []
+  const totalPages = data?.totalPages ?? 0
+  const totalElements = data?.totalElements ?? 0
 
   const columns = useMemo<DataTableColumn<ProductBatchResponse>[]>(
     () => [
@@ -697,6 +718,17 @@ function BatchesSection({
         empty={{
           title: "No batches yet",
           description: "Add the first batch for this product.",
+        }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          totalElements,
+          pageSize: size,
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
         }}
       />
       <ProductBatchDialog
@@ -815,9 +847,12 @@ function GstMappingsCard({
   productUuid: string
   onAdd: () => void
 }) {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const { data, isLoading, error, refetch } = useProductGstMappings(
     companyUuid,
-    productUuid
+    productUuid,
+    { page, size }
   )
   const statusMutation = useUpdateProductGstMappingStatus(
     companyUuid,
@@ -829,6 +864,8 @@ function GstMappingsCard({
     current: string
   } | null>(null)
   const rows = data?.content ?? []
+  const gstTotalPages = data?.totalPages ?? 0
+  const gstTotalElements = data?.totalElements ?? 0
 
   const columns = useMemo<DataTableColumn<ProductGstMappingResponse>[]>(
     () => [
@@ -911,6 +948,17 @@ function GstMappingsCard({
           emptyContent={
             <p className="text-sm text-muted-foreground">No GST mappings.</p>
           }
+          pagination={{
+            page,
+            totalPages: gstTotalPages,
+            onPageChange: setPage,
+            totalElements: gstTotalElements,
+            pageSize: size,
+            onPageSizeChange: (s) => {
+              setSize(s)
+              setPage(0)
+            },
+          }}
         />
         <ConfirmDialog
           open={!!toggle}
@@ -955,9 +1003,12 @@ function RelationshipsCard({
   productUuid: string
   onAdd: () => void
 }) {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const { data, isLoading, error, refetch } = useProductRelationships(
     companyUuid,
-    productUuid
+    productUuid,
+    { page, size }
   )
   const statusMutation = useUpdateProductRelationshipStatus(
     companyUuid,
@@ -969,6 +1020,8 @@ function RelationshipsCard({
     current: string
   } | null>(null)
   const rows = data?.content ?? []
+  const relTotalPages = data?.totalPages ?? 0
+  const relTotalElements = data?.totalElements ?? 0
 
   const columns = useMemo<DataTableColumn<ProductRelationshipResponse>[]>(
     () => [
@@ -1049,6 +1102,17 @@ function RelationshipsCard({
           emptyContent={
             <p className="text-sm text-muted-foreground">No relationships.</p>
           }
+          pagination={{
+            page,
+            totalPages: relTotalPages,
+            onPageChange: setPage,
+            totalElements: relTotalElements,
+            pageSize: size,
+            onPageSizeChange: (s) => {
+              setSize(s)
+              setPage(0)
+            },
+          }}
         />
         <ConfirmDialog
           open={!!toggle}
@@ -1093,9 +1157,12 @@ function FitmentsCard({
   productUuid: string
   onAdd: () => void
 }) {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const { data, isLoading, error, refetch } = useProductFitments(
     companyUuid,
-    productUuid
+    productUuid,
+    { page, size }
   )
   const statusMutation = useUpdateProductFitmentStatus(
     companyUuid,
@@ -1107,6 +1174,8 @@ function FitmentsCard({
     current: string
   } | null>(null)
   const rows = data?.content ?? []
+  const fitTotalPages = data?.totalPages ?? 0
+  const fitTotalElements = data?.totalElements ?? 0
 
   const columns = useMemo<DataTableColumn<ProductFitmentResponse>[]>(
     () => [
@@ -1192,6 +1261,17 @@ function FitmentsCard({
           emptyContent={
             <p className="text-sm text-muted-foreground">No fitments.</p>
           }
+          pagination={{
+            page,
+            totalPages: fitTotalPages,
+            onPageChange: setPage,
+            totalElements: fitTotalElements,
+            pageSize: size,
+            onPageSizeChange: (s) => {
+              setSize(s)
+              setPage(0)
+            },
+          }}
         />
         <ConfirmDialog
           open={!!toggle}
@@ -1236,9 +1316,12 @@ function GeographyMappingsCard({
   productUuid: string
   onAdd: () => void
 }) {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const { data, isLoading, error, refetch } = useProductGeographyMappings(
     companyUuid,
-    productUuid
+    productUuid,
+    { page, size }
   )
   const statusMutation = useUpdateProductGeographyMappingStatus(
     companyUuid,
@@ -1250,6 +1333,8 @@ function GeographyMappingsCard({
     current: string
   } | null>(null)
   const rows = data?.content ?? []
+  const geoTotalPages = data?.totalPages ?? 0
+  const geoTotalElements = data?.totalElements ?? 0
 
   const columns = useMemo<DataTableColumn<ProductGeographyMappingResponse>[]>(
     () => [
@@ -1320,6 +1405,17 @@ function GeographyMappingsCard({
               No geography mappings.
             </p>
           }
+          pagination={{
+            page,
+            totalPages: geoTotalPages,
+            onPageChange: setPage,
+            totalElements: geoTotalElements,
+            pageSize: size,
+            onPageSizeChange: (s) => {
+              setSize(s)
+              setPage(0)
+            },
+          }}
         />
         <ConfirmDialog
           open={!!toggle}

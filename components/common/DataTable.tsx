@@ -105,6 +105,20 @@ export interface DataTableProps<TData extends RowData> {
   enableSorting?: boolean
 }
 
+/**
+ * Default floor widths per column id so the same kind of column renders at
+ * the same size in every module. Column ids are conventional (`code`,
+ * `status`, `actions`, …) across all tables. An explicit per-column
+ * `className` still wins on conflict. In the default auto table layout
+ * these act as minimums — long content can still expand a column.
+ */
+const DEFAULT_COLUMN_WIDTHS: Record<string, string> = {
+  actions: "w-12",
+  status: "w-28",
+  type: "w-28",
+  code: "w-36",
+}
+
 function toTableColumns<TData extends RowData>(
   columns: DataTableColumn<TData>[]
 ): ColumnDef<DataTableFeatures, TData, unknown>[] {
@@ -114,7 +128,7 @@ function toTableColumns<TData extends RowData>(
     cell: (ctx) =>
       c.cell({ row: { original: ctx.row.original, index: ctx.row.index } }),
     enableSorting: c.enableSorting ?? false,
-    meta: c.className,
+    meta: cn(DEFAULT_COLUMN_WIDTHS[c.id], c.className),
   }))
 }
 
@@ -142,7 +156,10 @@ export function DataTable<TData extends RowData>({
     data,
     columns: tableColumns,
     ...(getRowId
-      ? { getRowId: (originalRow: TData, index: number) => getRowId(originalRow, index) }
+      ? {
+          getRowId: (originalRow: TData, index: number) =>
+            getRowId(originalRow, index),
+        }
       : {}),
   })
 
@@ -221,10 +238,7 @@ export function DataTable<TData extends RowData>({
       <ScrollArea
         orientations={["vertical", "horizontal"]}
         className={cn("rounded-md border bg-background", wrapperClassName)}
-        viewportClassName={cn(
-          "max-h-[min(62svh,36rem)]",
-          wrapperClassName
-        )}
+        viewportClassName={cn("max-h-[min(62svh,36rem)]", wrapperClassName)}
         // Track starts below the sticky header (h-10) so the floating
         // thumb only ever overlaps body rows, never the header.
         verticalScrollBarClassName="mt-10"
@@ -236,7 +250,9 @@ export function DataTable<TData extends RowData>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className={header.column.columnDef.meta as string | undefined}
+                    className={
+                      header.column.columnDef.meta as string | undefined
+                    }
                   >
                     {header.isPlaceholder ? null : enableSorting &&
                       header.column.getCanSort() ? (
@@ -245,7 +261,10 @@ export function DataTable<TData extends RowData>({
                         onClick={header.column.getToggleSortingHandler()}
                         className="inline-flex cursor-pointer items-center gap-1 hover:text-foreground"
                       >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                         {header.column.getIsSorted() === "asc" ? (
                           <ArrowUp className="size-3.5" />
                         ) : header.column.getIsSorted() === "desc" ? (
@@ -255,7 +274,10 @@ export function DataTable<TData extends RowData>({
                         )}
                       </button>
                     ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
+                      flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )
                     )}
                   </TableHead>
                 ))}
@@ -263,40 +285,45 @@ export function DataTable<TData extends RowData>({
             ))}
           </TableHeader>
           <TableBody>
-            {showSkeleton ? (
-              Array.from({ length: resolvedSkeletonRows }).map((_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  <TableCell colSpan={tableColumns.length}>
-                    <Skeleton className="h-6" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              table.getRowModel().rows.map((row) => {
-                const original = row.original
-                const clickable = !!onRowClick
-                const customClass =
-                  typeof rowClassName === "function"
-                    ? rowClassName(original)
-                    : rowClassName
-                return (
-                  <TableRow
-                    key={row.id}
-                    className={cn(clickable && "cursor-pointer", customClass)}
-                    onClick={clickable ? () => onRowClick?.(original) : undefined}
-                  >
-                    {row.getAllCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={cell.column.columnDef.meta as string | undefined}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
+            {showSkeleton
+              ? Array.from({ length: resolvedSkeletonRows }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell colSpan={tableColumns.length}>
+                      <Skeleton className="h-6" />
+                    </TableCell>
                   </TableRow>
-                )
-              })
-            )}
+                ))
+              : table.getRowModel().rows.map((row) => {
+                  const original = row.original
+                  const clickable = !!onRowClick
+                  const customClass =
+                    typeof rowClassName === "function"
+                      ? rowClassName(original)
+                      : rowClassName
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={cn(clickable && "cursor-pointer", customClass)}
+                      onClick={
+                        clickable ? () => onRowClick?.(original) : undefined
+                      }
+                    >
+                      {row.getAllCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={
+                            cell.column.columnDef.meta as string | undefined
+                          }
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )
+                })}
           </TableBody>
         </Table>
       </ScrollArea>
@@ -343,10 +370,10 @@ export function DataTablePagination({
   pageSizeOptions?: number[]
 }) {
   const showRange = totalElements != null && from != null && to != null
-  if (totalPages <= 1 && !showRange) return null
-  // Nothing to be optimistic about on first load — footer appears once
-  // at least one page of metadata exists.
-  if (isLoading && totalPages <= 1) return null
+  const showNav = totalPages > 1
+  // The footer always renders once `pagination` is provided — navigation
+  // stays visible (disabled at the boundaries) even on single-page
+  // results so the controls never disappear and the layout stays stable.
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
       <div className="flex flex-wrap items-center justify-start gap-4">
@@ -354,10 +381,11 @@ export function DataTablePagination({
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rows per page</span>
             <Select
+              disabled={isLoading}
               value={String(pageSize ?? pageSizeOptions[0])}
               onValueChange={(v) => onPageSizeChange(Number(v))}
             >
-              <SelectTrigger size="sm" className="h-8 min-w-20 gap-2 px-3">
+              <SelectTrigger size="sm" className="h-8 min-w-16 gap-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="p-1.5">
@@ -375,30 +403,28 @@ export function DataTablePagination({
         {isLoading ? <Loader2 className="size-3.5 animate-spin" /> : null}
         {showRange
           ? `Showing ${from}–${to} of ${totalElements}`
-          : `Page ${page + 1} of ${totalPages}`}
-        {showRange && totalPages > 1 ? ` · Page ${page + 1} of ${totalPages}` : null}
+          : `Page ${page + 1} of ${Math.max(totalPages, 1)}`}
+        {showRange && showNav ? ` · Page ${page + 1} of ${totalPages}` : null}
       </p>
       <div className="flex justify-end">
-        {totalPages > 1 ? (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 0 || isLoading}
-              onClick={() => onPageChange(page - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages - 1 || isLoading}
-              onClick={() => onPageChange(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        ) : null}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 0 || isLoading}
+            onClick={() => onPageChange(page - 1)}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages - 1 || isLoading}
+            onClick={() => onPageChange(page + 1)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   )

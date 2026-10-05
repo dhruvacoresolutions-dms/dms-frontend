@@ -2,7 +2,29 @@
 
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/common/DataTable"
+import type { EffectiveAccessResponse } from "@/features/users/api/user.types"
 import { useEffectiveAccess } from "@/features/users/hooks/use-effective-access"
+
+type AccessScope = EffectiveAccessResponse["scopes"][number]
+
+const scopeColumns: DataTableColumn<AccessScope>[] = [
+  {
+    id: "type",
+    header: "Type",
+    cell: ({ row }) => row.original.type,
+  },
+  {
+    id: "publicId",
+    header: "Public ID",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">{row.original.publicId}</span>
+    ),
+  },
+]
 
 type Props = {
   companyUuid: string
@@ -104,26 +126,13 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
       {access.scopes.length > 0 && (
         <div className="rounded-lg border p-6 space-y-4">
           <h3 className="text-lg font-semibold">Scopes</h3>
-          <div className="rounded-md border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="px-4 py-2 text-left font-medium">Type</th>
-                  <th className="px-4 py-2 text-left font-medium">Public ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {access.scopes.map((scope, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="px-4 py-2">{scope.type}</td>
-                    <td className="px-4 py-2 font-mono text-xs">
-                      {scope.publicId}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={scopeColumns}
+            data={access.scopes}
+            getRowId={(scope, index) =>
+              `${scope.type}-${scope.publicId}-${index}`
+            }
+          />
         </div>
       )}
     </div>

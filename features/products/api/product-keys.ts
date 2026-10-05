@@ -25,12 +25,44 @@ export const productKeys = {
     productUuid: string,
     params?: Record<string, unknown>
   ) => [...productKeys.batches(companyUuid, productUuid), params] as const,
-  gstMappings: (companyUuid: string, productUuid: string) =>
-    [...productKeys.detail(companyUuid, productUuid), "gst-mappings"] as const,
-  relationships: (companyUuid: string, productUuid: string) =>
-    [...productKeys.detail(companyUuid, productUuid), "relationships"] as const,
-  fitments: (companyUuid: string, productUuid: string) =>
-    [...productKeys.detail(companyUuid, productUuid), "fitments"] as const,
-  geographyMappings: (companyUuid: string, productUuid: string) =>
-    [...productKeys.detail(companyUuid, productUuid), "geographies"] as const,
+  gstMappings: (
+    companyUuid: string,
+    productUuid: string,
+    params?: Record<string, unknown>
+  ) =>
+    [
+      ...productKeys.detail(companyUuid, productUuid),
+      "gst-mappings",
+      params,
+    ] as const,
+  relationships: (
+    companyUuid: string,
+    productUuid: string,
+    params?: Record<string, unknown>
+  ) =>
+    [
+      ...productKeys.detail(companyUuid, productUuid),
+      "relationships",
+      params,
+    ] as const,
+  fitments: (
+    companyUuid: string,
+    productUuid: string,
+    params?: Record<string, unknown>
+  ) =>
+    [
+      ...productKeys.detail(companyUuid, productUuid),
+      "fitments",
+      params,
+    ] as const,
+  geographyMappings: (
+    companyUuid: string,
+    productUuid: string,
+    params?: Record<string, unknown>
+  ) =>
+    [
+      ...productKeys.detail(companyUuid, productUuid),
+      "geographies",
+      params,
+    ] as const,
 } as const
