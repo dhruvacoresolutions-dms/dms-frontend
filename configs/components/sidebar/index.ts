@@ -17,6 +17,10 @@ import {
   Upload,
   // Primary Management
   Package,
+  ListTree,
+  Ruler,
+  Award,
+  Tags,
   Truck,
   ArrowDownToLine,
   ShoppingCart,
@@ -156,6 +160,67 @@ export const mainNav: MainNav = [
       },
     ],
   },
+  {
+    title: "Product & Pricing",
+    url: "/product-pricing",
+    icon: Package,
+    items: [
+      {
+        title: "Products",
+        url: "/products",
+        icon: Package,
+        permission: PERMISSIONS.PRODUCT.VIEW,
+      },
+      {
+        title: "Categories",
+        url: "/product-categories",
+        icon: ListTree,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "UOMs",
+        url: "/product-uoms",
+        icon: Ruler,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Brands",
+        url: "/product-brands",
+        icon: Award,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "GST HSN",
+        url: "/gst-hsn",
+        icon: ReceiptText,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Tax Structures",
+        url: "/gst-tax-structures",
+        icon: Landmark,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Vehicle Masters",
+        url: "/vehicle-masters",
+        icon: Car,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Support Masters",
+        url: "/support-masters",
+        icon: Wrench,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Attributes",
+        url: "/product-attributes",
+        icon: Tags,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+    ],
+  },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -164,6 +229,66 @@ export const mainNav: MainNav = [
 /* ------------------------------------------------------------------ */
 
 export const navGroups: NavGroup[] = [
+  {
+    label: "Product & Pricing",
+    icon: Package,
+    items: [
+      {
+        title: "Products",
+        url: "/products",
+        icon: Package,
+        permission: PERMISSIONS.PRODUCT.VIEW,
+      },
+      {
+        title: "Categories",
+        url: "/product-categories",
+        icon: ListTree,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "UOMs",
+        url: "/product-uoms",
+        icon: Ruler,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Brands",
+        url: "/product-brands",
+        icon: Award,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "GST HSN",
+        url: "/gst-hsn",
+        icon: ReceiptText,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Tax Structures",
+        url: "/gst-tax-structures",
+        icon: Landmark,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Vehicle Masters",
+        url: "/vehicle-masters",
+        icon: Car,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Support Masters",
+        url: "/support-masters",
+        icon: Wrench,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+      {
+        title: "Attributes",
+        url: "/product-attributes",
+        icon: Tags,
+        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+      },
+    ],
+  },
   {
     label: "Primary Management",
     icon: Package,
