@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, FileText, X, AlertCircle } from "lucide-react"
+import { Upload, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -198,12 +198,6 @@ export function Dropzone({
     e.preventDefault()
     e.stopPropagation()
     setIsDragActive(false)
-  }
-
-  const removeFile = (index: number) => {
-    const next = files.filter((_, i) => i !== index)
-    setValidationError(null)
-    emit(next)
   }
 
   const clearAll = () => {

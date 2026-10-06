@@ -36,7 +36,7 @@ export function DepartmentCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search department...",
+  placeholder = "Select department...",
   disabled,
   size = 100,
 }: Props) {
@@ -55,7 +55,7 @@ export function DepartmentCombobox({
     size,
   })
 
-  const searchResults = departmentsQuery.data?.content ?? []
+  const searchResults = React.useMemo(() => departmentsQuery.data?.content ?? [], [departmentsQuery.data?.content])
 
   // Fetch selected department if value not in searchResults (to keep label)
   const selectedInResults = React.useMemo(

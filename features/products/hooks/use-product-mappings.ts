@@ -22,6 +22,7 @@ import {
 import { productKeys } from "../api/product-keys"
 import type {
   CreateProductGstMappingRequest,
+  ProductPriceListParams,
   UpdateProductGstMappingRequest,
   UpdateProductGstMappingStatusRequest,
   CreateProductRelationshipRequest,
@@ -41,11 +42,12 @@ type QC = ReturnType<typeof useQueryClient>
 
 export function useProductGstMappings(
   companyUuid: string,
-  productUuid: string
+  productUuid: string,
+  params?: ProductPriceListParams
 ) {
   return useQuery({
-    queryKey: productKeys.gstMappings(companyUuid, productUuid),
-    queryFn: () => getProductGstMappings(companyUuid, productUuid),
+    queryKey: productKeys.gstMappings(companyUuid, productUuid, params),
+    queryFn: () => getProductGstMappings(companyUuid, productUuid, params),
     enabled: !!companyUuid && !!productUuid,
   })
 }
@@ -116,11 +118,12 @@ export function useUpdateProductGstMapping(
 
 export function useProductRelationships(
   companyUuid: string,
-  productUuid: string
+  productUuid: string,
+  params?: ProductPriceListParams
 ) {
   return useQuery({
-    queryKey: productKeys.relationships(companyUuid, productUuid),
-    queryFn: () => getProductRelationships(companyUuid, productUuid),
+    queryKey: productKeys.relationships(companyUuid, productUuid, params),
+    queryFn: () => getProductRelationships(companyUuid, productUuid, params),
     enabled: !!companyUuid && !!productUuid,
   })
 }
@@ -194,10 +197,14 @@ export function useUpdateProductRelationshipStatus(
 
 // ── Fitments ─────────────────────────────────────────────────────────────────
 
-export function useProductFitments(companyUuid: string, productUuid: string) {
+export function useProductFitments(
+  companyUuid: string,
+  productUuid: string,
+  params?: ProductPriceListParams
+) {
   return useQuery({
-    queryKey: productKeys.fitments(companyUuid, productUuid),
-    queryFn: () => getProductFitments(companyUuid, productUuid),
+    queryKey: productKeys.fitments(companyUuid, productUuid, params),
+    queryFn: () => getProductFitments(companyUuid, productUuid, params),
     enabled: !!companyUuid && !!productUuid,
   })
 }
@@ -262,11 +269,13 @@ export function useUpdateProductFitmentStatus(
 
 export function useProductGeographyMappings(
   companyUuid: string,
-  productUuid: string
+  productUuid: string,
+  params?: ProductPriceListParams
 ) {
   return useQuery({
-    queryKey: productKeys.geographyMappings(companyUuid, productUuid),
-    queryFn: () => getProductGeographyMappings(companyUuid, productUuid),
+    queryKey: productKeys.geographyMappings(companyUuid, productUuid, params),
+    queryFn: () =>
+      getProductGeographyMappings(companyUuid, productUuid, params),
     enabled: !!companyUuid && !!productUuid,
   })
 }

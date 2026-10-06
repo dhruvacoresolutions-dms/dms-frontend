@@ -133,6 +133,8 @@ export async function uploadVehicleVariantImport(
 
 export type ExportVehicleVariantsFilters = {
   search?: string
+  status?: string
+  modelUuid?: string
 }
 
 export async function exportVehicleVariants(
@@ -147,6 +149,8 @@ export async function exportVehicleVariants(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      status: filters?.status || undefined,
+      modelUuid: filters?.modelUuid || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

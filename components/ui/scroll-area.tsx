@@ -7,9 +7,22 @@ import { cn } from "@/lib/utils"
 
 function ScrollArea({
   className,
+  viewportClassName,
+  verticalScrollBarClassName,
+  horizontalScrollBarClassName,
   children,
+  orientations = ["vertical"],
   ...props
-}: ScrollAreaPrimitive.Root.Props) {
+}: ScrollAreaPrimitive.Root.Props & {
+  /** Which overlay scrollbars to render. Defaults to vertical only. */
+  orientations?: ("horizontal" | "vertical")[]
+  /** Extra classes for the scroll viewport (the actual scroll container). */
+  viewportClassName?: string
+  /** Extra classes for the floating vertical scrollbar (e.g. an offset). */
+  verticalScrollBarClassName?: string
+  /** Extra classes for the floating horizontal scrollbar. */
+  horizontalScrollBarClassName?: string
+}) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -18,11 +31,22 @@ function ScrollArea({
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        className={cn(
+          "size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1",
+          viewportClassName
+        )}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      {orientations.includes("vertical") ? (
+        <ScrollBar className={verticalScrollBarClassName} />
+      ) : null}
+      {orientations.includes("horizontal") ? (
+        <ScrollBar
+          orientation="horizontal"
+          className={horizontalScrollBarClassName}
+        />
+      ) : null}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
@@ -39,7 +63,7 @@ function ScrollBar({
       data-orientation={orientation}
       orientation={orientation}
       className={cn(
-        "flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
+        "flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
         className
       )}
       {...props}

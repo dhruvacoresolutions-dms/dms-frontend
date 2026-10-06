@@ -152,6 +152,8 @@ export async function getGeographyImportResultsCsv(companyUuid: string, jobUuid:
 
 export type ExportGeographiesFilters = {
   search?: string
+  type?: string
+  status?: string
 }
 
 export async function exportGeographies(
@@ -162,12 +164,14 @@ export async function exportGeographies(
   const resolved = companyHeader(companyUuid)
   const { data } = await apiClient.get<Blob>(`${baseUrl(companyUuid)}/export`, {
     headers: { "X-Company-Context": resolved },
-    // Mirror the list filters so an applied search narrows the export.
+    // Mirror the list filters so applied filters narrow the export.
     // Unknown params are ignored by the backend.
     params: {
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
+      type: filters?.type || undefined,
+      status: filters?.status || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

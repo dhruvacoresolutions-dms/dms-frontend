@@ -11,61 +11,75 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SearchInput } from "@/components/common/SearchInput"
-import { DesignationCombobox } from "@/features/designations/components/DesignationCombobox"
-import type { EmployeeStatus } from "@/features/employees/api/employee.types"
+import type {
+  GeographyStatus,
+  GeographyType,
+} from "@/features/geographies/api/geography.types"
 
-export type EmployeeFiltersValues = {
+export const GEOGRAPHY_TYPES: GeographyType[] = [
+  "COUNTRY",
+  "ZONE",
+  "STATE",
+  "REGION",
+  "TERRITORY",
+  "BEAT",
+]
+
+export type GeographyFiltersValues = {
   search: string
-  status: "ALL" | EmployeeStatus
-  designationUuid: string | null
+  type: "ALL" | GeographyType
+  status: "ALL" | GeographyStatus
 }
 
-type EmployeeFiltersProps = {
-  companyUuid: string
-  values: EmployeeFiltersValues
+type GeographyFiltersProps = {
+  values: GeographyFiltersValues
   onSearchChange: (value: string) => void
-  onStatusChange: (value: "ALL" | EmployeeStatus) => void
-  onDesignationChange: (uuid: string | null) => void
+  onTypeChange: (value: "ALL" | GeographyType) => void
+  onStatusChange: (value: "ALL" | GeographyStatus) => void
   onClear: () => void
-  /** Optional trailing element pinned to the right (e.g. bulk actions) */
+  /** Optional trailing element pinned to the right (e.g. export) */
   action?: React.ReactNode
 }
 
-export function EmployeeFilters({
-  companyUuid,
+export function GeographyFilters({
   values,
   onSearchChange,
+  onTypeChange,
   onStatusChange,
-  onDesignationChange,
   onClear,
   action,
-}: EmployeeFiltersProps) {
+}: GeographyFiltersProps) {
   const [resetKey, setResetKey] = React.useState(0)
   const hasActiveFilters =
-    values.search !== "" ||
-    values.status !== "ALL" ||
-    values.designationUuid !== null
+    values.search !== "" || values.type !== "ALL" || values.status !== "ALL"
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <SearchInput
         key={resetKey}
-        placeholder="Search employees..."
+        placeholder="Search geographies..."
         defaultValue={values.search}
         onChange={onSearchChange}
       />
-      <div className="w-full sm:w-64">
-        <DesignationCombobox
-          companyUuid={companyUuid}
-          value={values.designationUuid}
-          onValueChange={onDesignationChange}
-          placeholder="Filter by designation..."
-          size={100}
-        />
-      </div>
+      <Select
+        value={values.type}
+        onValueChange={(v) => onTypeChange(v as "ALL" | GeographyType)}
+      >
+        <SelectTrigger className="w-full sm:w-40">
+          <SelectValue placeholder="Filter by type" />
+        </SelectTrigger>
+        <SelectContent className="p-2">
+          <SelectItem value="ALL">All types</SelectItem>
+          {GEOGRAPHY_TYPES.map((t) => (
+            <SelectItem key={t} value={t}>
+              {t.charAt(0) + t.slice(1).toLowerCase()}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Select
         value={values.status}
-        onValueChange={(v) => onStatusChange(v as "ALL" | EmployeeStatus)}
+        onValueChange={(v) => onStatusChange(v as "ALL" | GeographyStatus)}
       >
         <SelectTrigger className="w-full sm:w-36">
           <SelectValue placeholder="Filter by status" />

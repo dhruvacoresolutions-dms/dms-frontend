@@ -2,19 +2,17 @@
 
 import { Controller, type FieldValues } from "react-hook-form"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { DatePicker } from "@/components/common/DatePicker"
+import { PhoneInput } from "@/components/common/PhoneInput"
 import type { BaseFieldProps } from "./types"
 
-export function FormDateField<T extends FieldValues>({
+export function FormPhoneField<T extends FieldValues>({
   control,
   name,
   label,
-  placeholder = "Pick a date",
+  placeholder = "Enter mobile number",
   disabled,
   className,
-  disableFuture,
-  disablePast,
-}: BaseFieldProps<T> & { disableFuture?: boolean; disablePast?: boolean }) {
+}: BaseFieldProps<T>) {
   return (
     <Controller
       control={control}
@@ -22,14 +20,13 @@ export function FormDateField<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <Field className={className}>
           <FieldLabel>{label}</FieldLabel>
-          <DatePicker
-            value={field.value ? String(field.value) : null}
-            onValueChange={(iso) => field.onChange(iso ?? "")}
-            placeholder={placeholder}
+          <PhoneInput
+            value={field.value ?? ""}
+            onValueChange={(v) => field.onChange(v)}
+            onBlur={field.onBlur}
             disabled={disabled}
+            placeholder={placeholder}
             hasError={!!fieldState.error}
-            disableFuture={disableFuture}
-            disablePast={disablePast}
           />
           <FieldError errors={[fieldState.error]} />
         </Field>

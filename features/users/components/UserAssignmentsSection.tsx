@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,16 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { LoadingState } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
@@ -43,6 +35,7 @@ import {
   useAssignPermissionSet,
   useRemovePermissionSetAssignment,
 } from "@/features/users/hooks/use-permission-set-assignments"
+import type { AccessAssignmentResponse } from "@/features/users/api/user.types"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -70,6 +63,90 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
   const removeRoleMutation = useRemoveRoleAssignment(companyUuid, userUuid)
   const assignPsMutation = useAssignPermissionSet(companyUuid, userUuid)
   const removePsMutation = useRemovePermissionSetAssignment(companyUuid, userUuid)
+
+  const roleColumns = useMemo<DataTableColumn<AccessAssignmentResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => row.original.status,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const a = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.ROLE.ASSIGN}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() =>
+                  setRemoveTarget({
+                    type: "role",
+                    uuid: a.publicId,
+                    label: a.code,
+                  })
+                }
+              >
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
+
+  const psColumns = useMemo<DataTableColumn<AccessAssignmentResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => row.original.status,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const a = row.original
+          return (
+            <PermissionGate permission={PERMISSIONS.PERMISSION_SET.ASSIGN}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() =>
+                  setRemoveTarget({
+                    type: "ps",
+                    uuid: a.publicId,
+                    label: a.code,
+                  })
+                }
+              >
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   if (roleAssignments.isLoading || psAssignments.isLoading) return <LoadingState />
   if (roleAssignments.error || psAssignments.error) return <ErrorState />
@@ -153,46 +230,15 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
           </PermissionGate>
         </div>
 
-        {!roleAssignments.data || roleAssignments.data.length === 0 ? (
-          <EmptyState title="No roles assigned" description="Assign a role to this user." />
-        ) : (
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roleAssignments.data.map((a) => (
-                  <TableRow key={a.publicId}>
-                    <TableCell className="font-mono">{a.code}</TableCell>
-                    <TableCell>{a.status}</TableCell>
-                    <TableCell>
-                      <PermissionGate permission={PERMISSIONS.ROLE.ASSIGN}>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() =>
-                            setRemoveTarget({
-                              type: "role",
-                              uuid: a.publicId,
-                              label: a.code,
-                            })
-                          }
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </PermissionGate>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <DataTable
+          columns={roleColumns}
+          data={roleAssignments.data ?? []}
+          getRowId={(a) => a.publicId}
+          empty={{
+            title: "No roles assigned",
+            description: "Assign a role to this user.",
+          }}
+        />
       </div>
 
       <div className="space-y-4">
@@ -271,49 +317,15 @@ export function UserAssignmentsSection({ companyUuid, userUuid }: Props) {
           </PermissionGate>
         </div>
 
-        {!psAssignments.data || psAssignments.data.length === 0 ? (
-          <EmptyState
-            title="No permission sets assigned"
-            description="Assign a permission set to this user."
-          />
-        ) : (
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {psAssignments.data.map((a) => (
-                  <TableRow key={a.publicId}>
-                    <TableCell className="font-mono">{a.code}</TableCell>
-                    <TableCell>{a.status}</TableCell>
-                    <TableCell>
-                      <PermissionGate permission={PERMISSIONS.PERMISSION_SET.ASSIGN}>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() =>
-                            setRemoveTarget({
-                              type: "ps",
-                              uuid: a.publicId,
-                              label: a.code,
-                            })
-                          }
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </PermissionGate>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <DataTable
+          columns={psColumns}
+          data={psAssignments.data ?? []}
+          getRowId={(a) => a.publicId}
+          empty={{
+            title: "No permission sets assigned",
+            description: "Assign a permission set to this user.",
+          }}
+        />
       </div>
 
       <ConfirmDialog

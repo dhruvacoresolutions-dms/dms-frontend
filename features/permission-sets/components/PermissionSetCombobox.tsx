@@ -42,7 +42,7 @@ export function PermissionSetCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search permission set...",
+  placeholder = "Select permission set...",
   disabled,
   status,
 }: Props) {

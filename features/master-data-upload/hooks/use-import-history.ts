@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { listImportHistory } from "../api/master-data-upload.api"
 import { masterUploadKeys } from "../api/master-data-upload-keys"
 import type {
@@ -16,6 +16,5 @@ export function useImportHistory(
   return useQuery({
     queryKey: masterUploadKeys.history(companyUuid, type, params),
     queryFn: () => listImportHistory(type, companyUuid, params),
-    placeholderData: keepPreviousData,
   })
 }

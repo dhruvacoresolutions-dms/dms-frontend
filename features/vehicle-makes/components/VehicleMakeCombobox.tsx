@@ -17,6 +17,7 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  placeholder?: string
 };
 
 function toOption(item: VehicleMakeResponse): ComboboxOption {
@@ -30,6 +31,7 @@ export function VehicleMakeCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select make...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -39,7 +41,7 @@ export function VehicleMakeCombobox({
     size,
   })
 
-  const rawResults = listQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => listQuery.data?.content ?? [], [listQuery.data?.content])
   const searchResults = React.useMemo(() => {
     if (!excludeIds || excludeIds.length === 0) return rawResults
     const excluded = new Set(excludeIds)
@@ -96,6 +98,8 @@ export function VehicleMakeCombobox({
       loading={listQuery.isFetching}
       emptyText="No makes found."
       clearLabel="Clear make"
+      placeholder={placeholder}
+      searchPlaceholder="Search makes..."
       onSearchChange={setDebouncedQuery}
     />
   )

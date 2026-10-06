@@ -121,7 +121,8 @@ export async function reactivateProduct(
 
 export type ExportProductsFilters = {
   search?: string
-  status?: string
+  lifecycleStatus?: string
+  categoryUuid?: string
 }
 
 export async function exportProducts(
@@ -136,7 +137,8 @@ export async function exportProducts(
       format,
       query: filters?.search || undefined,
       search: filters?.search || undefined,
-      status: filters?.status || undefined,
+      lifecycleStatus: filters?.lifecycleStatus || undefined,
+      categoryUuid: filters?.categoryUuid || undefined,
     },
     responseType: "blob",
     timeout: 60_000,

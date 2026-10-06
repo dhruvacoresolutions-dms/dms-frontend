@@ -38,7 +38,7 @@ export function GeographyCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search geography...",
+  placeholder = "Select geography...",
   disabled,
   size = 100,
   excludeUuids,
@@ -58,7 +58,7 @@ export function GeographyCombobox({
     size,
   })
 
-  const rawResults = geographiesQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => geographiesQuery.data?.content ?? [], [geographiesQuery.data?.content])
   const searchResults = React.useMemo(() => {
     if (!excludeUuids || excludeUuids.length === 0) return rawResults
     const excluded = new Set(excludeUuids)

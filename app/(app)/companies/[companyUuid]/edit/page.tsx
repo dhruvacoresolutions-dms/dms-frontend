@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
@@ -9,20 +8,17 @@ import { toast } from "sonner"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { Stepper } from "@/components/ui/stepper"
 import { StateCombobox } from "@/components/common/StateCombobox"
-import { PhoneInput } from "@/components/common/PhoneInput"
+import {
+  FormPhoneField,
+  FormSelectField,
+  FormTextField,
+} from "@/components/common/form-fields"
 import { useCompany } from "@/features/companies/hooks/use-company"
 import { useCompanyAddresses } from "@/features/companies/hooks/use-company-addresses"
 import { useUpdateCompany } from "@/features/companies/hooks/use-update-company"
@@ -95,7 +91,6 @@ export default function EditCompanyPage() {
   const [initFor, setInitFor] = useState<string | null>(null)
 
   const {
-    register,
     handleSubmit,
     setValue,
     control,
@@ -154,29 +149,31 @@ export default function EditCompanyPage() {
     })
   }
 
-  const businessDomainValue = useWatch({ control, name: "businessDomain" })
-  const addressTypeValue = useWatch({ control, name: "addressType" })
   const stateValue = useWatch({ control, name: "state" }) as string | undefined
-  const contactMobileValue = useWatch({ control, name: "contactMobile" }) as
-    | string
-    | undefined
-  const financialYearValue = useWatch({ control, name: "financialYear" })
-  const currencyValue = useWatch({ control, name: "currency" })
-  const timeZoneValue = useWatch({ control, name: "timeZone" })
-  const subscriptionPlanValue = useWatch({ control, name: "subscriptionPlan" })
-  const erpSystemValue = useWatch({ control, name: "erpSystem" })
 
-  const handleGstinBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const raw = e.target.value?.toUpperCase().trim()
-    if (!raw) return
-    const pan = extractPanFromGstin(raw)
-    if (pan) {
-      const currentPan = getValues("pan")
-      if (currentPan !== pan) {
-        setValue("pan", pan, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
+  // FormTextField has no uppercase transform, so normalize gstin/pan/cin/
+  // countryCode to uppercase on blur (keeps zod regex validation passing)
+  // and again in the submit payload. GSTIN blur also auto-fills PAN.
+  const handleUpperBlur =
+    (fieldName: "gstin" | "pan" | "cin" | "countryCode") =>
+    (e: React.FocusEvent) => {
+      const input = e.target as HTMLInputElement
+      const upper = (input.value ?? "").toUpperCase()
+      if (input.value && upper !== input.value) {
+        setValue(fieldName, upper, { shouldValidate: true, shouldDirty: true })
+      }
+      if (fieldName === "gstin") {
+        const raw = upper.trim()
+        if (!raw) return
+        const pan = extractPanFromGstin(raw)
+        if (pan) {
+          const currentPan = getValues("pan")
+          if (currentPan !== pan) {
+            setValue("pan", pan, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
+          }
+        }
       }
     }
-  }
 
   const handleNext = async () => {
     const fields = EDIT_STEP_FIELDS[currentStep]
@@ -225,9 +222,9 @@ export default function EditCompanyPage() {
       companyName: values.companyName,
       legalName: values.legalName || undefined,
       businessDomain: values.businessDomain,
-      gstin: values.gstin || undefined,
-      pan: values.pan || undefined,
-      cin: values.cin || undefined,
+      gstin: values.gstin?.toUpperCase() || undefined,
+      pan: values.pan?.toUpperCase() || undefined,
+      cin: values.cin?.toUpperCase() || undefined,
       primaryAddress: {
         addressType: values.addressType,
         line1: values.line1,
@@ -236,7 +233,7 @@ export default function EditCompanyPage() {
         state: values.state,
         district: values.district || undefined,
         postalCode: values.postalCode,
-        countryCode: values.countryCode,
+        countryCode: values.countryCode.toUpperCase(),
         primary: true,
       },
       primaryContact: {
@@ -325,24 +322,20 @@ export default function EditCompanyPage() {
                     Code cannot be changed after creation.
                   </p>
                 </Field>
-                <Field>
-                  <FieldLabel htmlFor="companyName">
-                    Company Name <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="companyName"
-                    aria-invalid={!!errors.companyName}
-                    {...register("companyName")}
-                  />
-                  <FieldError errors={[errors.companyName]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="companyName"
+                  label={<>Company Name <span className="text-destructive">*</span></>}
+                  placeholder="Enter company name"
+                />
               </div>
 
-              <Field>
-                <FieldLabel htmlFor="legalName">Legal Name</FieldLabel>
-                <Input id="legalName" {...register("legalName")} />
-                <FieldError errors={[errors.legalName]} />
-              </Field>
+              <FormTextField
+                control={control}
+                name="legalName"
+                label="Legal Name"
+                placeholder="Enter legal name"
+              />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
@@ -352,83 +345,46 @@ export default function EditCompanyPage() {
                     Type cannot be changed after creation.
                   </p>
                 </Field>
-                <Field>
-                  <FieldLabel>
-                    Business Domain <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Select
-                    value={businessDomainValue}
-                    onValueChange={(v) => {
-                      if (v) setValue("businessDomain", v as CompanyEditFormValues["businessDomain"], { shouldValidate: true })
-                    }}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.businessDomain} className="w-full">
-                      <SelectValue placeholder="Select domain" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="FMCG">FMCG</SelectItem>
-                      <SelectItem value="AUTOMOTIVE">Automotive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.businessDomain]} />
-                </Field>
+                <FormSelectField
+                  control={control}
+                  name="businessDomain"
+                  label={<>Business Domain <span className="text-destructive">*</span></>}
+                  placeholder="Select business domain"
+                  options={[
+                    { value: "FMCG", label: "FMCG" },
+                    { value: "AUTOMOTIVE", label: "Automotive" },
+                  ]}
+                />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Field>
-                  <FieldLabel htmlFor="gstin">GSTIN</FieldLabel>
-                  {(() => {
-                    const field = register("gstin", {
-                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                        e.target.value = e.target.value.toUpperCase()
-                      },
-                    })
-                    return (
-                      <Input
-                        id="gstin"
-                        maxLength={15}
-                        className="font-mono uppercase"
-                        aria-invalid={!!errors.gstin}
-                        {...field}
-                        onBlur={(e) => {
-                          field.onBlur(e)
-                          handleGstinBlur(e)
-                        }}
-                      />
-                    )
-                  })()}
-                  <FieldError errors={[errors.gstin]} />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="pan">PAN</FieldLabel>
-                  <Input
-                    id="pan"
+                <div onBlur={handleUpperBlur("gstin")}>
+                  <FormTextField
+                    control={control}
+                    name="gstin"
+                    label="GSTIN"
+                    placeholder="Enter GSTIN"
+                    maxLength={15}
+                  />
+                </div>
+                <div onBlur={handleUpperBlur("pan")}>
+                  <FormTextField
+                    control={control}
+                    name="pan"
+                    label="PAN"
+                    placeholder="Enter PAN"
                     maxLength={10}
-                    className="font-mono uppercase"
-                    aria-invalid={!!errors.pan}
-                    {...register("pan", {
-                      onChange: (e) => {
-                        e.target.value = e.target.value.toUpperCase()
-                      },
-                    })}
                   />
-                  <FieldError errors={[errors.pan]} />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="cin">CIN</FieldLabel>
-                  <Input
-                    id="cin"
+                </div>
+                <div onBlur={handleUpperBlur("cin")}>
+                  <FormTextField
+                    control={control}
+                    name="cin"
+                    label="CIN"
+                    placeholder="Enter CIN"
                     maxLength={21}
-                    className="font-mono uppercase"
-                    aria-invalid={!!errors.cin}
-                    {...register("cin", {
-                      onChange: (e) => {
-                        e.target.value = e.target.value.toUpperCase()
-                      },
-                    })}
                   />
-                  <FieldError errors={[errors.cin]} />
-                </Field>
+                </div>
               </div>
             </FieldGroup>
           </div>
@@ -444,76 +400,58 @@ export default function EditCompanyPage() {
 
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel>
-                    Address Type <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Select
-                    value={addressTypeValue}
-                    onValueChange={(v) => {
-                      if (v) setValue("addressType", v, { shouldValidate: true })
-                    }}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.addressType} className="w-full">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="REGISTERED">Registered</SelectItem>
-                      <SelectItem value="CORPORATE">Corporate</SelectItem>
-                      <SelectItem value="BRANCH">Branch</SelectItem>
-                      <SelectItem value="WAREHOUSE">Warehouse</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.addressType]} />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="countryCode">
-                    Country Code <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="countryCode"
+                <FormSelectField
+                  control={control}
+                  name="addressType"
+                  label={<>Address Type <span className="text-destructive">*</span></>}
+                  placeholder="Select address type"
+                  options={[
+                    { value: "REGISTERED", label: "Registered" },
+                    { value: "CORPORATE", label: "Corporate" },
+                    { value: "BRANCH", label: "Branch" },
+                    { value: "WAREHOUSE", label: "Warehouse" },
+                  ]}
+                />
+                <div onBlur={handleUpperBlur("countryCode")}>
+                  <FormTextField
+                    control={control}
+                    name="countryCode"
+                    label={<>Country Code <span className="text-destructive">*</span></>}
+                    placeholder="Enter country code"
                     maxLength={2}
-                    className="uppercase"
-                    aria-invalid={!!errors.countryCode}
-                    {...register("countryCode", {
-                      onChange: (e) => {
-                        e.target.value = e.target.value.toUpperCase()
-                      },
-                    })}
                   />
-                  <FieldError errors={[errors.countryCode]} />
-                </Field>
+                </div>
               </div>
 
-              <Field>
-                <FieldLabel htmlFor="line1">
-                  Address Line 1 <span className="text-destructive">*</span>
-                </FieldLabel>
-                <Input id="line1" aria-invalid={!!errors.line1} {...register("line1")} />
-                <FieldError errors={[errors.line1]} />
-              </Field>
+              <FormTextField
+                control={control}
+                name="line1"
+                label={<>Address Line 1 <span className="text-destructive">*</span></>}
+                placeholder="Enter address line 1"
+              />
 
-              <Field>
-                <FieldLabel htmlFor="line2">Address Line 2</FieldLabel>
-                <Input id="line2" {...register("line2")} />
-                <FieldError errors={[errors.line2]} />
-              </Field>
+              <FormTextField
+                control={control}
+                name="line2"
+                label="Address Line 2"
+                placeholder="Enter address line 2"
+              />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <FormTextField
+                  control={control}
+                  name="city"
+                  label={<>City <span className="text-destructive">*</span></>}
+                  placeholder="Enter city"
+                />
+                <FormTextField
+                  control={control}
+                  name="district"
+                  label="District"
+                  placeholder="Enter district"
+                />
                 <Field>
-                  <FieldLabel htmlFor="city">
-                    City <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input id="city" aria-invalid={!!errors.city} {...register("city")} />
-                  <FieldError errors={[errors.city]} />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="district">District</FieldLabel>
-                  <Input id="district" {...register("district")} />
-                  <FieldError errors={[errors.district]} />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="state">
+                  <FieldLabel>
                     State <span className="text-destructive">*</span>
                   </FieldLabel>
                   <StateCombobox
@@ -523,24 +461,20 @@ export default function EditCompanyPage() {
                       setValue("state", val, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
                     }
                     hasError={!!errors.state}
+                    placeholder="Select state"
                   />
                   <FieldError errors={[errors.state]} />
                 </Field>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="postalCode">
-                    Postal Code <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="postalCode"
-                    maxLength={6}
-                    aria-invalid={!!errors.postalCode}
-                    {...register("postalCode")}
-                  />
-                  <FieldError errors={[errors.postalCode]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="postalCode"
+                  label={<>Postal Code <span className="text-destructive">*</span></>}
+                  placeholder="Enter postal code"
+                  maxLength={6}
+                />
                 <div className="flex items-end pb-2">
                   <p className="text-xs text-muted-foreground">
                     This address will be marked as <span className="font-medium text-foreground">Primary</span> automatically.
@@ -560,55 +494,33 @@ export default function EditCompanyPage() {
                 <p className="text-sm text-muted-foreground">Main point of contact for the company</p>
               </div>
               <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="contactName">
-                    Contact Name <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="contactName"
-                    aria-invalid={!!errors.contactName}
-                    {...register("contactName")}
-                  />
-                  <FieldError errors={[errors.contactName]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="contactName"
+                  label={<>Contact Name <span className="text-destructive">*</span></>}
+                  placeholder="Enter contact name"
+                />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel htmlFor="contactMobile">
-                      Mobile <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <PhoneInput
-                      id="contactMobile"
-                      value={contactMobileValue ?? ""}
-                      onValueChange={(v) =>
-                        setValue("contactMobile", v, {
-                          shouldValidate: true,
-                          shouldDirty: true,
-                          shouldTouch: true,
-                        })
-                      }
-                      hasError={!!errors.contactMobile}
-                      placeholder="98765 43210"
-                    />
-                    <FieldError errors={[errors.contactMobile]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="contactEmail">
-                      Email <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Input
-                      id="contactEmail"
-                      type="email"
-                      aria-invalid={!!errors.contactEmail}
-                      {...register("contactEmail")}
-                    />
-                    <FieldError errors={[errors.contactEmail]} />
-                  </Field>
+                  <FormPhoneField
+                    control={control}
+                    name="contactMobile"
+                    label={<>Mobile <span className="text-destructive">*</span></>}
+                    placeholder="Enter mobile number"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="contactEmail"
+                    label={<>Email <span className="text-destructive">*</span></>}
+                    type="email"
+                    placeholder="Enter contact email"
+                  />
                 </div>
-                <Field>
-                  <FieldLabel htmlFor="website">Website</FieldLabel>
-                  <Input id="website" placeholder="https://example.com" {...register("website")} />
-                  <FieldError errors={[errors.website]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="website"
+                  label="Website"
+                  placeholder="Enter website"
+                />
               </FieldGroup>
             </div>
 
@@ -619,129 +531,80 @@ export default function EditCompanyPage() {
               </div>
               <FieldGroup>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <Field>
-                    <FieldLabel>
-                      Financial Year <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Select
-                      value={financialYearValue}
-                      onValueChange={(v) => {
-                        if (v) setValue("financialYear", v as CompanyEditFormValues["financialYear"], { shouldValidate: true })
-                      }}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.financialYear} className="w-full">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="APR_MAR">Apr – Mar</SelectItem>
-                        <SelectItem value="JAN_DEC">Jan – Dec</SelectItem>
-                        <SelectItem value="JUL_JUN">Jul – Jun</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.financialYear]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>
-                      Currency <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Select
-                      value={currencyValue}
-                      onValueChange={(v) => {
-                        if (v) setValue("currency", v, { shouldValidate: true })
-                      }}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.currency} className="w-full">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INR">INR – Indian Rupee</SelectItem>
-                        <SelectItem value="USD">USD – US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR – Euro</SelectItem>
-                        <SelectItem value="GBP">GBP – Pound</SelectItem>
-                        <SelectItem value="JPY">JPY – Yen</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.currency]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>
-                      Time Zone <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Select
-                      value={timeZoneValue}
-                      onValueChange={(v) => {
-                        if (v) setValue("timeZone", v, { shouldValidate: true })
-                      }}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.timeZone} className="w-full">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Asia/Kolkata">Asia/Kolkata</SelectItem>
-                        <SelectItem value="Asia/Dubai">Asia/Dubai</SelectItem>
-                        <SelectItem value="Asia/Singapore">Asia/Singapore</SelectItem>
-                        <SelectItem value="Europe/London">Europe/London</SelectItem>
-                        <SelectItem value="America/New_York">America/New_York</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.timeZone]} />
-                  </Field>
+                  <FormSelectField
+                    control={control}
+                    name="financialYear"
+                    label={<>Financial Year <span className="text-destructive">*</span></>}
+                    placeholder="Select financial year"
+                    options={[
+                      { value: "APR_MAR", label: "Apr – Mar" },
+                      { value: "JAN_DEC", label: "Jan – Dec" },
+                      { value: "JUL_JUN", label: "Jul – Jun" },
+                    ]}
+                  />
+                  <FormSelectField
+                    control={control}
+                    name="currency"
+                    label={<>Currency <span className="text-destructive">*</span></>}
+                    placeholder="Select currency"
+                    options={[
+                      { value: "INR", label: "INR – Indian Rupee" },
+                      { value: "USD", label: "USD – US Dollar" },
+                      { value: "EUR", label: "EUR – Euro" },
+                      { value: "GBP", label: "GBP – Pound" },
+                      { value: "JPY", label: "JPY – Yen" },
+                    ]}
+                  />
+                  <FormSelectField
+                    control={control}
+                    name="timeZone"
+                    label={<>Time Zone <span className="text-destructive">*</span></>}
+                    placeholder="Select time zone"
+                    options={[
+                      { value: "Asia/Kolkata", label: "Asia/Kolkata" },
+                      { value: "Asia/Dubai", label: "Asia/Dubai" },
+                      { value: "Asia/Singapore", label: "Asia/Singapore" },
+                      { value: "Europe/London", label: "Europe/London" },
+                      { value: "America/New_York", label: "America/New_York" },
+                    ]}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel>
-                      Subscription Plan <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Select
-                      value={subscriptionPlanValue}
-                      onValueChange={(v) => {
-                        if (v) setValue("subscriptionPlan", v as CompanyEditFormValues["subscriptionPlan"], { shouldValidate: true })
-                      }}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.subscriptionPlan} className="w-full">
-                        <SelectValue placeholder="Select plan" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TRIAL">Trial</SelectItem>
-                        <SelectItem value="BASIC">Basic</SelectItem>
-                        <SelectItem value="STANDARD">Standard</SelectItem>
-                        <SelectItem value="PROFESSIONAL">Professional</SelectItem>
-                        <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.subscriptionPlan]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>
-                      ERP System <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Select
-                      value={erpSystemValue}
-                      onValueChange={(v) => {
-                        if (v) setValue("erpSystem", v as CompanyEditFormValues["erpSystem"], { shouldValidate: true })
-                      }}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.erpSystem} className="w-full">
-                        <SelectValue placeholder="Select ERP" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SAP">SAP</SelectItem>
-                        <SelectItem value="ORACLE">Oracle</SelectItem>
-                        <SelectItem value="DYNAMICS">Dynamics</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                        <SelectItem value="NONE">None</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={[errors.erpSystem]} />
-                  </Field>
+                  <FormSelectField
+                    control={control}
+                    name="subscriptionPlan"
+                    label={<>Subscription Plan <span className="text-destructive">*</span></>}
+                    placeholder="Select subscription plan"
+                    options={[
+                      { value: "TRIAL", label: "Trial" },
+                      { value: "BASIC", label: "Basic" },
+                      { value: "STANDARD", label: "Standard" },
+                      { value: "PROFESSIONAL", label: "Professional" },
+                      { value: "ENTERPRISE", label: "Enterprise" },
+                    ]}
+                  />
+                  <FormSelectField
+                    control={control}
+                    name="erpSystem"
+                    label={<>ERP System <span className="text-destructive">*</span></>}
+                    placeholder="Select ERP system"
+                    options={[
+                      { value: "SAP", label: "SAP" },
+                      { value: "ORACLE", label: "Oracle" },
+                      { value: "DYNAMICS", label: "Dynamics" },
+                      { value: "OTHER", label: "Other" },
+                      { value: "NONE", label: "None" },
+                    ]}
+                  />
                 </div>
 
-                <Field>
-                  <FieldLabel htmlFor="externalCompanyCode">External Company Code</FieldLabel>
-                  <Input id="externalCompanyCode" {...register("externalCompanyCode")} />
-                  <FieldError errors={[errors.externalCompanyCode]} />
-                </Field>
+                <FormTextField
+                  control={control}
+                  name="externalCompanyCode"
+                  label="External Company Code"
+                  placeholder="Enter external company code"
+                />
               </FieldGroup>
             </div>
           </div>

@@ -19,6 +19,7 @@ type Props = {
   excludeIds?: string[]
   /** Restrict models to a make */
   makeUuid?: string
+  placeholder?: string
 };
 
 function toOption(item: VehicleModelResponse): ComboboxOption {
@@ -33,6 +34,7 @@ export function VehicleModelCombobox({
   size = 100,
   excludeIds,
   makeUuid,
+  placeholder = "Select model...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -43,7 +45,7 @@ export function VehicleModelCombobox({
     size,
   })
 
-  const rawResults = listQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => listQuery.data?.content ?? [], [listQuery.data?.content])
   const searchResults = React.useMemo(() => {
     if (!excludeIds || excludeIds.length === 0) return rawResults
     const excluded = new Set(excludeIds)
@@ -100,6 +102,8 @@ export function VehicleModelCombobox({
       loading={listQuery.isFetching}
       emptyText="No models found."
       clearLabel="Clear model"
+      placeholder={placeholder}
+      searchPlaceholder="Search models..."
       onSearchChange={setDebouncedQuery}
     />
   )

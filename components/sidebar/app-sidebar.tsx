@@ -3,14 +3,10 @@
 import * as React from "react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
-import { NavGroups } from "@/components/sidebar/nav-groups"
 import { CompaniesNav } from "@/components/sidebar/companies-nav"
 import { Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar"
-import { mainNav, navGroups } from "@/configs/components/sidebar"
-import {
-  useFilteredMainNav,
-  useFilteredNavGroups,
-} from "@/hooks/use-filtered-nav"
+import { mainNav } from "@/configs/components/sidebar"
+import { useFilteredMainNav } from "@/hooks/use-filtered-nav"
 import { useAuthStore } from "@/stores/auth-store"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -18,7 +14,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     (s) => s.session?.user?.roles.includes("PLATFORM_ADMINISTRATOR") ?? false
   )
   const filteredNav = useFilteredMainNav(mainNav)
-  const filteredGroups = useFilteredNavGroups(navGroups)
   const { state, isMobile, setOpen } = useSidebar()
 
   // Hover-to-expand when collapsed to icon mode (desktop only).

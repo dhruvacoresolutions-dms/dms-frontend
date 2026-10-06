@@ -13,14 +13,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+  FormTextField,
+  FormTextareaField,
+} from "@/components/common/form-fields"
 import { useCreateRole } from "../hooks/use-create-role"
 import { getRoleErrorMessage } from "../utils/role.utils"
 import {
@@ -54,10 +51,9 @@ export function RoleCreateDialog({
 }: RoleCreateDialogProps) {
   const createMutation = useCreateRole(companyUuid)
   const {
-    register,
+    control,
     handleSubmit,
     reset,
-    formState: { errors },
   } = useForm<RoleCreateValues>({
     resolver: zodResolver(roleSchema),
     defaultValues: { code: "", name: "", description: "" },
@@ -86,31 +82,24 @@ export function RoleCreateDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FieldGroup>
-            <Field>
-              <FieldLabel>Code</FieldLabel>
-              <Input
-                placeholder="e.g. SFA_USER"
-                aria-invalid={!!errors.code}
-                {...register("code")}
-              />
-              <FieldError errors={[errors.code]} />
-            </Field>
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input
-                placeholder="e.g. SFA User"
-                aria-invalid={!!errors.name}
-                {...register("name")}
-              />
-              <FieldError errors={[errors.name]} />
-            </Field>
-            <Field>
-              <FieldLabel>Description</FieldLabel>
-              <Textarea
-                placeholder="Standard field sales role (optional)"
-                {...register("description")}
-              />
-            </Field>
+            <FormTextField
+              control={control}
+              name="code"
+              label="Code"
+              placeholder="Enter code"
+            />
+            <FormTextField
+              control={control}
+              name="name"
+              label="Name"
+              placeholder="Enter name"
+            />
+            <FormTextareaField
+              control={control}
+              name="description"
+              label="Description"
+              placeholder="Enter description"
+            />
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button

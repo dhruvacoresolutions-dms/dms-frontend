@@ -1,5 +1,6 @@
 "use client"
 
+import type * as React from "react"
 import { Controller, type FieldValues } from "react-hook-form"
 import {
   Select,
@@ -15,6 +16,7 @@ export function FormSelectField<T extends FieldValues>({
   control,
   name,
   label,
+  placeholder,
   disabled,
   className,
   options,
@@ -36,7 +38,9 @@ export function FormSelectField<T extends FieldValues>({
             disabled={disabled}
           >
             <SelectTrigger aria-invalid={!!fieldState.error}>
-              <SelectValue />
+              <SelectValue
+                placeholder={placeholder ?? getGenericSelectPlaceholder(label)}
+              />
             </SelectTrigger>
             <SelectContent>
               {options.map((o) => (
@@ -51,4 +55,12 @@ export function FormSelectField<T extends FieldValues>({
       )}
     />
   )
+}
+
+function getGenericSelectPlaceholder(label: React.ReactNode): string {
+  if (typeof label === "string" && label.trim()) {
+    const clean = label.replace(/\s*\*\s*$/, "").trim()
+    return `Select ${clean.toLowerCase()}`
+  }
+  return "Select an option"
 }

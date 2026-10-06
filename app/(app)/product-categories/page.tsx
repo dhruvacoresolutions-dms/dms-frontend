@@ -1,18 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, FolderTree, Upload } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { StatusFilterSelect } from "@/components/common/StatusFilterSelect"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,10 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import type { ProductCategoryResponse } from "@/features/product-categories/api/product-category.types"
 import { useProductCategories } from "@/features/product-categories/hooks/use-product-categories"
 import { useUpdateProductCategoryStatus } from "@/features/product-categories/hooks/use-update-product-category-status"
 import { ProductCategoryFormDialog } from "@/features/product-categories/components/ProductCategoryFormDialog"
@@ -50,7 +42,9 @@ export default function CategoriesPage() {
 function CategoriesContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -58,14 +52,83 @@ function CategoriesContent() {
 
   const { data, isLoading, error, refetch } = useProductCategories(companyUuid, {
     search: search || undefined,
+    status: statusFilter === "ALL" ? undefined : (statusFilter as "ACTIVE" | "INACTIVE"),
     page,
-    size: 20,
+    size,
   })
 
   const updateStatusMutation = useUpdateProductCategoryStatus(companyUuid)
 
   const categories = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
+
+  const columns = useMemo<DataTableColumn<ProductCategoryResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "level",
+        header: "Level",
+        cell: ({ row }) =>
+          row.original.categoryLevel !== undefined ? (
+            <Badge variant="secondary">L{row.original.categoryLevel}</Badge>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const c = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}>
+                  <DropdownMenuItem onClick={() => setEditingUuid(c.categoryUuid)}>
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <DropdownMenuSeparator />
+                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}>
+                  <DropdownMenuItem
+                    variant={
+                      c.status === "ACTIVE" ? "destructive" : "default"
+                    }
+                    onClick={() => setStatusToggle({ uuid: c.categoryUuid, currentStatus: c.status })}
+                  >
+                    {c.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -89,11 +152,15 @@ function CategoriesContent() {
         }
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search categories..."
           defaultValue={search}
           onChange={(v) => { setSearch(v); setPage(0) }}
+        />
+        <StatusFilterSelect
+          value={statusFilter}
+          onChange={(v) => { setStatusFilter(v); setPage(0) }}
         />
         <div className="ml-auto flex items-center gap-2">
           <ExportDropdown
@@ -102,84 +169,27 @@ function CategoriesContent() {
             onExport={(format) =>
               exportProductCategories(companyUuid, format, {
                 search: search || undefined,
+                status: statusFilter === "ALL" ? undefined : statusFilter,
               })
             }
           />
         </div>
       </div>
 
-      {isLoading ? <TableSkeleton rows={5} /> : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : categories.length === 0 ? (
-        <EmptyState icon={FolderTree} title="No product categories found" description={search ? "Try a different search." : "Create a category to get started."} />
-      ) : (
-        <>
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((c) => (
-                  <TableRow key={c.categoryUuid}>
-                    <TableCell className="font-mono text-sm">{c.code}</TableCell>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell>
-                      {c.categoryLevel !== undefined ? (
-                        <Badge variant="secondary">L{c.categoryLevel}</Badge>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell><StatusBadge status={c.status} /></TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}>
-                            <DropdownMenuItem onClick={() => setEditingUuid(c.categoryUuid)}>
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <DropdownMenuSeparator />
-                          <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}>
-                            <DropdownMenuItem
-                              variant={
-                                c.status === "ACTIVE" ? "destructive" : "default"
-                              }
-                              onClick={() => setStatusToggle({ uuid: c.categoryUuid, currentStatus: c.status })}
-                            >
-                              {c.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>Next</Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={categories}
+        getRowId={(c) => c.categoryUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: FolderTree,
+          title: "No product categories found",
+          description: search || statusFilter !== "ALL" ? "Try a different search or clear filters." : "Create a category to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <ProductCategoryFormDialog
         open={createOpen}

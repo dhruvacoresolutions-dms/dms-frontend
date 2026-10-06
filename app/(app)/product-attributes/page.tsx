@@ -16,14 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,9 +27,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PermissionGate } from "@/components/auth/PermissionGate"
@@ -88,7 +78,9 @@ function ProductAttributesContent() {
 function AttributeTemplatesTab() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
+  const [productType, setProductType] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -101,10 +93,13 @@ function AttributeTemplatesTab() {
     companyUuid,
     {
       search: search || undefined,
+      productType: productType || undefined,
       page,
-      size: 20,
+      size,
     }
   )
+
+  const hasActiveFilters = search !== "" || productType !== ""
 
   const updateStatusMutation =
     useUpdateProductAttributeTemplateStatus(companyUuid)
@@ -112,9 +107,136 @@ function AttributeTemplatesTab() {
   const templates = data?.content ?? []
   const totalPages = data?.totalPages ?? 0
 
+  const columns = useMemo<DataTableColumn<ProductAttributeTemplateResponse>[]>(
+    () => [
+      {
+        id: "label",
+        header: "Label",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.label}</span>
+        ),
+      },
+      {
+        id: "key",
+        header: "Key",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.attributeKey}</span>
+        ),
+      },
+      {
+        id: "productType",
+        header: "Product Type",
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.productType}</Badge>
+        ),
+      },
+      {
+        id: "dataType",
+        header: "Data Type",
+        cell: ({ row }) => (
+          <Badge variant="outline">{row.original.dataType}</Badge>
+        ),
+      },
+      {
+        id: "slot",
+        header: "Slot",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.slotAssignment}</span>
+        ),
+      },
+      {
+        id: "mandatory",
+        header: "Mandatory",
+        cell: ({ row }) => (row.original.mandatory ? "Yes" : "No"),
+      },
+      {
+        id: "order",
+        header: "Order",
+        cell: ({ row }) => row.original.displayOrder,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const t = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <PermissionGate
+                  permission={
+                    PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
+                  }
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(t.templateUuid)}
+                  >
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                {t.dataType === "DROPDOWN" && (
+                  <PermissionGate
+                    permission={
+                      PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW
+                    }
+                  >
+                    <DropdownMenuItem
+                      onClick={() => setOptionsTemplate(t)}
+                    >
+                      <Settings2 className="mr-2 size-4" /> Manage
+                      Options
+                    </DropdownMenuItem>
+                  </PermissionGate>
+                )}
+                <DropdownMenuSeparator />
+                <PermissionGate
+                  permission={
+                    PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS
+                  }
+                >
+                  <DropdownMenuItem
+                    variant={
+                      t.status === "ACTIVE"
+                        ? "destructive"
+                        : "default"
+                    }
+                    onClick={() => setStatusToggle(t)}
+                  >
+                    {t.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" />{" "}
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" />{" "}
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    []
+  )
+
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput
           placeholder="Search attribute templates..."
           defaultValue={search}
@@ -122,6 +244,15 @@ function AttributeTemplatesTab() {
             setSearch(v)
             setPage(0)
           }}
+        />
+        <Input
+          placeholder="Filter by product type..."
+          defaultValue={productType}
+          onChange={(e) => {
+            setProductType(e.target.value)
+            setPage(0)
+          }}
+          className="w-full sm:w-52"
         />
         <div className="ml-auto flex items-center gap-2">
           <PermissionGate
@@ -142,154 +273,22 @@ function AttributeTemplatesTab() {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : templates.length === 0 ? (
-        <EmptyState
-          icon={ListTree}
-          title="No attribute templates found"
-          description={
-            search
-              ? "Try a different search."
-              : "Create an attribute template to get started."
-          }
-        />
-      ) : (
-        <>
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Label</TableHead>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Product Type</TableHead>
-                  <TableHead>Data Type</TableHead>
-                  <TableHead>Slot</TableHead>
-                  <TableHead>Mandatory</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {templates.map((t) => (
-                  <TableRow key={t.templateUuid}>
-                    <TableCell className="font-medium">{t.label}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {t.attributeKey}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{t.productType}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{t.dataType}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {t.slotAssignment}
-                    </TableCell>
-                    <TableCell>{t.mandatory ? "Yes" : "No"}</TableCell>
-                    <TableCell>{t.displayOrder}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={t.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <PermissionGate
-                            permission={
-                              PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                            }
-                          >
-                            <DropdownMenuItem
-                              onClick={() => setEditingUuid(t.templateUuid)}
-                            >
-                              <Pencil className="mr-2 size-4" /> Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          {t.dataType === "DROPDOWN" && (
-                            <PermissionGate
-                              permission={
-                                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW
-                              }
-                            >
-                              <DropdownMenuItem
-                                onClick={() => setOptionsTemplate(t)}
-                              >
-                                <Settings2 className="mr-2 size-4" /> Manage
-                                Options
-                              </DropdownMenuItem>
-                            </PermissionGate>
-                          )}
-                          <DropdownMenuSeparator />
-                          <PermissionGate
-                            permission={
-                              PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS
-                            }
-                          >
-                            <DropdownMenuItem
-                              variant={
-                                t.status === "ACTIVE"
-                                  ? "destructive"
-                                  : "default"
-                              }
-                              onClick={() => setStatusToggle(t)}
-                            >
-                              {t.status === "ACTIVE" ? (
-                                <>
-                                  <ToggleLeft className="mr-2 size-4" />{" "}
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 size-4" />{" "}
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page + 1} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={templates}
+        getRowId={(t) => t.templateUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: ListTree,
+          title: "No attribute templates found",
+          description: hasActiveFilters
+            ? "Try a different search or clear filters."
+            : "Create an attribute template to get started.",
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <ProductAttributeTemplateFormDialog
         open={createOpen}
@@ -396,6 +395,110 @@ function FieldTemplateTab() {
   const applicabilityOf = (fieldKey: string) =>
     fields.find((f) => f.fieldKey === fieldKey)?.applicability ?? "-"
 
+  const columns = useMemo<DataTableColumn<UpdateProductFieldTemplateField>[]>(
+    () => [
+      {
+        id: "fieldKey",
+        header: "Field Key",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.fieldKey}</span>
+        ),
+      },
+      {
+        id: "applicability",
+        header: "Applicability",
+        cell: ({ row }) => (
+          <Badge variant="secondary">
+            {applicabilityOf(row.original.fieldKey)}
+          </Badge>
+        ),
+      },
+      {
+        id: "visible",
+        header: "Visible",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate
+              permission={
+                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
+              }
+            >
+              {(allowed) => (
+                <Checkbox
+                  checked={r.visible}
+                  disabled={!allowed}
+                  onCheckedChange={(checked) =>
+                    updateRow(r.fieldKey, {
+                      visible: checked === true,
+                    })
+                  }
+                />
+              )}
+            </PermissionGate>
+          )
+        },
+      },
+      {
+        id: "mandatory",
+        header: "Mandatory",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate
+              permission={
+                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
+              }
+            >
+              {(allowed) => (
+                <Checkbox
+                  checked={r.mandatory}
+                  disabled={!allowed}
+                  onCheckedChange={(checked) =>
+                    updateRow(r.fieldKey, {
+                      mandatory: checked === true,
+                    })
+                  }
+                />
+              )}
+            </PermissionGate>
+          )
+        },
+      },
+      {
+        id: "displayOrder",
+        header: "Display Order",
+        cell: ({ row }) => {
+          const r = row.original
+          return (
+            <PermissionGate
+              permission={
+                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
+              }
+            >
+              {(allowed) => (
+                <Input
+                  type="number"
+                  min={0}
+                  value={r.displayOrder}
+                  disabled={!allowed}
+                  onChange={(e) =>
+                    updateRow(r.fieldKey, {
+                      displayOrder: Number(e.target.value),
+                    })
+                  }
+                />
+              )}
+            </PermissionGate>
+          )
+        },
+      },
+    ],
+    // `updateRow` / `applicabilityOf` close over the current draft + fields.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draft, fields]
+  )
+
   const handleSave = () => {
     updateMutation.mutate(
       { fields: draft },
@@ -430,104 +533,19 @@ function FieldTemplateTab() {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={8} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : draft.length === 0 ? (
-        <EmptyState
-          icon={Settings2}
-          title="No fields found"
-          description="The field template has no fields."
-        />
-      ) : (
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Field Key</TableHead>
-                <TableHead>Applicability</TableHead>
-                <TableHead>Visible</TableHead>
-                <TableHead>Mandatory</TableHead>
-                <TableHead className="w-32">Display Order</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {draft.map((r) => (
-                <TableRow key={r.fieldKey}>
-                  <TableCell className="font-mono text-sm">
-                    {r.fieldKey}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {applicabilityOf(r.fieldKey)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate
-                      permission={
-                        PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                      }
-                    >
-                      {(allowed) => (
-                        <Checkbox
-                          checked={r.visible}
-                          disabled={!allowed}
-                          onCheckedChange={(checked) =>
-                            updateRow(r.fieldKey, {
-                              visible: checked === true,
-                            })
-                          }
-                        />
-                      )}
-                    </PermissionGate>
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate
-                      permission={
-                        PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                      }
-                    >
-                      {(allowed) => (
-                        <Checkbox
-                          checked={r.mandatory}
-                          disabled={!allowed}
-                          onCheckedChange={(checked) =>
-                            updateRow(r.fieldKey, {
-                              mandatory: checked === true,
-                            })
-                          }
-                        />
-                      )}
-                    </PermissionGate>
-                  </TableCell>
-                  <TableCell>
-                    <PermissionGate
-                      permission={
-                        PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                      }
-                    >
-                      {(allowed) => (
-                        <Input
-                          type="number"
-                          min={0}
-                          value={r.displayOrder}
-                          disabled={!allowed}
-                          onChange={(e) =>
-                            updateRow(r.fieldKey, {
-                              displayOrder: Number(e.target.value),
-                            })
-                          }
-                        />
-                      )}
-                    </PermissionGate>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={draft}
+        getRowId={(r) => r.fieldKey}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Settings2,
+          title: "No fields found",
+          description: "The field template has no fields.",
+        }}
+      />
     </div>
   )
 }

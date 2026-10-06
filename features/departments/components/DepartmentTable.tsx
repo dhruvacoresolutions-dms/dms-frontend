@@ -1,15 +1,8 @@
 "use client"
 
+import { useMemo } from "react"
 import { MoreHorizontal, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,13 +13,20 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { PERMISSIONS } from "@/lib/permissions"
 import type { DepartmentResponse } from "../api/department.types"
+import { DEPARTMENT_TEXTS } from "../configs/department.config"
 
 type DepartmentTableProps = {
   departments: DepartmentResponse[]
   page: number
   totalPages: number
   onPageChange: (page: number) => void
+  pageSize: number
+  onPageSizeChange: (size: number) => void
   onEdit: (department: DepartmentResponse) => void
+  isLoading?: boolean
+  error?: unknown
+  onRetry?: () => void
+  search?: string
 }
 
 export function DepartmentTable({
@@ -34,72 +34,81 @@ export function DepartmentTable({
   page,
   totalPages,
   onPageChange,
+  pageSize,
+  onPageSizeChange,
   onEdit,
+  isLoading = false,
+  error,
+  onRetry,
+  search = "",
 }: DepartmentTableProps) {
+  const columns = useMemo<DataTableColumn<DepartmentResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const d = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <PermissionGate permission={PERMISSIONS.DEPARTMENT.UPDATE}>
+                  <DropdownMenuItem onClick={() => onEdit(d)}>
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    [onEdit]
+  )
+
   return (
-    <>
-      <div className="rounded-md border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {departments.map((d) => (
-              <TableRow key={d.departmentUuid}>
-                <TableCell className="font-mono text-sm">{d.code}</TableCell>
-                <TableCell className="font-medium">{d.name}</TableCell>
-                <TableCell>
-                  <StatusBadge status={d.status} />
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="cursor-pointer">
-                      <MoreHorizontal className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <PermissionGate permission={PERMISSIONS.DEPARTMENT.UPDATE}>
-                        <DropdownMenuItem onClick={() => onEdit(d)}>
-                          <Pencil className="mr-2 size-4" /> Edit
-                        </DropdownMenuItem>
-                      </PermissionGate>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {page + 1} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 0}
-              onClick={() => onPageChange(page - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages - 1}
-              onClick={() => onPageChange(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-    </>
+    <DataTable
+      columns={columns}
+      data={departments}
+      getRowId={(d) => d.departmentUuid}
+      isLoading={isLoading}
+      error={error}
+      onRetry={onRetry}
+      empty={{
+        title: DEPARTMENT_TEXTS.emptyTitle,
+        description: search
+          ? DEPARTMENT_TEXTS.emptySearchHint
+          : DEPARTMENT_TEXTS.emptyCreateHint,
+      }}
+      pagination={{
+        page,
+        totalPages,
+        onPageChange,
+        pageSize,
+        onPageSizeChange,
+      }}
+    />
   )
 }

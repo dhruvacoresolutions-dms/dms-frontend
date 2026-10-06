@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -13,7 +12,6 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-  ComboboxValue,
 } from "@/components/ui/combobox"
 
 export type ComboboxOption = {
@@ -37,6 +35,10 @@ type Props<T> = {
   emptyText?: string
   /** Accessible label for the clear button */
   clearLabel?: string
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
+  /** Search input placeholder shown inside the dropdown */
+  searchPlaceholder?: string
   /** Called as the user types (parent debounces + refetches) */
   onSearchChange?: (query: string) => void
 }
@@ -47,7 +49,6 @@ type Props<T> = {
  * map their rows to `{ id, label, sub }`.
  */
 export function EntityCombobox<T>({
-  value,
   onValueChange,
   disabled,
   options,
@@ -55,6 +56,8 @@ export function EntityCombobox<T>({
   loading,
   emptyText = "No results found.",
   clearLabel = "Clear selection",
+  placeholder = "Select an option",
+  searchPlaceholder = "Search...",
   onSearchChange,
 }: Props<T>) {
   const [inputValue, setInputValue] = React.useState("")
@@ -108,7 +111,11 @@ export function EntityCombobox<T>({
               : "min-w-0 flex-1 truncate text-left text-muted-foreground"
           }
         >
-          <ComboboxValue />
+          {/* Rendered directly (not via ComboboxValue): Base UI treats the
+            `{ id, label }` option shape as a "null item with label" and
+            suppresses `ComboboxValue placeholder`, leaving a blank trigger
+            once options load. */}
+          {selected ? selected.label : placeholder}
         </span>
         {selected && !disabled && (
           <span
@@ -135,6 +142,7 @@ export function EntityCombobox<T>({
       <ComboboxContent>
         <ComboboxInput
           disabled={disabled}
+          placeholder={searchPlaceholder}
           showTrigger={false}
           showSearchIcon
           className="has-[[data-slot=input-group-control]:focus-visible]:ring-0"

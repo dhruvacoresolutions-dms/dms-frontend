@@ -7,6 +7,8 @@ export type BaseFieldProps<T extends FieldValues> = {
   control: Control<T>
   name: Path<T>
   label: React.ReactNode
+  /** Generic placeholder text — never an example value (e.g. "Enter name", "Select status"). */
+  placeholder?: string
   disabled?: boolean
   className?: string
 }

@@ -18,6 +18,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: FitmentPositionResponse): ComboboxOption {
@@ -31,6 +33,7 @@ export function FitmentPositionCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select fitment position...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -40,7 +43,7 @@ export function FitmentPositionCombobox({
     size,
   })
 
-  const rawResults = listQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => listQuery.data?.content ?? [], [listQuery.data?.content])
   const searchResults = React.useMemo(() => {
     if (!excludeIds || excludeIds.length === 0) return rawResults
     const excluded = new Set(excludeIds)
@@ -97,6 +100,8 @@ export function FitmentPositionCombobox({
       loading={listQuery.isFetching}
       emptyText="No fitment positions found."
       clearLabel="Clear fitment position"
+      placeholder={placeholder}
+      searchPlaceholder="Search fitment positions..."
       onSearchChange={setDebouncedQuery}
     />
   )

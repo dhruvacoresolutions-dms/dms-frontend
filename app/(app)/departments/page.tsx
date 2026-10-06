@@ -6,14 +6,11 @@ import { Plus, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { useDepartments } from "@/features/departments/hooks/use-departments"
 import { DepartmentTable } from "@/features/departments/components/DepartmentTable"
 import { DepartmentFormDialog } from "@/features/departments/components/DepartmentFormDialog"
 import { DepartmentBulkUploadDialog } from "@/features/departments/components/DepartmentBulkUploadDialog"
-import { DEPARTMENT_PAGE_SIZE, DEPARTMENT_TEXTS } from "@/features/departments/configs/department.config"
+import { DEPARTMENT_TEXTS } from "@/features/departments/configs/department.config"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { ExportDropdown } from "@/components/common/ExportDropdown"
@@ -32,6 +29,7 @@ function DepartmentsContent() {
   const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
@@ -39,7 +37,7 @@ function DepartmentsContent() {
   const { data, isLoading, error, refetch } = useDepartments(companyUuid, {
     query: search || undefined,
     page,
-    size: DEPARTMENT_PAGE_SIZE,
+    size,
   })
 
   const departments = data?.content ?? []
@@ -89,26 +87,19 @@ function DepartmentsContent() {
         </div>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : departments.length === 0 ? (
-        <EmptyState
-          title={DEPARTMENT_TEXTS.emptyTitle}
-          description={
-            search ? DEPARTMENT_TEXTS.emptySearchHint : DEPARTMENT_TEXTS.emptyCreateHint
-          }
-        />
-      ) : (
-        <DepartmentTable
-          departments={departments}
-          page={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          onEdit={(d) => setEditingUuid(d.departmentUuid)}
-        />
-      )}
+      <DepartmentTable
+        departments={departments}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        pageSize={size}
+        onPageSizeChange={(s) => { setSize(s); setPage(0) }}
+        onEdit={(d) => setEditingUuid(d.departmentUuid)}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        search={search}
+      />
 
       <DepartmentFormDialog
         open={createOpen}

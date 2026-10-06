@@ -1,22 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { ShieldCheck, ShieldAlert } from "lucide-react"
 import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
 import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { usePermissions } from "@/features/permissions/hooks/use-permissions"
+import type { PermissionResponse } from "@/features/permissions/api/permission.types"
 import { formatModuleLabel } from "@/features/permissions/utils/permission.utils"
 import { getApiError } from "@/lib/api/api-error"
 import { RouteGate } from "@/components/auth/RouteGate"
@@ -45,6 +37,73 @@ function PermissionsContent() {
       (p.actionCode ?? "").toLowerCase().includes(search.toLowerCase())
   )
 
+  const columns = useMemo<DataTableColumn<PermissionResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => row.original.name,
+      },
+      {
+        id: "resource",
+        header: "Resource",
+        cell: ({ row }) => (
+          <Badge variant="secondary">
+            {formatModuleLabel(row.original.resourceCode)}
+          </Badge>
+        ),
+      },
+      {
+        id: "action",
+        header: "Action",
+        cell: ({ row }) => (
+          <span className="capitalize">{row.original.actionCode ?? "—"}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.status === "ACTIVE" ? "default" : "outline"}
+          >
+            {row.original.status}
+          </Badge>
+        ),
+      },
+    ],
+    []
+  )
+
+  if (!isLoading && isForbidden) {
+    return (
+      <div className="flex flex-1 flex-col gap-4">
+        <PageHeader title="Permissions" description="View all system permissions" />
+
+        <div className="flex items-center gap-2">
+          <SearchInput
+            placeholder="Search permissions..."
+            defaultValue={search}
+            onChange={(v) => setSearch(v)}
+          />
+        </div>
+
+        <EmptyState
+          icon={ShieldAlert}
+          title="Access denied"
+          description="You need PERMISSION_VIEW permission to view permissions. Please login as Platform Administrator (superadmin) or contact your administrator."
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader title="Permissions" description="View all system permissions" />
@@ -57,46 +116,20 @@ function PermissionsContent() {
         />
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={10} />
-      ) : error ? (
-        isForbidden ? (
-          <EmptyState
-            icon={ShieldAlert}
-            title="Access denied"
-            description="You need PERMISSION_VIEW permission to view permissions. Please login as Platform Administrator (superadmin) or contact your administrator."
-          />
-        ) : (
-          <ErrorState message={apiError?.message ?? "Failed to load permissions"} onRetry={refetch} />
-        )
-      ) : !filtered || filtered.length === 0 ? (
-        <EmptyState icon={ShieldCheck} title="No permissions found" description="No permissions match your search." />
-      ) : (
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Resource</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((perm) => (
-                <TableRow key={perm.code}>
-                  <TableCell className="font-mono text-sm">{perm.code}</TableCell>
-                  <TableCell>{perm.name}</TableCell>
-                  <TableCell><Badge variant="secondary">{formatModuleLabel(perm.resourceCode)}</Badge></TableCell>
-                  <TableCell><span className="capitalize">{perm.actionCode ?? "—"}</span></TableCell>
-                  <TableCell><Badge variant={perm.status === "ACTIVE" ? "default" : "outline"}>{perm.status}</Badge></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={filtered ?? []}
+        getRowId={(perm) => perm.code}
+        isLoading={isLoading}
+        error={error}
+        errorMessage={apiError?.message ?? "Failed to load permissions"}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: ShieldCheck,
+          title: "No permissions found",
+          description: "No permissions match your search.",
+        }}
+      />
     </div>
   )
 }

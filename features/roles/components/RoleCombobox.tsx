@@ -39,7 +39,7 @@ export function RoleCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search role...",
+  placeholder = "Select role...",
   disabled,
   status,
 }: Props) {

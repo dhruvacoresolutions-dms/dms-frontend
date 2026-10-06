@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/stores/auth-store"
@@ -15,15 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { SearchInput } from "@/components/common/SearchInput"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/PageHeader"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
@@ -49,6 +38,7 @@ import {
 } from "@/features/products/hooks/use-product-mutations"
 import { exportProducts } from "@/features/products/api/product.api"
 import { ProductImportDialog } from "@/features/products/components/ProductImportDialog"
+import { ProductFilters } from "@/features/products/components/ProductFilters"
 import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -73,15 +63,23 @@ function ProductsContent() {
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
 
   const [search, setSearch] = useState("")
+  const [lifecycleStatus, setLifecycleStatus] = useState("ALL")
+  const [categoryUuid, setCategoryUuid] = useState<string | null>(null)
   const [page, setPage] = useState(0)
+  const [size, setSize] = useState(10)
   const [importOpen, setImportOpen] = useState(false)
   const [lifecycle, setLifecycle] = useState<LifecycleAction | null>(null)
 
   const { data, isLoading, error, refetch } = useProducts(companyUuid, {
     search: search || undefined,
+    lifecycleStatus: lifecycleStatus === "ALL" ? undefined : lifecycleStatus,
+    categoryUuid: categoryUuid ?? undefined,
     page,
-    size: 20,
+    size,
   })
+
+  const hasActiveFilters =
+    search !== "" || lifecycleStatus !== "ALL" || categoryUuid !== null
 
   const publishMutation = usePublishProduct(companyUuid)
   const deactivateMutation = useDeactivateProduct(companyUuid)
@@ -93,6 +91,132 @@ function ProductsContent() {
     publishMutation.isPending ||
     deactivateMutation.isPending ||
     reactivateMutation.isPending
+
+  const columns = useMemo<DataTableColumn<ProductResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <Link
+            href={`/products/${row.original.productUuid}`}
+            className="font-mono text-sm text-primary underline-offset-4 hover:underline"
+          >
+            {row.original.code}
+          </Link>
+        ),
+      },
+      {
+        id: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.name}</span>
+        ),
+      },
+      {
+        id: "category",
+        header: "Category",
+        cell: ({ row }) => row.original.category?.name ?? "—",
+      },
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) =>
+          row.original.productType ? (
+            <Badge variant="secondary">{row.original.productType}</Badge>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const p = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-auto min-w-40"
+              >
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(`/products/${p.productUuid}`)
+                  }
+                >
+                  <Eye className="mr-2 size-4" />
+                  View
+                </DropdownMenuItem>
+                <PermissionGate
+                  permission={PERMISSIONS.PRODUCT.UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() =>
+                      router.push(`/products/${p.productUuid}/edit`)
+                    }
+                  >
+                    <Pencil className="mr-2 size-4" />
+                    Edit
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate
+                  permission={PERMISSIONS.PRODUCT.UPDATE}
+                >
+                  <DropdownMenuSeparator />
+                  {p.status === "DRAFT" && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setLifecycle({ kind: "publish", product: p })
+                      }
+                    >
+                      <Rocket className="mr-2 size-4" />
+                      Publish
+                    </DropdownMenuItem>
+                  )}
+                  {p.status === "ACTIVE" && (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() =>
+                        setLifecycle({
+                          kind: "deactivate",
+                          product: p,
+                        })
+                      }
+                    >
+                      <Ban className="mr-2 size-4" />
+                      Deactivate
+                    </DropdownMenuItem>
+                  )}
+                  {p.status === "INACTIVE" && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setLifecycle({
+                          kind: "reactivate",
+                          product: p,
+                        })
+                      }
+                    >
+                      <RotateCcw className="mr-2 size-4" />
+                      Reactivate
+                    </DropdownMenuItem>
+                  )}
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    [router]
+  )
 
   const handleLifecycleConfirm = () => {
     if (!lifecycle) return
@@ -146,194 +270,67 @@ function ProductsContent() {
         }
       />
 
-      <div className="flex items-center gap-2">
-        <SearchInput
-          placeholder="Search products..."
-          defaultValue={search}
-          onChange={(v) => {
-            setSearch(v)
-            setPage(0)
-          }}
-        />
-        <div className="ml-auto flex items-center gap-2">
+      <ProductFilters
+        companyUuid={companyUuid}
+        values={{ search, lifecycleStatus, categoryUuid }}
+        onSearchChange={(v) => {
+          setSearch(v)
+          setPage(0)
+        }}
+        onLifecycleStatusChange={(v) => {
+          setLifecycleStatus(v)
+          setPage(0)
+        }}
+        onCategoryChange={(uuid) => {
+          setCategoryUuid(uuid)
+          setPage(0)
+        }}
+        onClear={() => {
+          setSearch("")
+          setLifecycleStatus("ALL")
+          setCategoryUuid(null)
+          setPage(0)
+        }}
+        action={
           <ExportDropdown
             permission={PERMISSIONS.PRODUCT.EXPORT}
             baseFileName="products-export"
             onExport={(format) =>
               exportProducts(companyUuid, format, {
                 search: search || undefined,
+                lifecycleStatus:
+                  lifecycleStatus === "ALL" ? undefined : lifecycleStatus,
+                categoryUuid: categoryUuid ?? undefined,
               })
             }
           />
-        </div>
-      </div>
+        }
+      />
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={refetch} />
-      ) : products.length === 0 ? (
-        <EmptyState
-          icon={Plus}
-          title="No products found"
-          description={
-            search
-              ? "Try a different search term."
-              : "Get started by creating a product."
-          }
-        >
-          {!search && (
+      <DataTable
+        columns={columns}
+        data={products}
+        getRowId={(p) => p.productUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: Plus,
+          title: "No products found",
+          description: hasActiveFilters
+            ? "Try a different search or clear filters."
+            : "Get started by creating a product.",
+          action: !hasActiveFilters ? (
             <PermissionGate permission={PERMISSIONS.PRODUCT.CREATE}>
-              <Button
-                nativeButton={false}
-                render={<Link href="/products/new" />}
-                className="mt-2"
-              >
+              <Button nativeButton={false} render={<Link href="/products/new" />}>
                 <Plus className="mr-2 size-4" />
                 Create Product
               </Button>
             </PermissionGate>
-          )}
-        </EmptyState>
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((p) => (
-                  <TableRow key={p.productUuid}>
-                    <TableCell className="font-mono text-sm">
-                      {p.code}
-                    </TableCell>
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.category?.name ?? "—"}</TableCell>
-                    <TableCell>
-                      {p.productType ? (
-                        <Badge variant="secondary">{p.productType}</Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={p.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() =>
-                              router.push(`/products/${p.productUuid}`)
-                            }
-                          >
-                            <Eye className="mr-2 size-4" />
-                            View
-                          </DropdownMenuItem>
-                          <PermissionGate
-                            permission={PERMISSIONS.PRODUCT.UPDATE}
-                          >
-                            <DropdownMenuItem
-                              onClick={() =>
-                                router.push(`/products/${p.productUuid}/edit`)
-                              }
-                            >
-                              <Pencil className="mr-2 size-4" />
-                              Edit
-                            </DropdownMenuItem>
-                          </PermissionGate>
-                          <PermissionGate
-                            permission={PERMISSIONS.PRODUCT.UPDATE}
-                          >
-                            <DropdownMenuSeparator />
-                            {p.status === "DRAFT" && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setLifecycle({ kind: "publish", product: p })
-                                }
-                              >
-                                <Rocket className="mr-2 size-4" />
-                                Publish
-                              </DropdownMenuItem>
-                            )}
-                            {p.status === "ACTIVE" && (
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() =>
-                                  setLifecycle({
-                                    kind: "deactivate",
-                                    product: p,
-                                  })
-                                }
-                              >
-                                <Ban className="mr-2 size-4" />
-                                Deactivate
-                              </DropdownMenuItem>
-                            )}
-                            {p.status === "INACTIVE" && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setLifecycle({
-                                    kind: "reactivate",
-                                    product: p,
-                                  })
-                                }
-                              >
-                                <RotateCcw className="mr-2 size-4" />
-                                Reactivate
-                              </DropdownMenuItem>
-                            )}
-                          </PermissionGate>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page + 1} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+          ) : undefined,
+        }}
+        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+      />
 
       <ConfirmDialog
         open={!!lifecycle}

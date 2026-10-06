@@ -7,13 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
+import { FormTextField } from "@/components/common/form-fields"
 import { PageHeader } from "@/components/common/PageHeader"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
@@ -49,9 +44,8 @@ function NewUserContent() {
   const createUserMutation = useCreateUser(companyUuid)
 
   const {
-    register,
+    control,
     handleSubmit,
-    formState: { errors },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -83,37 +77,25 @@ function NewUserContent() {
       >
         <div className="rounded-lg border p-6 space-y-4">
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="username">Username</FieldLabel>
-              <Input
-                id="username"
-                placeholder="e.g. john.doe"
-                aria-invalid={!!errors.username}
-                {...register("username")}
-              />
-              <FieldError errors={[errors.username]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="displayName">Display Name</FieldLabel>
-              <Input
-                id="displayName"
-                placeholder="e.g. John Doe"
-                aria-invalid={!!errors.displayName}
-                {...register("displayName")}
-              />
-              <FieldError errors={[errors.displayName]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                placeholder="e.g. john@company.com"
-                aria-invalid={!!errors.email}
-                {...register("email")}
-              />
-              <FieldError errors={[errors.email]} />
-            </Field>
+            <FormTextField
+              control={control}
+              name="username"
+              label="Username"
+              placeholder="Enter username"
+            />
+            <FormTextField
+              control={control}
+              name="displayName"
+              label="Display Name"
+              placeholder="Enter display name"
+            />
+            <FormTextField
+              control={control}
+              name="email"
+              label="Email"
+              type="email"
+              placeholder="Enter email"
+            />
           </FieldGroup>
         </div>
 

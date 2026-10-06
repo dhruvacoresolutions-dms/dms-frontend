@@ -104,9 +104,8 @@ export type ProductLifecycleRequest = {
 export type ProductListParams = {
   search?: string
   query?: string
-  status?: string
+  lifecycleStatus?: string
   categoryUuid?: string
-  productType?: string
   page?: number
   size?: number
 }

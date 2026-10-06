@@ -19,6 +19,8 @@ type Props = {
   excludeIds?: string[]
   /** Restrict variants to a model */
   modelUuid?: string
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: VehicleVariantResponse): ComboboxOption {
@@ -33,6 +35,7 @@ export function VehicleVariantCombobox({
   size = 100,
   excludeIds,
   modelUuid,
+  placeholder = "Select variant...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -43,7 +46,7 @@ export function VehicleVariantCombobox({
     size,
   })
 
-  const rawResults = listQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => listQuery.data?.content ?? [], [listQuery.data?.content])
   const searchResults = React.useMemo(() => {
     if (!excludeIds || excludeIds.length === 0) return rawResults
     const excluded = new Set(excludeIds)
@@ -100,6 +103,8 @@ export function VehicleVariantCombobox({
       loading={listQuery.isFetching}
       emptyText="No variants found."
       clearLabel="Clear variant"
+      placeholder={placeholder}
+      searchPlaceholder="Search variants..."
       onSearchChange={setDebouncedQuery}
     />
   )

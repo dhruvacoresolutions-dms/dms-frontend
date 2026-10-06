@@ -11,67 +11,67 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SearchInput } from "@/components/common/SearchInput"
-import { DesignationCombobox } from "@/features/designations/components/DesignationCombobox"
-import type { EmployeeStatus } from "@/features/employees/api/employee.types"
+import { ProductCategoryCombobox } from "@/features/product-categories/components/ProductCategoryCombobox"
 
-export type EmployeeFiltersValues = {
+export type ProductFiltersValues = {
   search: string
-  status: "ALL" | EmployeeStatus
-  designationUuid: string | null
+  lifecycleStatus: string
+  categoryUuid: string | null
 }
 
-type EmployeeFiltersProps = {
+type ProductFiltersProps = {
   companyUuid: string
-  values: EmployeeFiltersValues
+  values: ProductFiltersValues
   onSearchChange: (value: string) => void
-  onStatusChange: (value: "ALL" | EmployeeStatus) => void
-  onDesignationChange: (uuid: string | null) => void
+  onLifecycleStatusChange: (value: string) => void
+  onCategoryChange: (uuid: string | null) => void
   onClear: () => void
-  /** Optional trailing element pinned to the right (e.g. bulk actions) */
+  /** Optional trailing element pinned to the right (e.g. export) */
   action?: React.ReactNode
 }
 
-export function EmployeeFilters({
+export function ProductFilters({
   companyUuid,
   values,
   onSearchChange,
-  onStatusChange,
-  onDesignationChange,
+  onLifecycleStatusChange,
+  onCategoryChange,
   onClear,
   action,
-}: EmployeeFiltersProps) {
+}: ProductFiltersProps) {
   const [resetKey, setResetKey] = React.useState(0)
   const hasActiveFilters =
     values.search !== "" ||
-    values.status !== "ALL" ||
-    values.designationUuid !== null
+    values.lifecycleStatus !== "ALL" ||
+    values.categoryUuid !== null
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <SearchInput
         key={resetKey}
-        placeholder="Search employees..."
+        placeholder="Search products..."
         defaultValue={values.search}
         onChange={onSearchChange}
       />
       <div className="w-full sm:w-64">
-        <DesignationCombobox
+        <ProductCategoryCombobox
           companyUuid={companyUuid}
-          value={values.designationUuid}
-          onValueChange={onDesignationChange}
-          placeholder="Filter by designation..."
+          value={values.categoryUuid}
+          onValueChange={onCategoryChange}
+          placeholder="Filter by category..."
           size={100}
         />
       </div>
       <Select
-        value={values.status}
-        onValueChange={(v) => onStatusChange(v as "ALL" | EmployeeStatus)}
+        value={values.lifecycleStatus}
+        onValueChange={(v: string | null) => v && onLifecycleStatusChange(v)}
       >
         <SelectTrigger className="w-full sm:w-36">
           <SelectValue placeholder="Filter by status" />
         </SelectTrigger>
         <SelectContent className="p-2">
           <SelectItem value="ALL">All statuses</SelectItem>
+          <SelectItem value="DRAFT">Draft</SelectItem>
           <SelectItem value="ACTIVE">Active</SelectItem>
           <SelectItem value="INACTIVE">Inactive</SelectItem>
         </SelectContent>

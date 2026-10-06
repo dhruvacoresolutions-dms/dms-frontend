@@ -36,7 +36,7 @@ export function DesignationCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search designation...",
+  placeholder = "Select designation...",
   disabled,
   size = 100,
 }: Props) {
@@ -55,7 +55,7 @@ export function DesignationCombobox({
     size,
   })
 
-  const searchResults = designationsQuery.data?.content ?? []
+  const searchResults = React.useMemo(() => designationsQuery.data?.content ?? [], [designationsQuery.data?.content])
 
   // Fetch selected designation if value not in searchResults (to keep label)
   const selectedInResults = React.useMemo(

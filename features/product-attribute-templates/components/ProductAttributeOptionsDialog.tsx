@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -13,18 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
@@ -109,6 +99,77 @@ export function ProductAttributeOptionsDialog({
   }, [editing, data, reset])
 
   const options = data ?? []
+
+  const columns = useMemo<DataTableColumn<ProductAttributeOptionResponse>[]>(
+    () => [
+      {
+        id: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.code}</span>
+        ),
+      },
+      {
+        id: "label",
+        header: "Label",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.label}</span>
+        ),
+      },
+      {
+        id: "order",
+        header: "Order",
+        cell: ({ row }) => row.original.displayOrder,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const o = row.original
+          return (
+            <div className="flex items-center gap-1">
+              <PermissionGate
+                permission={
+                  PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
+                }
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditing(o)}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+              </PermissionGate>
+              <PermissionGate
+                permission={
+                  PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS
+                }
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStatusToggle(o)}
+                >
+                  {o.status === "ACTIVE" ? (
+                    <ToggleLeft className="size-4" />
+                  ) : (
+                    <ToggleRight className="size-4" />
+                  )}
+                </Button>
+              </PermissionGate>
+            </div>
+          )
+        },
+      },
+    ],
+    []
+  )
 
   const onSubmit = (values: OptionFormValues) => {
     if (!attributeTemplateUuid) return
@@ -202,78 +263,19 @@ export function ProductAttributeOptionsDialog({
             </form>
           </PermissionGate>
 
-          {isLoading ? (
-            <TableSkeleton rows={3} />
-          ) : error ? (
-            <ErrorState onRetry={refetch} />
-          ) : options.length === 0 ? (
-            <EmptyState
-              title="No options found"
-              description="Add an option to get started."
-            />
-          ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Label</TableHead>
-                    <TableHead>Order</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {options.map((o) => (
-                    <TableRow key={o.optionUuid}>
-                      <TableCell className="font-mono text-sm">
-                        {o.code}
-                      </TableCell>
-                      <TableCell className="font-medium">{o.label}</TableCell>
-                      <TableCell>{o.displayOrder}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={o.status} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <PermissionGate
-                            permission={
-                              PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                            }
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditing(o)}
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                          </PermissionGate>
-                          <PermissionGate
-                            permission={
-                              PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS
-                            }
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setStatusToggle(o)}
-                            >
-                              {o.status === "ACTIVE" ? (
-                                <ToggleLeft className="size-4" />
-                              ) : (
-                                <ToggleRight className="size-4" />
-                              )}
-                            </Button>
-                          </PermissionGate>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <DataTable
+            columns={columns}
+            data={options}
+            getRowId={(o) => o.optionUuid}
+            isLoading={isLoading}
+            skeletonRows={3}
+            error={error}
+            onRetry={() => void refetch()}
+            empty={{
+              title: "No options found",
+              description: "Add an option to get started.",
+            }}
+          />
         </DialogContent>
       </Dialog>
 

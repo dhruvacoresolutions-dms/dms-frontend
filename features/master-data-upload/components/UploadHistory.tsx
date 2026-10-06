@@ -9,15 +9,7 @@ import {
   Loader2,
   MoreHorizontal,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,9 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { SearchInput } from "@/components/common/SearchInput"
-import { TableSkeleton } from "@/components/common/LoadingState"
-import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { downloadBlob } from "@/lib/file-download"
@@ -46,8 +35,6 @@ import type {
   MasterDataType,
   UnifiedImportHistoryItem,
 } from "../api/master-data-upload.types"
-
-const PAGE_SIZE = 10
 
 type Props = {
   companyUuid: string
@@ -64,6 +51,7 @@ function formatDateTime(iso: string): string {
 export function UploadHistory({ companyUuid, type }: Props) {
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(0)
+  const [size, setSize] = React.useState(10)
   const [selected, setSelected] =
     React.useState<UnifiedImportHistoryItem | null>(null)
   const [downloading, setDownloading] = React.useState<string | null>(null)
@@ -75,41 +63,172 @@ export function UploadHistory({ companyUuid, type }: Props) {
   const { data, isLoading, error, refetch } = useImportHistory(companyUuid, type, {
     search: search || undefined,
     page,
-    size: PAGE_SIZE,
+    size,
   })
 
   const items = data?.content ?? []
   const totalElements = data?.totalElements ?? 0
   const totalPages = data?.totalPages ?? 0
-  const from = totalElements === 0 ? 0 : page * PAGE_SIZE + 1
-  const to = Math.min(page * PAGE_SIZE + items.length, totalElements)
 
-  const handleDownload = async (
-    item: UnifiedImportHistoryItem,
-    kind: "csv" | "xlsx" | "original"
-  ) => {
-    const key = `${item.jobUuid}:${kind}`
-    if (downloading) return
-    try {
-      setDownloading(key)
-      const blob =
-        kind === "csv"
-          ? await config.getResultsCsv(companyUuid, item.jobUuid)
-          : kind === "xlsx"
-            ? await getImportResultsXlsx(type, companyUuid, item.jobUuid)
-            : await getOriginalImportFile(type, companyUuid, item.jobUuid)
-      const base = item.fileName.replace(/\.[^.]+$/, "") || item.fileName
-      downloadBlob(
-        blob,
-        kind === "original" ? item.fileName : `${base}-results.${kind}`
-      )
-      toast.success("Download started")
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Download failed"))
-    } finally {
-      setDownloading(null)
-    }
-  }
+  const handleDownload = React.useCallback(
+    async (item: UnifiedImportHistoryItem, kind: "csv" | "xlsx" | "original") => {
+      const key = `${item.jobUuid}:${kind}`
+      if (downloading) return
+      try {
+        setDownloading(key)
+        const blob =
+          kind === "csv"
+            ? await config.getResultsCsv(companyUuid, item.jobUuid)
+            : kind === "xlsx"
+              ? await getImportResultsXlsx(type, companyUuid, item.jobUuid)
+              : await getOriginalImportFile(type, companyUuid, item.jobUuid)
+        const base = item.fileName.replace(/\.[^.]+$/, "") || item.fileName
+        downloadBlob(
+          blob,
+          kind === "original" ? item.fileName : `${base}-results.${kind}`
+        )
+        toast.success("Download started")
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Download failed"))
+      } finally {
+        setDownloading(null)
+      }
+    },
+    [companyUuid, config, downloading, type]
+  )
+
+  const columns = React.useMemo<DataTableColumn<UnifiedImportHistoryItem>[]>(
+    () => [
+      {
+        id: "index",
+        header: "#",
+        cell: ({ row }) => page * size + row.index + 1,
+      },
+      {
+        id: "fileName",
+        header: "File Name",
+        cell: ({ row }) => (
+          <span
+            className="block max-w-55 truncate font-medium"
+            title={row.original.fileName}
+          >
+            {row.original.fileName}
+          </span>
+        ),
+      },
+      {
+        id: "masterType",
+        header: "Master Data Type",
+        cell: () => config.label,
+      },
+      {
+        id: "uploadedOn",
+        header: "Uploaded On",
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap text-sm">
+            {formatDateTime(row.original.uploadedAt)}
+          </span>
+        ),
+      },
+      {
+        id: "uploadedBy",
+        header: "Uploaded By",
+        cell: ({ row }) => (
+          <span
+            className="block max-w-40 truncate font-mono text-xs"
+            title={row.original.uploadedBy}
+          >
+            {row.original.uploadedBy}
+          </span>
+        ),
+      },
+      {
+        id: "total",
+        header: "Total Records",
+        cell: ({ row }) => (
+          <span className="text-right">{row.original.totalRecords}</span>
+        ),
+      },
+      {
+        id: "success",
+        header: "Success",
+        cell: ({ row }) => (
+          <span className="text-right font-medium text-green-700 dark:text-green-400">
+            {row.original.successRecords}
+          </span>
+        ),
+      },
+      {
+        id: "failed",
+        header: "Failed",
+        cell: ({ row }) => (
+          <span
+            className={
+              row.original.failedRecords > 0
+                ? "text-right font-medium text-red-700 dark:text-red-400"
+                : "text-right text-muted-foreground"
+            }
+          >
+            {row.original.failedRecords}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const item = row.original
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="cursor-pointer">
+                {downloading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <MoreHorizontal className="size-4" />
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-48">
+                <DropdownMenuItem onClick={() => setSelected(item)}>
+                  <Eye className="mr-2 size-4" /> View details
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger disabled={downloading !== null}>
+                    <Download className="mr-2 size-4" /> Download results
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      disabled={downloading !== null}
+                      onClick={() => void handleDownload(item, "csv")}
+                    >
+                      <Download className="mr-2 size-4" /> CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={downloading !== null}
+                      onClick={() => void handleDownload(item, "xlsx")}
+                    >
+                      <Download className="mr-2 size-4" /> Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuItem
+                  disabled={downloading !== null}
+                  onClick={() => void handleDownload(item, "original")}
+                >
+                  <Download className="mr-2 size-4" /> Download original file
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      },
+    ],
+    [config.label, downloading, handleDownload, page, size]
+  )
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -130,158 +249,30 @@ export function UploadHistory({ companyUuid, type }: Props) {
         />
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={5} />
-      ) : error ? (
-        <ErrorState onRetry={() => void refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={FileUp}
-          title={search ? "No uploads match your search" : "No uploads yet"}
-          description={
-            search
-              ? "Try a different search term."
-              : `Upload a ${config.label.toLowerCase()} file to see it here.`
-          }
-        />
-      ) : (
-        <>
-          <div className="max-w-full overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">#</TableHead>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Master Data Type</TableHead>
-                  <TableHead>Uploaded On</TableHead>
-                  <TableHead>Uploaded By</TableHead>
-                  <TableHead className="text-right">Total Records</TableHead>
-                  <TableHead className="text-right">Success</TableHead>
-                  <TableHead className="text-right">Failed</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item, idx) => (
-                  <TableRow key={item.jobUuid || `${page}-${idx}`}>
-                    <TableCell className="text-muted-foreground">
-                      {page * PAGE_SIZE + idx + 1}
-                    </TableCell>
-                    <TableCell
-                      className="max-w-55 truncate font-medium"
-                      title={item.fileName}
-                    >
-                      {item.fileName}
-                    </TableCell>
-                    <TableCell>{config.label}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm">
-                      {formatDateTime(item.uploadedAt)}
-                    </TableCell>
-                    <TableCell
-                      className="max-w-40 truncate font-mono text-xs"
-                      title={item.uploadedBy}
-                    >
-                      {item.uploadedBy}
-                    </TableCell>
-                    <TableCell className="text-right">{item.totalRecords}</TableCell>
-                    <TableCell className="text-right font-medium text-green-700 dark:text-green-400">
-                      {item.successRecords}
-                    </TableCell>
-                    <TableCell
-                      className={
-                        item.failedRecords > 0
-                          ? "text-right font-medium text-red-700 dark:text-red-400"
-                          : "text-right text-muted-foreground"
-                      }
-                    >
-                      {item.failedRecords}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={item.status} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="cursor-pointer">
-                          {downloading ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <MoreHorizontal className="size-4" />
-                          )}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-auto min-w-48"
-                        >
-                          <DropdownMenuItem onClick={() => setSelected(item)}>
-                            <Eye className="mr-2 size-4" /> View details
-                          </DropdownMenuItem>
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger disabled={downloading !== null}>
-                              <Download className="mr-2 size-4" /> Download
-                              results
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                              <DropdownMenuItem
-                                disabled={downloading !== null}
-                                onClick={() => void handleDownload(item, "csv")}
-                              >
-                                <Download className="mr-2 size-4" /> CSV
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                disabled={downloading !== null}
-                                onClick={() => void handleDownload(item, "xlsx")}
-                              >
-                                <Download className="mr-2 size-4" /> Excel
-                              </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                          <DropdownMenuItem
-                            disabled={downloading !== null}
-                            onClick={() => void handleDownload(item, "original")}
-                          >
-                            <Download className="mr-2 size-4" /> Download
-                            original file
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Showing {from}–{to} of {totalElements}
-            </p>
-            {totalPages > 1 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Page {page + 1} of {totalPages}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={items}
+        getRowId={(item) => item.jobUuid}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        empty={{
+          icon: FileUp,
+          title: search ? "No uploads match your search" : "No uploads yet",
+          description: search
+            ? "Try a different search term."
+            : `Upload a ${config.label.toLowerCase()} file to see it here.`,
+        }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          pageSize: size,
+          onPageSizeChange: (s) => { setSize(s); setPage(0) },
+          totalElements,
+        }}
+        wrapperClassName="max-w-full overflow-x-auto"
+      />
 
       <ImportJobDetailsDialog
         open={!!selected}

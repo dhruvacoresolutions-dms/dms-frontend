@@ -10,22 +10,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
+import { FieldGroup } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { useForm, useWatch } from "react-hook-form"
+  FormTextField,
+  FormSelectField,
+  FormCheckboxField,
+} from "@/components/common/form-fields"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -37,6 +28,14 @@ import {
   useAddCompanyAddress,
 } from "@/features/companies/hooks/use-company-addresses"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+
+const ADDRESS_TYPE_OPTIONS = [
+  { value: "REGISTERED", label: "Registered" },
+  { value: "CORPORATE", label: "Corporate" },
+  { value: "BRANCH", label: "Branch" },
+  { value: "WAREHOUSE", label: "Warehouse" },
+  { value: "BILLING", label: "Billing" },
+] as const
 
 const addressSchema = z.object({
   addressType: z.string().min(1, "Address type is required"),
@@ -60,12 +59,9 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
   const addAddressMutation = useAddCompanyAddress(companyUuid)
 
   const {
-    register,
-    handleSubmit,
-    setValue,
     control,
+    handleSubmit,
     reset,
-    formState: { errors },
   } = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
     defaultValues: {
@@ -79,9 +75,6 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
       primary: false,
     },
   })
-
-  const addressTypeValue = useWatch({ control, name: "addressType" })
-  const primaryValue = useWatch({ control, name: "primary" })
 
   if (isLoading) return <LoadingState />
   if (error) return <ErrorState onRetry={refetch} />
@@ -117,94 +110,59 @@ export function CompanyAddressesTab({ companyUuid }: { companyUuid: string }) {
               className="space-y-4"
             >
               <FieldGroup>
-                <Field>
-                  <FieldLabel>Address Type</FieldLabel>
-                  <Select
-                    value={addressTypeValue}
-                    onValueChange={(v) => {
-                      if (v) setValue("addressType", v, { shouldValidate: true })
-                    }}
-                  >
-                    <SelectTrigger aria-invalid={!!errors.addressType}>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="REGISTERED">Registered</SelectItem>
-                      <SelectItem value="CORPORATE">Corporate</SelectItem>
-                      <SelectItem value="BRANCH">Branch</SelectItem>
-                      <SelectItem value="WAREHOUSE">Warehouse</SelectItem>
-                      <SelectItem value="BILLING">Billing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[errors.addressType]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Address Line 1</FieldLabel>
-                  <Input
-                    placeholder="Street address"
-                    aria-invalid={!!errors.line1}
-                    {...register("line1")}
-                  />
-                  <FieldError errors={[errors.line1]} />
-                </Field>
-                <Field>
-                  <FieldLabel>Address Line 2</FieldLabel>
-                  <Input
-                    placeholder="Apt, suite, etc. (optional)"
-                    {...register("line2")}
-                  />
-                </Field>
+                <FormSelectField
+                  control={control}
+                  name="addressType"
+                  label="Address Type"
+                  placeholder="Select address type"
+                  options={ADDRESS_TYPE_OPTIONS}
+                />
+                <FormTextField
+                  control={control}
+                  name="line1"
+                  label="Address Line 1"
+                  placeholder="Enter address line 1"
+                />
+                <FormTextField
+                  control={control}
+                  name="line2"
+                  label="Address Line 2"
+                  placeholder="Enter address line 2"
+                />
                 <div className="grid grid-cols-2 gap-4">
-                  <Field>
-                    <FieldLabel>City</FieldLabel>
-                    <Input
-                      placeholder="City"
-                      aria-invalid={!!errors.city}
-                      {...register("city")}
-                    />
-                    <FieldError errors={[errors.city]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel>State</FieldLabel>
-                    <Input
-                      placeholder="State (optional)"
-                      {...register("state")}
-                    />
-                  </Field>
+                  <FormTextField
+                    control={control}
+                    name="city"
+                    label="City"
+                    placeholder="Enter city"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="state"
+                    label="State"
+                    placeholder="Enter state"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Field>
-                    <FieldLabel>Postal Code</FieldLabel>
-                    <Input
-                      placeholder="Postal code (optional)"
-                      {...register("postalCode")}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Country Code</FieldLabel>
-                    <Input
-                      placeholder="e.g. IN"
-                      maxLength={2}
-                      aria-invalid={!!errors.countryCode}
-                      {...register("countryCode")}
-                    />
-                    <FieldError errors={[errors.countryCode]} />
-                  </Field>
+                  <FormTextField
+                    control={control}
+                    name="postalCode"
+                    label="Postal Code"
+                    placeholder="Enter postal code"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="countryCode"
+                    label="Country Code"
+                    placeholder="Enter country code"
+                    maxLength={2}
+                  />
                 </div>
-                <Field>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="isPrimary"
-                      checked={primaryValue}
-                      onCheckedChange={(checked) =>
-                        setValue("primary", !!checked)
-                      }
-                    />
-                    <label htmlFor="isPrimary" className="text-sm">
-                      Primary address
-                    </label>
-                  </div>
-                </Field>
+                <FormCheckboxField
+                  control={control}
+                  name="primary"
+                  label="Primary address"
+                />
               </FieldGroup>
               <div className="flex justify-end gap-2">
                 <Button
