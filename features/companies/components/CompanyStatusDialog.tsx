@@ -49,6 +49,7 @@ export function CompanyStatusDialog({
   const { control, getValues, reset, watch } = useForm<StatusFormValues>({
     defaultValues: { status: "ACTIVE" },
   })
+  // eslint-disable-next-line react-hooks/incompatible-library -- RHF watch() cannot be memoized; component renders unmemoized by design
   const status = watch("status")
   const [initKey, setInitKey] = useState<string | null>(null)
   const updateMutation = useUpdateCompanyStatus()

@@ -76,7 +76,7 @@ export function EmployeeCombobox({
     size,
   })
 
-  const rawResults = employeesQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => employeesQuery.data?.content ?? [], [employeesQuery.data?.content])
   const allowedSet = React.useMemo(
     () =>
       allowedDesignationUuids === undefined

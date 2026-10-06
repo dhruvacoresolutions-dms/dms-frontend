@@ -28,7 +28,7 @@ export function PriceTypeCombobox({
   placeholder = "Select price type...",
 }: Props) {
   const { data, isFetching } = usePriceTypes(companyUuid)
-  const rows = data?.content ?? []
+  const rows = React.useMemo(() => data?.content ?? [], [data?.content])
 
   const options = React.useMemo<ComboboxOption[]>(
     () =>

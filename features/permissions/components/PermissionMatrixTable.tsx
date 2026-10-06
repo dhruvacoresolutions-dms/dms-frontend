@@ -12,9 +12,9 @@ type PermissionMatrixTableProps = {
 
 /** Flatten a module's resources/actions into permission codes. */
 function getModulePermissionCodes(
-  module: PermissionModuleResponse
+  mod: PermissionModuleResponse
 ): string[] {
-  return module.resources.flatMap((resource) =>
+  return mod.resources.flatMap((resource) =>
     resource.actions.map((action) => action.permissionCode)
   )
 }
@@ -30,16 +30,16 @@ export function PermissionMatrixTable({ matrix }: PermissionMatrixTableProps) {
         id: "module",
         header: "Module",
         cell: ({ row }) => {
-          const module = row.original
-          const codes = getModulePermissionCodes(module)
+          const mod = row.original
+          const codes = getModulePermissionCodes(mod)
           return (
             <div>
-              <p className="font-medium">{module.moduleName}</p>
+              <p className="font-medium">{mod.moduleName}</p>
               <Badge variant="outline" className="mt-1 text-[10px]">
-                {formatModuleLabel(module.moduleCode)}
+                {formatModuleLabel(mod.moduleCode)}
               </Badge>
               <p className="mt-1 text-xs text-muted-foreground">
-                {codes.length} permission(s) · {module.resources.length}{" "}
+                {codes.length} permission(s) · {mod.resources.length}{" "}
                 resource(s)
               </p>
             </div>

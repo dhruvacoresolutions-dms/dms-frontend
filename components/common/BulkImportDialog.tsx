@@ -85,7 +85,8 @@ function formatJobStatus(s: ImportJobStatus): string {
   const total = s.totalRows ?? 0
   const ok = s.successRows ?? total - (s.failedRows ?? 0)
   const failed = s.failedRows ?? total - ok
-  if (failed > 0 && ok > 0) return `Partial success · ${ok}/${total} rows succeeded · ${failed} failed`
+  if (failed > 0 && ok > 0)
+    return `Partial success · ${ok}/${total} rows succeeded · ${failed} failed`
   if (failed > 0) return `Failed · ${failed}/${total} rows failed`
   if (s.status) return `${s.status} · ${ok}/${total} rows succeeded`
   return `${ok}/${total} rows succeeded`
@@ -159,7 +160,9 @@ export function BulkImportDialog({
   maxSize = 10 * 1024 * 1024,
 }: BulkImportDialogProps) {
   const [items, setItems] = React.useState<UploadItem[]>([])
-  const [downloading, setDownloading] = React.useState<Record<"csv" | "xlsx", boolean>>({
+  const [downloading, setDownloading] = React.useState<
+    Record<"csv" | "xlsx", boolean>
+  >({
     csv: false,
     xlsx: false,
   })
@@ -177,16 +180,19 @@ export function BulkImportDialog({
     }
   }, [])
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      const files = items.map((i) => i.file)
-      const hadUpload = uploadedRef.current
-      reset()
-      // refetch the list on every page no matter how the dialog is closed
-      if (hadUpload) onUploadComplete?.(files)
-    }
-    onOpenChange(nextOpen)
-  }
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        const files = items.map((i) => i.file)
+        const hadUpload = uploadedRef.current
+        reset()
+        // refetch the list on every page no matter how the dialog is closed
+        if (hadUpload) onUploadComplete?.(files)
+      }
+      onOpenChange(nextOpen)
+    },
+    [items, onUploadComplete, onOpenChange, reset]
+  )
 
   const handleFileSelect = React.useCallback((files: File[]) => {
     if (files.length === 0) return
@@ -209,7 +215,9 @@ export function BulkImportDialog({
 
   const startSimulatedUpload = React.useCallback(() => {
     // transition idle/error -> uploading with simulated progress; expects items already set
-    setItems((prev) => prev.map((it) => ({ ...it, state: "uploading" as const, progress: 0 })))
+    setItems((prev) =>
+      prev.map((it) => ({ ...it, state: "uploading" as const, progress: 0 }))
+    )
 
     if (timerRef.current) clearInterval(timerRef.current)
 
@@ -243,7 +251,9 @@ export function BulkImportDialog({
   }, [])
 
   const fetchJobStatus = React.useCallback(
-    async (uploadResult: unknown): Promise<{ jobUuid: string; status: ImportJobStatus } | undefined> => {
+    async (
+      uploadResult: unknown
+    ): Promise<{ jobUuid: string; status: ImportJobStatus } | undefined> => {
       if (!getJobStatus) return undefined
       const jobUuid = extractJobUuid(uploadResult)
       if (!jobUuid) return undefined
@@ -307,12 +317,23 @@ export function BulkImportDialog({
     setItems((prev) =>
       prev.map((it, i) =>
         i === idx
-          ? { ...it, progress: 30, state: "uploading" as const, errorMessage: undefined, jobUuid: undefined, jobStatus: undefined }
+          ? {
+              ...it,
+              progress: 30,
+              state: "uploading" as const,
+              errorMessage: undefined,
+              jobUuid: undefined,
+              jobStatus: undefined,
+            }
           : it
       )
     )
     try {
-      setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, progress: 60, state: "processing" as const } : it)))
+      setItems((prev) =>
+        prev.map((it, i) =>
+          i === idx ? { ...it, progress: 60, state: "processing" as const } : it
+        )
+      )
       const uploadResult = await uploadFn(file)
       const job = await fetchJobStatus(uploadResult)
       // keep processing briefly for UX
@@ -320,7 +341,15 @@ export function BulkImportDialog({
       uploadedRef.current = true
       setItems((prev) =>
         prev.map((it, i) =>
-          i === idx ? { ...it, progress: 100, state: "done" as const, jobUuid: job?.jobUuid, jobStatus: job?.status } : it
+          i === idx
+            ? {
+                ...it,
+                progress: 100,
+                state: "done" as const,
+                jobUuid: job?.jobUuid,
+                jobStatus: job?.status,
+              }
+            : it
         )
       )
       toastUploadResult(file.name, job?.status)
@@ -329,7 +358,12 @@ export function BulkImportDialog({
       setItems((prev) =>
         prev.map((it, i) =>
           i === idx
-            ? { ...it, progress: 100, state: "error" as const, errorMessage: message }
+            ? {
+                ...it,
+                progress: 100,
+                state: "error" as const,
+                errorMessage: message,
+              }
             : it
         )
       )
@@ -343,7 +377,11 @@ export function BulkImportDialog({
     const processingItems = items.filter((i) => i.state === "processing")
     if (processingItems.length === 0) return
     const t = setTimeout(() => {
-      setItems((prev) => prev.map((it) => (it.state === "processing" ? { ...it, state: "done" as const } : it)))
+      setItems((prev) =>
+        prev.map((it) =>
+          it.state === "processing" ? { ...it, state: "done" as const } : it
+        )
+      )
     }, 1200)
     return () => clearTimeout(t)
   }, [items, uploadFn])
@@ -370,7 +408,8 @@ export function BulkImportDialog({
       setDownloading((prev) => ({ ...prev, [format]: true }))
       const blob = await getTemplate(format)
       const mime = (blob.type || "").toLowerCase()
-      const isCsv = mime.includes("csv") || mime.includes("text/csv") || format === "csv"
+      const isCsv =
+        mime.includes("csv") || mime.includes("text/csv") || format === "csv"
       const isExcel =
         mime.includes("spreadsheet") ||
         mime.includes("excel") ||
@@ -404,7 +443,9 @@ export function BulkImportDialog({
     }
   }
 
-  const isUploading = items.some((i) => i.state === "uploading" || i.state === "processing")
+  const isUploading = items.some(
+    (i) => i.state === "uploading" || i.state === "processing"
+  )
   const isDone = items.length > 0 && items.every((i) => i.state === "done")
 
   const handleUploadClick = React.useCallback(() => {
@@ -414,14 +455,24 @@ export function BulkImportDialog({
       return
     }
     if (items.length === 0 || isUploading) return
-    const hasIdleOrError = items.some((it) => it.state === "idle" || it.state === "error")
+    const hasIdleOrError = items.some(
+      (it) => it.state === "idle" || it.state === "error"
+    )
     if (!hasIdleOrError) return
     if (uploadFn) {
       void startRealUpload()
     } else {
       startSimulatedUpload()
     }
-  }, [items, isDone, isUploading, uploadFn, startRealUpload, startSimulatedUpload, handleOpenChange])
+  }, [
+    items,
+    isDone,
+    isUploading,
+    uploadFn,
+    startRealUpload,
+    startSimulatedUpload,
+    handleOpenChange,
+  ])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -448,17 +499,29 @@ export function BulkImportDialog({
           {items.length > 0 && (
             <div className="flex w-full flex-col gap-2">
               {items.map((item, idx) => {
-                const { state, file, progress, errorMessage, jobUuid, jobStatus } = item
+                const {
+                  state,
+                  file,
+                  progress,
+                  errorMessage,
+                  jobUuid,
+                  jobStatus,
+                } = item
                 const failedCount = jobStatus?.failedRows ?? 0
                 const totalCount = jobStatus?.totalRows ?? 0
-                const successCount = jobStatus?.successRows ?? totalCount - failedCount
+                const successCount =
+                  jobStatus?.successRows ?? totalCount - failedCount
                 const diagnostics = jobStatus?.diagnostics ?? []
                 const hasJobStatus = state === "done" && jobStatus != null
-                const allFailed = hasJobStatus && failedCount > 0 && successCount === 0
-                const showFailures = hasJobStatus && (failedCount > 0 || diagnostics.length > 0)
+                const allFailed =
+                  hasJobStatus && failedCount > 0 && successCount === 0
+                const showFailures =
+                  hasJobStatus && (failedCount > 0 || diagnostics.length > 0)
                 // all rows failed -> failed state; mix -> success state with partial text; all ok -> success state
                 const displayState = allFailed ? ("error" as const) : state
-                const statusText = jobStatus ? formatJobStatus(jobStatus) : `Uploaded · ${formatBytes(file.size)}`
+                const statusText = jobStatus
+                  ? formatJobStatus(jobStatus)
+                  : `Uploaded · ${formatBytes(file.size)}`
                 return (
                   <React.Fragment key={`${file.name}-${idx}`}>
                     <Attachment state={displayState} className="w-full">
@@ -472,39 +535,63 @@ export function BulkImportDialog({
                       <AttachmentContent>
                         <AttachmentTitle>{file.name}</AttachmentTitle>
                         <AttachmentDescription
-                          title={displayState === "error" ? (errorMessage ?? statusText) : undefined}
-                          className={displayState === "error" ? "whitespace-normal break-words" : undefined}
+                          title={
+                            displayState === "error"
+                              ? (errorMessage ?? statusText)
+                              : undefined
+                          }
+                          className={
+                            displayState === "error"
+                              ? "break-words whitespace-normal"
+                              : undefined
+                          }
                         >
                           {state === "idle" && "Ready to upload"}
                           {state === "uploading" && `Uploading · ${progress}%`}
                           {state === "processing" && "Processing document"}
-                          {displayState === "error" && (errorMessage ?? statusText)}
+                          {displayState === "error" &&
+                            (errorMessage ?? statusText)}
                           {displayState === "done" && statusText}
                         </AttachmentDescription>
                       </AttachmentContent>
                       <AttachmentActions>
                         {displayState === "idle" && (
-                          <AttachmentAction aria-label={`Remove ${file.name}`} onClick={() => handleRemove(idx)}>
+                          <AttachmentAction
+                            aria-label={`Remove ${file.name}`}
+                            onClick={() => handleRemove(idx)}
+                          >
                             <XIcon />
                           </AttachmentAction>
                         )}
                         {displayState === "uploading" && (
-                          <AttachmentAction aria-label="Cancel upload" onClick={() => handleCancel(idx)}>
+                          <AttachmentAction
+                            aria-label="Cancel upload"
+                            onClick={() => handleCancel(idx)}
+                          >
                             <XIcon />
                           </AttachmentAction>
                         )}
                         {displayState === "processing" && (
-                          <AttachmentAction aria-label={`Remove ${file.name}`} onClick={() => handleRemove(idx)}>
+                          <AttachmentAction
+                            aria-label={`Remove ${file.name}`}
+                            onClick={() => handleRemove(idx)}
+                          >
                             <XIcon />
                           </AttachmentAction>
                         )}
                         {displayState === "error" && (
-                          <AttachmentAction aria-label={`Remove ${file.name}`} onClick={() => handleRemove(idx)}>
+                          <AttachmentAction
+                            aria-label={`Remove ${file.name}`}
+                            onClick={() => handleRemove(idx)}
+                          >
                             <XIcon />
                           </AttachmentAction>
                         )}
                         {displayState === "done" && (
-                          <AttachmentAction aria-label={`Remove ${file.name}`} onClick={() => handleRemove(idx)}>
+                          <AttachmentAction
+                            aria-label={`Remove ${file.name}`}
+                            onClick={() => handleRemove(idx)}
+                          >
                             <XIcon />
                           </AttachmentAction>
                         )}
@@ -522,11 +609,17 @@ export function BulkImportDialog({
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDownloadResults(jobUuid, file.name)}
+                              onClick={() =>
+                                handleDownloadResults(jobUuid, file.name)
+                              }
                               disabled={downloadingResults}
                               className="h-7 shrink-0 text-xs"
                             >
-                              {downloadingResults ? <Spinner className="size-3.5" /> : <DownloadIcon className="size-3.5" />}
+                              {downloadingResults ? (
+                                <Spinner className="size-3.5" />
+                              ) : (
+                                <DownloadIcon className="size-3.5" />
+                              )}
                               Download Result
                             </Button>
                           )}
@@ -537,7 +630,11 @@ export function BulkImportDialog({
                               <li key={i} className="break-words">
                                 Row {d.rowNumber}
                                 {d.entityKey ? ` · ${d.entityKey}` : ""}
-                                {d.reason ? ` — ${d.reason}` : d.errorCode ? ` — ${d.errorCode}` : ""}
+                                {d.reason
+                                  ? ` — ${d.reason}`
+                                  : d.errorCode
+                                    ? ` — ${d.errorCode}`
+                                    : ""}
                               </li>
                             ))}
                           </ul>
@@ -558,7 +655,11 @@ export function BulkImportDialog({
               disabled={downloading.xlsx}
               className="h-auto p-0 text-xs"
             >
-              {downloading.xlsx ? <Spinner className="size-3.5" /> : <DownloadIcon className="size-3.5" />}
+              {downloading.xlsx ? (
+                <Spinner className="size-3.5" />
+              ) : (
+                <DownloadIcon className="size-3.5" />
+              )}
               Download Excel template
             </Button>
             <span className="text-xs text-muted-foreground">·</span>
@@ -569,7 +670,11 @@ export function BulkImportDialog({
               disabled={downloading.csv}
               className="h-auto p-0 text-xs"
             >
-              {downloading.csv ? <Spinner className="size-3.5" /> : <DownloadIcon className="size-3.5" />}
+              {downloading.csv ? (
+                <Spinner className="size-3.5" />
+              ) : (
+                <DownloadIcon className="size-3.5" />
+              )}
               Download CSV template
             </Button>
           </div>
@@ -579,7 +684,10 @@ export function BulkImportDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {isDone ? "Close" : "Cancel"}
           </Button>
-          <Button disabled={items.length === 0 || isUploading} onClick={handleUploadClick}>
+          <Button
+            disabled={items.length === 0 || isUploading}
+            onClick={handleUploadClick}
+          >
             {isUploading ? "Uploading..." : isDone ? "Done" : "Upload"}
           </Button>
         </DialogFooter>

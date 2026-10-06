@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -50,7 +49,6 @@ type Props<T> = {
  * map their rows to `{ id, label, sub }`.
  */
 export function EntityCombobox<T>({
-  value,
   onValueChange,
   disabled,
   options,
@@ -113,7 +111,7 @@ export function EntityCombobox<T>({
               : "min-w-0 flex-1 truncate text-left text-muted-foreground"
           }
         >
-        {/* Rendered directly (not via ComboboxValue): Base UI treats the
+          {/* Rendered directly (not via ComboboxValue): Base UI treats the
             `{ id, label }` option shape as a "null item with label" and
             suppresses `ComboboxValue placeholder`, leaving a blank trigger
             once options load. */}

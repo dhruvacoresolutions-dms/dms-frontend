@@ -43,7 +43,7 @@ export function RelationshipTypeCombobox({
     size,
   })
 
-  const rawResults = listQuery.data?.content ?? []
+  const rawResults = React.useMemo(() => listQuery.data?.content ?? [], [listQuery.data?.content])
   const searchResults = React.useMemo(() => {
     if (!excludeIds || excludeIds.length === 0) return rawResults
     const excluded = new Set(excludeIds)
