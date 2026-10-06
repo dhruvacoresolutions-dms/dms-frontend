@@ -4,6 +4,7 @@ import * as React from "react"
 import { Check, AlertCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -159,8 +160,9 @@ function Stepper({
                 {isVertical ? (
                   <div className="flex flex-row items-start gap-3">
                     {/* Indicator */}
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       data-slot="stepper-trigger"
                       data-state={state}
                       aria-current={state === "current" ? "step" : undefined}
@@ -170,7 +172,7 @@ function Stepper({
                         if (isClickable) onStepChange?.(index)
                       }}
                       className={cn(
-                        "relative flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-300",
+                        "relative flex size-9 shrink-0 rounded-full border-2 text-sm font-semibold transition-all duration-300",
                         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none",
                         state === "completed" &&
                           "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20",
@@ -208,7 +210,7 @@ function Stepper({
                       ) : (
                         <span>{index + 1}</span>
                       )}
-                    </button>
+                    </Button>
                     <div className="flex flex-col items-start pt-0.5 text-left">
                       <span
                         data-slot="stepper-title"
@@ -246,8 +248,9 @@ function Stepper({
                   <div className="flex w-full flex-col items-center">
                     {/* Top row: indicator centered + connector in between steps at equal distance */}
                     <div className="relative flex w-full items-center justify-center">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         data-slot="stepper-trigger"
                         data-state={state}
                         aria-current={state === "current" ? "step" : undefined}
@@ -257,7 +260,7 @@ function Stepper({
                           if (isClickable) onStepChange?.(index)
                         }}
                         className={cn(
-                          "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-background text-sm font-semibold transition-all duration-300",
+                          "relative z-10 flex size-9 shrink-0 rounded-full border-2 bg-background text-sm font-semibold transition-all duration-300",
                           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none",
                           state === "completed" &&
                             "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20",
@@ -295,7 +298,7 @@ function Stepper({
                         ) : (
                           <span>{index + 1}</span>
                         )}
-                      </button>
+                      </Button>
                       {/* Connector line at equal distance between two steps - absolute centered, equal gap on both sides */}
                       {!isLast && (
                         <div
@@ -384,11 +387,12 @@ function StepperItem({
 function StepperTrigger({
   className,
   ...props
-}: React.ComponentProps<"button">) {
+}: React.ComponentProps<typeof Button>) {
   const { onStepChange } = useStepperContext()
   void onStepChange
   return (
-    <button
+    <Button
+      variant="ghost"
       data-slot="stepper-trigger"
       className={cn("", className)}
       {...props}

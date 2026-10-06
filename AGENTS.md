@@ -165,6 +165,7 @@ export function useDeleteProduct() {
 
 ```ts
 "use client"
+import { Button } from "@/components/ui/button"
 import { useProducts } from "@/features/products/hooks/use-products"
 import { useDeleteProduct } from "@/features/products/hooks/use-delete-product"
 import { getApiErrorMessage } from "@/lib/api/api-error"
@@ -188,7 +189,7 @@ export function ProductList() {
       {products?.map((product) => (
         <li key={product.id}>
           {product.name}
-          <button onClick={() => handleDelete(product.id)}>Delete</button>
+          <Button variant="destructive" size="sm" onClick={() => handleDelete(product.id)}>Delete</Button>
         </li>
       ))}
     </ul>
