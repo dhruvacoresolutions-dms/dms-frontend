@@ -13,7 +13,6 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-  ComboboxValue,
 } from "@/components/ui/combobox"
 
 export type ComboboxOption = {
@@ -114,7 +113,11 @@ export function EntityCombobox<T>({
               : "min-w-0 flex-1 truncate text-left text-muted-foreground"
           }
         >
-          <ComboboxValue placeholder={placeholder} />
+        {/* Rendered directly (not via ComboboxValue): Base UI treats the
+            `{ id, label }` option shape as a "null item with label" and
+            suppresses `ComboboxValue placeholder`, leaving a blank trigger
+            once options load. */}
+          {selected ? selected.label : placeholder}
         </span>
         {selected && !disabled && (
           <span
