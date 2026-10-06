@@ -101,6 +101,7 @@ export function FuelTypeCombobox({
       emptyText="No fuel types found."
       clearLabel="Clear fuel type"
       placeholder={placeholder}
+      searchPlaceholder="Search fuel types..."
       onSearchChange={setDebouncedQuery}
     />
   )

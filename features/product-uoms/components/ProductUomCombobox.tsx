@@ -100,6 +100,7 @@ export function ProductUomCombobox({
       emptyText="No UOMs found."
       clearLabel="Clear UOM"
       placeholder={placeholder}
+      searchPlaceholder="Search UOMs..."
       onSearchChange={setDebouncedQuery}
     />
   )

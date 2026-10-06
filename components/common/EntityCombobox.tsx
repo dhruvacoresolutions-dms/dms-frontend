@@ -39,6 +39,8 @@ type Props<T> = {
   clearLabel?: string
   /** Trigger text shown when nothing is selected */
   placeholder?: string
+  /** Search input placeholder shown inside the dropdown */
+  searchPlaceholder?: string
   /** Called as the user types (parent debounces + refetches) */
   onSearchChange?: (query: string) => void
 }
@@ -58,6 +60,7 @@ export function EntityCombobox<T>({
   emptyText = "No results found.",
   clearLabel = "Clear selection",
   placeholder = "Select an option",
+  searchPlaceholder = "Search...",
   onSearchChange,
 }: Props<T>) {
   const [inputValue, setInputValue] = React.useState("")
@@ -138,6 +141,7 @@ export function EntityCombobox<T>({
       <ComboboxContent>
         <ComboboxInput
           disabled={disabled}
+          placeholder={searchPlaceholder}
           showTrigger={false}
           showSearchIcon
           className="has-[[data-slot=input-group-control]:focus-visible]:ring-0"

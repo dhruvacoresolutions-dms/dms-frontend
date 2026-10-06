@@ -103,6 +103,7 @@ export function VehicleModelCombobox({
       emptyText="No models found."
       clearLabel="Clear model"
       placeholder={placeholder}
+      searchPlaceholder="Search models..."
       onSearchChange={setDebouncedQuery}
     />
   )

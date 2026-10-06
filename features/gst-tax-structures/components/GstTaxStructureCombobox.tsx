@@ -100,6 +100,7 @@ export function GstTaxStructureCombobox({
       emptyText="No tax structures found."
       clearLabel="Clear tax structure"
       placeholder={placeholder}
+      searchPlaceholder="Search tax structures..."
       onSearchChange={setDebouncedQuery}
     />
   )

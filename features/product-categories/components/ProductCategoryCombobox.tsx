@@ -99,6 +99,7 @@ export function ProductCategoryCombobox({
       emptyText="No categories found."
       clearLabel="Clear category"
       placeholder={placeholder}
+      searchPlaceholder="Search categories..."
       onSearchChange={setDebouncedQuery}
     />
   )

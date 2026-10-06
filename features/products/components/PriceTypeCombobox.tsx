@@ -66,6 +66,7 @@ export function PriceTypeCombobox({
       emptyText="No price types found."
       clearLabel="Clear price type"
       placeholder={placeholder}
+      searchPlaceholder="Search price types..."
     />
   )
 }

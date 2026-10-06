@@ -101,6 +101,7 @@ export function RelationshipTypeCombobox({
       emptyText="No relationship types found."
       clearLabel="Clear relationship type"
       placeholder={placeholder}
+      searchPlaceholder="Search relationship types..."
       onSearchChange={setDebouncedQuery}
     />
   )

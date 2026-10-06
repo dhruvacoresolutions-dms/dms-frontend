@@ -100,6 +100,7 @@ export function GstHsnCombobox({
       emptyText="No HSN entries found."
       clearLabel="Clear HSN"
       placeholder={placeholder}
+      searchPlaceholder="Search HSN..."
       onSearchChange={setDebouncedQuery}
     />
   )

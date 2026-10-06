@@ -100,6 +100,7 @@ export function ProductBrandCombobox({
       emptyText="No brands found."
       clearLabel="Clear brand"
       placeholder={placeholder}
+      searchPlaceholder="Search brands..."
       onSearchChange={setDebouncedQuery}
     />
   )

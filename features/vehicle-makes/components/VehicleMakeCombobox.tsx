@@ -99,6 +99,7 @@ export function VehicleMakeCombobox({
       emptyText="No makes found."
       clearLabel="Clear make"
       placeholder={placeholder}
+      searchPlaceholder="Search makes..."
       onSearchChange={setDebouncedQuery}
     />
   )

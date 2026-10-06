@@ -104,6 +104,7 @@ export function VehicleVariantCombobox({
       emptyText="No variants found."
       clearLabel="Clear variant"
       placeholder={placeholder}
+      searchPlaceholder="Search variants..."
       onSearchChange={setDebouncedQuery}
     />
   )

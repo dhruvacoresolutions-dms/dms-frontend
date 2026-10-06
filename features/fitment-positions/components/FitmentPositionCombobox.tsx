@@ -101,6 +101,7 @@ export function FitmentPositionCombobox({
       emptyText="No fitment positions found."
       clearLabel="Clear fitment position"
       placeholder={placeholder}
+      searchPlaceholder="Search fitment positions..."
       onSearchChange={setDebouncedQuery}
     />
   )

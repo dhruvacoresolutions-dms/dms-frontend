@@ -100,6 +100,7 @@ export function ProductCombobox({
       emptyText="No products found."
       clearLabel="Clear product"
       placeholder={placeholder}
+      searchPlaceholder="Search products..."
       onSearchChange={setDebouncedQuery}
     />
   )
