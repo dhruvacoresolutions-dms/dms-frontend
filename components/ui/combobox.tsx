@@ -43,7 +43,7 @@ function ComboboxTrigger({
       className={cn(
         "[&_svg:not([class*='size-'])]:size-4",
         className,
-        "hover:bg-background hover:text-foreground aria-expanded:bg-background dark:hover:bg-input/30 dark:aria-expanded:bg-input/30",
+        "bg-transparent hover:bg-transparent hover:text-foreground aria-expanded:bg-transparent dark:bg-transparent dark:hover:bg-transparent dark:aria-expanded:bg-transparent",
         hoverBorder && "hover:border-ring/60"
       )}
       {...props}
@@ -80,32 +80,39 @@ function ComboboxInput({
   showClear?: boolean
   showSearchIcon?: boolean
 }) {
+  // `showTrigger={false}` marks the embedded dropdown-search mode (used by
+  // every combobox popup): borderless input with a separator below it.
+  // The standalone trigger mode (`StateCombobox`) keeps its border.
+  const embeddedSearch = !showTrigger
   return (
-    <InputGroup className={cn("w-auto", className)}>
-      {showSearchIcon && (
-        <InputGroupAddon>
-          <SearchIcon />
-        </InputGroupAddon>
-      )}
-      <ComboboxPrimitive.Input
-        render={<InputGroupInput disabled={disabled} />}
-        {...props}
-      />
-      <InputGroupAddon align="inline-end">
-        {showTrigger && (
-          <InputGroupButton
-            size="icon-xs"
-            variant="ghost"
-            render={<ComboboxTrigger hoverBorder={false} />}
-            data-slot="input-group-button"
-            className="group-has-data-[slot=combobox-clear]/input-group:hidden hover:bg-transparent hover:text-foreground aria-expanded:bg-transparent data-pressed:bg-transparent dark:hover:bg-transparent dark:aria-expanded:bg-transparent"
-            disabled={disabled}
-          />
+    <>
+      <InputGroup className={cn(embeddedSearch && "border-0", "w-auto", className)}>
+        {showSearchIcon && (
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
         )}
-        {showClear && <ComboboxClear disabled={disabled} />}
-      </InputGroupAddon>
-      {children}
-    </InputGroup>
+        <ComboboxPrimitive.Input
+          render={<InputGroupInput disabled={disabled} />}
+          {...props}
+        />
+        <InputGroupAddon align="inline-end">
+          {showTrigger && (
+            <InputGroupButton
+              size="icon-xs"
+              variant="ghost"
+              render={<ComboboxTrigger hoverBorder={false} />}
+              data-slot="input-group-button"
+              className="group-has-data-[slot=combobox-clear]/input-group:hidden hover:bg-transparent hover:text-foreground aria-expanded:bg-transparent data-pressed:bg-transparent dark:hover:bg-transparent dark:aria-expanded:bg-transparent"
+              disabled={disabled}
+            />
+          )}
+          {showClear && <ComboboxClear disabled={disabled} />}
+        </InputGroupAddon>
+        {children}
+      </InputGroup>
+      {embeddedSearch && <ComboboxSeparator />}
+    </>
   )
 }
 
@@ -136,7 +143,7 @@ function ComboboxContent({
           data-slot="combobox-content"
           data-chips={!!anchor}
           // Decorative ring replaced with border: ring-1 ring-foreground/10
-          className={cn("group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-[calc(var(--anchor-width)+--spacing(7))] origin-(--transform-origin) overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md duration-100 data-[chips=true]:min-w-(--anchor-width) data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 *:data-[slot=input-group]:m-1 *:data-[slot=input-group]:mb-0 *:data-[slot=input-group]:h-8 *:data-[slot=input-group]:border-input/30 *:data-[slot=input-group]:bg-input/30 *:data-[slot=input-group]:shadow-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn("group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-[calc(var(--anchor-width)+--spacing(7))] origin-(--transform-origin) overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md duration-100 data-[chips=true]:min-w-(--anchor-width) data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 *:data-[slot=input-group]:m-1 *:data-[slot=input-group]:mb-0 *:data-[slot=input-group]:h-8 *:data-[slot=input-group]:border-input/30 *:data-[slot=input-group]:bg-transparent *:data-[slot=input-group]:shadow-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
         />
       </ComboboxPrimitive.Positioner>

@@ -57,7 +57,7 @@ export function DatePicker({
         aria-invalid={!!hasError}
         className={cn(
           buttonVariants({ variant: "outline" }),
-          "w-full justify-start gap-2 px-3 font-normal",
+          "w-full justify-start gap-2 bg-transparent px-3 font-normal hover:border-ring/60 hover:bg-transparent aria-expanded:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
           !selected && "text-muted-foreground",
           className
         )}
