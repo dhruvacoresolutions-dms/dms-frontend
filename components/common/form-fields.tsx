@@ -5,6 +5,7 @@
 export type { BaseFieldProps, BackendComboboxProps } from "./form/types"
 export { FormTextField } from "./form/FormTextField"
 export { FormNumberField } from "./form/FormNumberField"
+export { FormPercentageField } from "./form/FormPercentageField"
 export { FormDateField } from "./form/FormDateField"
 export { FormTextareaField } from "./form/FormTextareaField"
 export { FormSelectField } from "./form/FormSelectField"
