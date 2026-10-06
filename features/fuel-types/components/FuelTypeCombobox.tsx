@@ -18,6 +18,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: FuelTypeResponse): ComboboxOption {
@@ -31,6 +33,7 @@ export function FuelTypeCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select fuel type...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -97,6 +100,7 @@ export function FuelTypeCombobox({
       loading={listQuery.isFetching}
       emptyText="No fuel types found."
       clearLabel="Clear fuel type"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

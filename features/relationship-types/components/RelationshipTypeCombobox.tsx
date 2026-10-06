@@ -18,6 +18,8 @@ type Props = {
   disabled?: boolean
   size?: number
   excludeIds?: string[]
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: RelationshipTypeResponse): ComboboxOption {
@@ -31,6 +33,7 @@ export function RelationshipTypeCombobox({
   disabled,
   size = 100,
   excludeIds,
+  placeholder = "Select relationship type...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -97,6 +100,7 @@ export function RelationshipTypeCombobox({
       loading={listQuery.isFetching}
       emptyText="No relationship types found."
       clearLabel="Clear relationship type"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

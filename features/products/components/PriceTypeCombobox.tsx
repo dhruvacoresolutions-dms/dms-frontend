@@ -16,6 +16,8 @@ type Props = {
     item?: PriceTypeResponse | null
   ) => void
   disabled?: boolean
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 }
 
 export function PriceTypeCombobox({
@@ -23,6 +25,7 @@ export function PriceTypeCombobox({
   value,
   onValueChange,
   disabled,
+  placeholder = "Select price type...",
 }: Props) {
   const { data, isFetching } = usePriceTypes(companyUuid)
   const rows = data?.content ?? []
@@ -62,6 +65,7 @@ export function PriceTypeCombobox({
       loading={isFetching}
       emptyText="No price types found."
       clearLabel="Clear price type"
+      placeholder={placeholder}
     />
   )
 }

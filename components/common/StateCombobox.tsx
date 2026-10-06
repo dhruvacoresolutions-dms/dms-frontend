@@ -22,7 +22,7 @@ type StateComboboxProps = {
 export function StateCombobox({
   value,
   onValueChange,
-  placeholder = "Select state — type to search",
+  placeholder = "Select state...",
   id,
   hasError,
   disabled,
@@ -31,6 +31,7 @@ export function StateCombobox({
     <ComboboxPrimitive.Root
       items={[...INDIAN_STATES]}
       value={value || null}
+      autoHighlight={"always" as unknown as boolean}
       onValueChange={(val: string | null) => onValueChange(val ?? "")}
       itemToStringLabel={(item: string | null) => item ?? ""}
       disabled={disabled}

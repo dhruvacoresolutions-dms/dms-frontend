@@ -36,7 +36,7 @@ export function DepartmentCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search department...",
+  placeholder = "Select department...",
   disabled,
   size = 100,
 }: Props) {

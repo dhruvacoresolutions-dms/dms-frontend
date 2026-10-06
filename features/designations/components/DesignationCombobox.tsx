@@ -36,7 +36,7 @@ export function DesignationCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search designation...",
+  placeholder = "Select designation...",
   disabled,
   size = 100,
 }: Props) {

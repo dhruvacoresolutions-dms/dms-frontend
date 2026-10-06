@@ -100,6 +100,7 @@ export function FitmentPositionCombobox({
       loading={listQuery.isFetching}
       emptyText="No fitment positions found."
       clearLabel="Clear fitment position"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

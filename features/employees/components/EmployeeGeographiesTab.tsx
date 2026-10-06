@@ -115,7 +115,7 @@ export function EmployeeGeographiesTab({ companyUuid, employeeUuid }: Props) {
                 companyUuid={companyUuid}
                 value={selected || null}
                 onValueChange={(v) => setSelected(v ?? "")}
-                placeholder="Search geography..."
+                placeholder="Select geography..."
                 size={100}
                 excludeUuids={assignedUuids}
               />

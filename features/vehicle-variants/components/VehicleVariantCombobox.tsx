@@ -19,6 +19,8 @@ type Props = {
   excludeIds?: string[]
   /** Restrict variants to a model */
   modelUuid?: string
+  /** Trigger text shown when nothing is selected */
+  placeholder?: string
 };
 
 function toOption(item: VehicleVariantResponse): ComboboxOption {
@@ -33,6 +35,7 @@ export function VehicleVariantCombobox({
   size = 100,
   excludeIds,
   modelUuid,
+  placeholder = "Select variant...",
 }: Props) {
   const [debouncedQuery, setDebouncedQuery] = React.useState("")
 
@@ -100,6 +103,7 @@ export function VehicleVariantCombobox({
       loading={listQuery.isFetching}
       emptyText="No variants found."
       clearLabel="Clear variant"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

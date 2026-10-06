@@ -99,6 +99,7 @@ export function GstHsnCombobox({
       loading={listQuery.isFetching}
       emptyText="No HSN entries found."
       clearLabel="Clear HSN"
+      placeholder={placeholder}
       onSearchChange={setDebouncedQuery}
     />
   )

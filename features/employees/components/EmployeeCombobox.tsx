@@ -55,7 +55,7 @@ export function EmployeeCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search employee...",
+  placeholder = "Select employee...",
   disabled,
   size = 100,
   excludeUuid,

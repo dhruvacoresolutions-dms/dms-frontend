@@ -13,7 +13,19 @@ import {
 } from "@/components/ui/input-group"
 import { ChevronDownIcon, XIcon, CheckIcon, SearchIcon } from "lucide-react"
 
-const Combobox = ComboboxPrimitive.Root
+function Combobox<Value, Multiple extends boolean | undefined = false>(
+  props: ComboboxPrimitive.Root.Props<Value, Multiple> & {
+    autoHighlight?: boolean | "always"
+  }
+) {
+  const { autoHighlight = "always", ...rest } = props
+  return (
+    <ComboboxPrimitive.Root
+      {...(rest as ComboboxPrimitive.Root.Props<Value, Multiple>)}
+      autoHighlight={autoHighlight as unknown as boolean}
+    />
+  )
+}
 
 function ComboboxValue({ ...props }: ComboboxPrimitive.Value.Props) {
   return <ComboboxPrimitive.Value data-slot="combobox-value" {...props} />
@@ -22,12 +34,18 @@ function ComboboxValue({ ...props }: ComboboxPrimitive.Value.Props) {
 function ComboboxTrigger({
   className,
   children,
+  hoverBorder = true,
   ...props
-}: ComboboxPrimitive.Trigger.Props) {
+}: ComboboxPrimitive.Trigger.Props & { hoverBorder?: boolean }) {
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
-      className={cn("[&_svg:not([class*='size-'])]:size-4", className)}
+      className={cn(
+        "[&_svg:not([class*='size-'])]:size-4",
+        className,
+        "hover:bg-background hover:text-foreground aria-expanded:bg-background dark:hover:bg-input/30 dark:aria-expanded:bg-input/30",
+        hoverBorder && "hover:border-ring/60"
+      )}
       {...props}
     >
       {children}
@@ -78,9 +96,9 @@ function ComboboxInput({
           <InputGroupButton
             size="icon-xs"
             variant="ghost"
-            render={<ComboboxTrigger />}
+            render={<ComboboxTrigger hoverBorder={false} />}
             data-slot="input-group-button"
-            className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
+            className="group-has-data-[slot=combobox-clear]/input-group:hidden hover:bg-transparent hover:text-foreground aria-expanded:bg-transparent data-pressed:bg-transparent dark:hover:bg-transparent dark:aria-expanded:bg-transparent"
             disabled={disabled}
           />
         )}

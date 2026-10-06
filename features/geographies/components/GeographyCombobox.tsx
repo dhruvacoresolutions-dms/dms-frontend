@@ -38,7 +38,7 @@ export function GeographyCombobox({
   companyUuid,
   value,
   onValueChange,
-  placeholder = "Search geography...",
+  placeholder = "Select geography...",
   disabled,
   size = 100,
   excludeUuids,
