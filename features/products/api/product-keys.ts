@@ -33,7 +33,7 @@ export const productKeys = {
     [
       ...productKeys.detail(companyUuid, productUuid),
       "gst-mappings",
-      params,
+      ...(params ? [params] : []),
     ] as const,
   relationships: (
     companyUuid: string,
@@ -43,7 +43,7 @@ export const productKeys = {
     [
       ...productKeys.detail(companyUuid, productUuid),
       "relationships",
-      params,
+      ...(params ? [params] : []),
     ] as const,
   fitments: (
     companyUuid: string,
@@ -53,7 +53,7 @@ export const productKeys = {
     [
       ...productKeys.detail(companyUuid, productUuid),
       "fitments",
-      params,
+      ...(params ? [params] : []),
     ] as const,
   geographyMappings: (
     companyUuid: string,
@@ -63,6 +63,6 @@ export const productKeys = {
     [
       ...productKeys.detail(companyUuid, productUuid),
       "geographies",
-      params,
+      ...(params ? [params] : []),
     ] as const,
 } as const
