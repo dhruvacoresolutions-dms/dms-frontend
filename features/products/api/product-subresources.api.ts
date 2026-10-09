@@ -44,6 +44,73 @@ function headers(companyUuid: string) {
 const productUrl = (companyUuid: string, productUuid: string) =>
   `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/products/${productUuid}`
 
+// ── List-shape normalizers ───────────────────────────────────────────────────
+// Some product sub-resource list endpoints return a plain array
+// (`data: [...]`) instead of a `PageResponse` (`data: { content, ... }`),
+// and use generic field names (`mappingUuid`, `batchStatus`).
+// Normalize both shapes here so tables always receive a `PageResponse`.
+
+type ListParams = { page?: number; size?: number }
+
+function toPage<T>(raw: PageResponse<T> | T[] | null | undefined, params?: ListParams): PageResponse<T> {
+  if (Array.isArray(raw)) {
+    const page = params?.page ?? 0
+    const size = params?.size ?? (raw.length || 10)
+    const start = page * size
+    return {
+      content: raw.slice(start, start + size),
+      page,
+      size,
+      totalElements: raw.length,
+      totalPages: raw.length === 0 ? 0 : Math.max(1, Math.ceil(raw.length / size)),
+    }
+  }
+  return (
+    raw ?? { content: [], page: params?.page ?? 0, size: params?.size ?? 10, totalElements: 0, totalPages: 0 }
+  )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pick = (obj: any, ...keys: string[]): string | undefined => {
+  for (const k of keys) {
+    const v = obj?.[k]
+    if (v !== undefined && v !== null && v !== "") return String(v)
+  }
+  return undefined
+}
+
+function normalizeBatch(raw: Record<string, unknown>): ProductBatchResponse {
+  const r = raw as Record<string, unknown> & ProductBatchResponse
+  return {
+    ...r,
+    status: (r.status ?? (r as Record<string, unknown>).batchStatus ?? "—") as string,
+  }
+}
+
+function normalizeGstMapping(raw: Record<string, unknown>): ProductGstMappingResponse {
+  const r = raw as Record<string, unknown> & ProductGstMappingResponse
+  const mappingUuid = pick(r, "gstMappingUuid", "mappingUuid") ?? ""
+  return { ...r, gstMappingUuid: mappingUuid, mappingUuid: pick(r, "mappingUuid") };
+}
+
+function normalizeGeographyMapping(raw: Record<string, unknown>): ProductGeographyMappingResponse {
+  const r = raw as Record<string, unknown> & ProductGeographyMappingResponse
+  const mappingUuid = pick(r, "geographyMappingUuid", "mappingUuid") ?? ""
+  return { ...r, geographyMappingUuid: mappingUuid, mappingUuid: pick(r, "mappingUuid") }
+}
+
+function normalizeRelationship(raw: Record<string, unknown>): ProductRelationshipResponse {
+  const r = raw as Record<string, unknown> & ProductRelationshipResponse
+  const uuid = pick(r, "relationshipUuid", "mappingUuid") ?? ""
+  return { ...r, relationshipUuid: uuid }
+}
+
+function normalizeFitment(raw: Record<string, unknown>): ProductFitmentResponse {
+  const r = raw as Record<string, unknown> & ProductFitmentResponse
+  const uuid = pick(r, "fitmentUuid", "mappingUuid") ?? ""
+  return { ...r, fitmentUuid: uuid }
+}
+
 // ── Price types (company level) ──────────────────────────────────────────────
 
 export async function getPriceTypes(companyUuid: string) {
@@ -162,12 +229,16 @@ export async function getProductBatches(
   params?: ProductPriceListParams
 ) {
   const { data } = await apiClient.get<
-    ApiSuccessResponse<PageResponse<ProductBatchResponse>>
+    ApiSuccessResponse<PageResponse<ProductBatchResponse> | ProductBatchResponse[]>
   >(`${productUrl(companyUuid, productUuid)}/batches`, {
     params,
     headers: headers(companyUuid),
   })
-  return data.data
+  const page = toPage<ProductBatchResponse>(
+    data.data as PageResponse<ProductBatchResponse> | ProductBatchResponse[],
+    params
+  )
+  return { ...page, content: page.content.map((b) => normalizeBatch(b as unknown as Record<string, unknown>)) }
 }
 
 export async function getProductBatch(
@@ -232,12 +303,16 @@ export async function getProductGstMappings(
   params?: ProductPriceListParams
 ) {
   const { data } = await apiClient.get<
-    ApiSuccessResponse<PageResponse<ProductGstMappingResponse>>
+    ApiSuccessResponse<PageResponse<ProductGstMappingResponse> | ProductGstMappingResponse[]>
   >(`${productUrl(companyUuid, productUuid)}/gst-mappings`, {
     params,
     headers: headers(companyUuid),
   })
-  return data.data
+  const page = toPage<ProductGstMappingResponse>(
+    data.data as PageResponse<ProductGstMappingResponse> | ProductGstMappingResponse[],
+    params
+  )
+  return { ...page, content: page.content.map((m) => normalizeGstMapping(m as unknown as Record<string, unknown>)) }
 }
 
 export async function createProductGstMapping(
@@ -293,12 +368,16 @@ export async function getProductRelationships(
   params?: ProductPriceListParams
 ) {
   const { data } = await apiClient.get<
-    ApiSuccessResponse<PageResponse<ProductRelationshipResponse>>
+    ApiSuccessResponse<PageResponse<ProductRelationshipResponse> | ProductRelationshipResponse[]>
   >(`${productUrl(companyUuid, productUuid)}/relationships`, {
     params,
     headers: headers(companyUuid),
   })
-  return data.data
+  const page = toPage<ProductRelationshipResponse>(
+    data.data as PageResponse<ProductRelationshipResponse> | ProductRelationshipResponse[],
+    params
+  )
+  return { ...page, content: page.content.map((m) => normalizeRelationship(m as unknown as Record<string, unknown>)) }
 }
 
 export async function getProductRelationship(
@@ -368,12 +447,16 @@ export async function getProductFitments(
   params?: ProductPriceListParams
 ) {
   const { data } = await apiClient.get<
-    ApiSuccessResponse<PageResponse<ProductFitmentResponse>>
+    ApiSuccessResponse<PageResponse<ProductFitmentResponse> | ProductFitmentResponse[]>
   >(`${productUrl(companyUuid, productUuid)}/fitments`, {
     params,
     headers: headers(companyUuid),
   })
-  return data.data
+  const page = toPage<ProductFitmentResponse>(
+    data.data as PageResponse<ProductFitmentResponse> | ProductFitmentResponse[],
+    params
+  )
+  return { ...page, content: page.content.map((m) => normalizeFitment(m as unknown as Record<string, unknown>)) }
 }
 
 export async function createProductFitment(
@@ -427,12 +510,16 @@ export async function getProductGeographyMappings(
   params?: ProductPriceListParams
 ) {
   const { data } = await apiClient.get<
-    ApiSuccessResponse<PageResponse<ProductGeographyMappingResponse>>
+    ApiSuccessResponse<PageResponse<ProductGeographyMappingResponse> | ProductGeographyMappingResponse[]>
   >(`${productUrl(companyUuid, productUuid)}/geographies`, {
     params,
     headers: headers(companyUuid),
   })
-  return data.data
+  const page = toPage<ProductGeographyMappingResponse>(
+    data.data as PageResponse<ProductGeographyMappingResponse> | ProductGeographyMappingResponse[],
+    params
+  )
+  return { ...page, content: page.content.map((m) => normalizeGeographyMapping(m as unknown as Record<string, unknown>)) }
 }
 
 export async function createProductGeographyMapping(
