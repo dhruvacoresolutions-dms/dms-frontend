@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -90,7 +90,7 @@ export function GstTaxStructureFormDialog({
   const createMutation = useCreateGstTaxStructure(companyUuid)
   const updateMutation = useUpdateGstTaxStructure(companyUuid)
 
-  const { handleSubmit, control, reset, watch, setValue } =
+  const { handleSubmit, control, reset, setValue } =
     useForm<TaxStructureFormValues>({
       resolver: zodResolver(taxStructureSchema),
       defaultValues: toFormDefaults(),
@@ -98,8 +98,8 @@ export function GstTaxStructureFormDialog({
 
   // Keep CGST and SGST in sync (intra-state rates are always equal).
   // Whichever field the user edits wins; the other follows.
-  const cgstRate = watch("cgstRate")
-  const sgstRate = watch("sgstRate")
+  const cgstRate = useWatch({ control, name: "cgstRate" })
+  const sgstRate = useWatch({ control, name: "sgstRate" })
   const prevRates = useRef<{ cgst: number | undefined; sgst: number | undefined }>({
     cgst: undefined,
     sgst: undefined,
