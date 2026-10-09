@@ -132,14 +132,13 @@ export function ProductPricesSection({
         <h3 className="text-sm font-medium">Product Prices</h3>
         <div className="ml-auto flex items-center gap-2">
           <PermissionGate permission={PERMISSIONS.PRODUCT.IMPORT}>
-            <Button variant="outline" size="sm" onClick={onImport}>
+            <Button variant="outline" onClick={onImport}>
               <Upload className="mr-2 size-4" />
               Import Prices
             </Button>
           </PermissionGate>
           <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
             <Button
-              size="sm"
               onClick={() => {
                 setRevisePrice(null)
                 setDialogOpen(true)

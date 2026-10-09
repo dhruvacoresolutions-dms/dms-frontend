@@ -217,7 +217,7 @@ function GstMappingsCard({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm">GST Mappings</CardTitle>
         <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-          <Button size="sm" variant="outline" onClick={onAdd}>
+          <Button variant="outline" onClick={onAdd}>
             <Plus className="mr-2 size-4" />
             Add
           </Button>
@@ -380,7 +380,7 @@ function RelationshipsCard({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Product Relationships</CardTitle>
         <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-          <Button size="sm" variant="outline" onClick={onAdd}>
+          <Button variant="outline" onClick={onAdd}>
             <Plus className="mr-2 size-4" />
             Add
           </Button>
@@ -543,7 +543,7 @@ function FitmentsCard({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Vehicle Fitments</CardTitle>
         <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-          <Button size="sm" variant="outline" onClick={onAdd}>
+          <Button variant="outline" onClick={onAdd}>
             <Plus className="mr-2 size-4" />
             Add
           </Button>
@@ -700,7 +700,7 @@ function GeographyMappingsCard({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Geography Availability</CardTitle>
         <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
-          <Button size="sm" variant="outline" onClick={onAdd}>
+          <Button variant="outline" onClick={onAdd}>
             <Plus className="mr-2 size-4" />
             Add
           </Button>

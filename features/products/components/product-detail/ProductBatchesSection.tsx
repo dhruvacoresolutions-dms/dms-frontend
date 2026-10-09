@@ -112,7 +112,6 @@ export function ProductBatchesSection({
         <div className="ml-auto">
           <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
             <Button
-              size="sm"
               onClick={() => {
                 setEditing(null)
                 setDialogOpen(true)
