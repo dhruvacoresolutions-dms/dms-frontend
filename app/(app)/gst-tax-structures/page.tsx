@@ -1,7 +1,15 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, Percent, Upload } from "lucide-react"
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  ToggleLeft,
+  ToggleRight,
+  Percent,
+  Upload,
+} from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
@@ -41,14 +49,19 @@ function formatRate(v: number | null) {
 }
 
 function GstTaxStructuresContent() {
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
-  const [statusToggle, setStatusToggle] = useState<{ uuid: string; currentStatus: string; version?: number } | null>(null)
+  const [statusToggle, setStatusToggle] = useState<{
+    uuid: string
+    currentStatus: string
+    version?: number
+  } | null>(null)
 
   const { data, isLoading, error, refetch } = useGstTaxStructures(companyUuid, {
     search: search || undefined,
@@ -71,24 +84,19 @@ function GstTaxStructuresContent() {
         ),
       },
       {
-        id: "taxType",
-        header: "Tax Type",
-        cell: ({ row }) => <Badge variant="secondary">{row.original.taxType}</Badge>,
+        id: "cgstRate",
+        header: "CGST",
+        cell: ({ row }) => formatRate(row.original.cgstRate),
       },
       {
-        id: "primaryInputRate",
-        header: "Primary In",
-        cell: ({ row }) => formatRate(row.original.primaryInputRate),
+        id: "sgstRate",
+        header: "SGST",
+        cell: ({ row }) => formatRate(row.original.sgstRate),
       },
       {
-        id: "primaryOutputRate",
-        header: "Primary Out",
-        cell: ({ row }) => formatRate(row.original.primaryOutputRate),
-      },
-      {
-        id: "applyOn",
-        header: "Apply On",
-        cell: ({ row }) => row.original.applyOn ?? "-",
+        id: "igstRate",
+        header: "IGST",
+        cell: ({ row }) => formatRate(row.original.igstRate),
       },
       {
         id: "effectiveFrom",
@@ -107,25 +115,42 @@ function GstTaxStructuresContent() {
           const t = row.original
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-auto min-w-40"
-              >
-                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}>
-                  <DropdownMenuItem onClick={() => setEditingUuid(t.taxStructureUuid)}>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-40">
+                <PermissionGate
+                  permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
+                >
+                  <DropdownMenuItem
+                    onClick={() => setEditingUuid(t.taxStructureUuid)}
+                  >
                     <Pencil className="mr-2 size-4" /> Edit
                   </DropdownMenuItem>
                 </PermissionGate>
                 <DropdownMenuSeparator />
-                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}>
+                <PermissionGate
+                  permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}
+                >
                   <DropdownMenuItem
-                    variant={
-                      t.status === "ACTIVE" ? "destructive" : "default"
+                    variant={t.status === "ACTIVE" ? "destructive" : "default"}
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: t.taxStructureUuid,
+                        currentStatus: t.status,
+                        version: t.version,
+                      })
                     }
-                    onClick={() => setStatusToggle({ uuid: t.taxStructureUuid, currentStatus: t.status, version: t.version })}
                   >
-                    {t.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                    {t.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" /> Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" /> Activate
+                      </>
+                    )}
                   </DropdownMenuItem>
                 </PermissionGate>
               </DropdownMenuContent>
@@ -144,13 +169,17 @@ function GstTaxStructuresContent() {
         description="Manage GST tax structures"
         action={
           <div className="flex items-center gap-2">
-            <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_IMPORT}>
+            <PermissionGate
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_IMPORT}
+            >
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <Upload className="mr-2 size-4" />
                 Bulk Upload
               </Button>
             </PermissionGate>
-            <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_CREATE}>
+            <PermissionGate
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_CREATE}
+            >
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 size-4" /> Create Tax Structure
               </Button>
@@ -163,7 +192,10 @@ function GstTaxStructuresContent() {
         <SearchInput
           placeholder="Search tax structures..."
           defaultValue={search}
-          onChange={(v) => { setSearch(v); setPage(0) }}
+          onChange={(v) => {
+            setSearch(v)
+            setPage(0)
+          }}
         />
       </div>
 
@@ -177,9 +209,20 @@ function GstTaxStructuresContent() {
         empty={{
           icon: Percent,
           title: "No tax structures found",
-          description: search ? "Try a different search." : "Create a tax structure to get started.",
+          description: search
+            ? "Try a different search."
+            : "Create a tax structure to get started.",
         }}
-        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          pageSize: size,
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
+        }}
       />
 
       <GstTaxStructureFormDialog
@@ -208,13 +251,23 @@ function GstTaxStructuresContent() {
             {
               taxStructureUuid: statusToggle.uuid,
               input: {
-                status: statusToggle.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                ...(typeof statusToggle.version === "number" ? { version: statusToggle.version } : {}),
+                status:
+                  statusToggle.currentStatus === "ACTIVE"
+                    ? "INACTIVE"
+                    : "ACTIVE",
+                ...(typeof statusToggle.version === "number"
+                  ? { version: statusToggle.version }
+                  : {}),
               },
             },
             {
-              onSuccess: () => { toast.success("Status updated"); setStatusToggle(null) },
-              onError: (error) => { toast.error(getApiErrorMessage(error, "Failed")) },
+              onSuccess: () => {
+                toast.success("Status updated")
+                setStatusToggle(null)
+              },
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed"))
+              },
             }
           )
         }}

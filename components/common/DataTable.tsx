@@ -256,10 +256,11 @@ export function DataTable<TData extends RowData>({
                   >
                     {header.isPlaceholder ? null : enableSorting &&
                       header.column.getCanSort() ? (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="xs"
                         onClick={header.column.getToggleSortingHandler()}
-                        className="inline-flex cursor-pointer items-center gap-1 hover:text-foreground"
+                        className="gap-1 px-1.5 font-medium hover:text-foreground"
                       >
                         {flexRender(
                           header.column.columnDef.header,
@@ -272,7 +273,7 @@ export function DataTable<TData extends RowData>({
                         ) : (
                           <ChevronsUpDown className="size-3.5 opacity-50" />
                         )}
-                      </button>
+                      </Button>
                     ) : (
                       flexRender(
                         header.column.columnDef.header,

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -143,14 +144,15 @@ export function PermissionSetPermissionsManager({
                   className="gap-1 font-mono text-xs"
                 >
                   {code}
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => toggle(code)}
-                    className="ml-1 text-xs hover:text-destructive"
+                    className="ml-1 size-4 hover:text-destructive"
                     aria-label={`Remove ${code}`}
                   >
-                    ×
-                  </button>
+                    <X className="size-3" />
+                  </Button>
                 </Badge>
               ))}
             </div>

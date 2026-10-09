@@ -3,12 +3,9 @@ export type GstTaxStructureStatus = "ACTIVE" | "INACTIVE"
 export type CreateGstTaxStructureRequest = {
   taxType: string
   taxCode: string
-  primaryInputRate?: number | null
-  primaryOutputRate?: number | null
-  secondaryInputRate?: number | null
-  secondaryOutputRate?: number | null
-  additionalInputRate?: number | null
-  additionalOutputRate?: number | null
+  cgstRate?: number | null
+  sgstRate?: number | null
+  igstRate?: number | null
   applyOn?: string | null
   cessRate?: number | null
   cessAmount?: number | null
@@ -25,12 +22,9 @@ export type CreateGstTaxStructureRequest = {
 export type UpdateGstTaxStructureRequest = {
   taxType?: string
   taxCode?: string
-  primaryInputRate?: number | null
-  primaryOutputRate?: number | null
-  secondaryInputRate?: number | null
-  secondaryOutputRate?: number | null
-  additionalInputRate?: number | null
-  additionalOutputRate?: number | null
+  cgstRate?: number | null
+  sgstRate?: number | null
+  igstRate?: number | null
   applyOn?: string | null
   cessRate?: number | null
   cessAmount?: number | null
@@ -53,12 +47,9 @@ export type GstTaxStructureResponse = {
   taxStructureUuid: string
   taxType: string
   taxCode: string
-  primaryInputRate: number | null
-  primaryOutputRate: number | null
-  secondaryInputRate: number | null
-  secondaryOutputRate: number | null
-  additionalInputRate: number | null
-  additionalOutputRate: number | null
+  cgstRate: number | null
+  sgstRate: number | null
+  igstRate: number | null
   applyOn: string | null
   cessRate: number | null
   cessAmount: number | null
