@@ -183,6 +183,8 @@ export type ProductBatchResponse = {
   manufacturingDate?: string
   expiryDate?: string | null
   status?: string
+  /** Backend alias for `status` (actual payload uses `batchStatus`). */
+  batchStatus?: string
   version: number
   createdAt?: string
   updatedAt?: string
@@ -209,11 +211,14 @@ export type UpdateProductBatchStatusRequest = {
 
 export type ProductGstMappingResponse = {
   gstMappingUuid: string
+  /** Backend alias — actual payload uses `mappingUuid`. */
+  mappingUuid?: string
   productUuid?: string
   hsnUuid?: string
   hsnCode?: string
   taxStructureUuid?: string
-  taxCode?: string
+  taxStructureModel?: string
+  taxCode?: string | null
   effectiveFrom?: string
   effectiveTo?: string | null
   status?: string
@@ -325,8 +330,11 @@ export type UpdateProductFitmentStatusRequest = {
 
 export type ProductGeographyMappingResponse = {
   geographyMappingUuid: string
+  /** Backend alias — actual payload uses `mappingUuid`. */
+  mappingUuid?: string
   productUuid?: string
   geographyUuid?: string
+  geographyType?: string
   geographyCode?: string
   geographyName?: string
   status?: string

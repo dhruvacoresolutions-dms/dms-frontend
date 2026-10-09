@@ -375,6 +375,11 @@ function InfoRow({
   )
 }
 
+function shortUuid(uuid?: string | null) {
+  if (!uuid) return undefined
+  return uuid.length > 8 ? `${uuid.slice(0, 8)}…` : uuid
+}
+
 // ── Prices ───────────────────────────────────────────────────────────────────
 
 const uomConversionColumns: DataTableColumn<UomConversion>[] = [
@@ -645,13 +650,18 @@ function BatchesSection({
       {
         id: "status",
         header: "Status",
-        cell: ({ row }) => <StatusBadge status={row.original.status ?? "—"} />,
+        cell: ({ row }) => (
+          <StatusBadge
+            status={row.original.status ?? row.original.batchStatus ?? "—"}
+          />
+        ),
       },
       {
         id: "actions",
         header: "",
         cell: ({ row }) => {
           const b = row.original
+          const status = b.status ?? b.batchStatus ?? "ACTIVE"
           return (
             <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
               <DropdownMenu>
@@ -671,12 +681,12 @@ function BatchesSection({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     variant={
-                      b.status === "ACTIVE" ? "destructive" : "default"
+                      status === "ACTIVE" ? "destructive" : "default"
                     }
                     onClick={() => setToggle(b)}
                   >
                     <Ban className="mr-2 size-4" />
-                    {b.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                    {status === "ACTIVE" ? "Deactivate" : "Activate"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -710,7 +720,7 @@ function BatchesSection({
       <DataTable
         columns={columns}
         data={batches}
-        getRowId={(b) => b.batchUuid}
+        getRowId={(b, i) => b.batchUuid ?? `batch-${i}`}
         isLoading={isLoading}
         skeletonRows={3}
         error={error}
@@ -750,12 +760,12 @@ function BatchesSection({
         isLoading={statusMutation.isPending}
         onConfirm={() => {
           if (!toggle) return
+          const current = toggle.status ?? toggle.batchStatus ?? "ACTIVE"
           statusMutation.mutate(
             {
               batchUuid: toggle.batchUuid,
               input: {
-                batchStatus:
-                  toggle.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                batchStatus: current === "ACTIVE" ? "INACTIVE" : "ACTIVE",
                 version: toggle.version,
               },
             },
@@ -873,8 +883,23 @@ function GstMappingsCard({
         id: "hsn",
         header: "HSN",
         cell: ({ row }) => (
-          <span className="font-mono text-sm">
-            {row.original.hsnCode ?? row.original.hsnUuid ?? "—"}
+          <span className="font-mono text-sm" title={row.original.hsnUuid ?? undefined}>
+            {row.original.hsnCode ?? shortUuid(row.original.hsnUuid) ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "taxStructure",
+        header: "Tax Structure",
+        cell: ({ row }) => (
+          <span
+            className="font-mono text-sm"
+            title={row.original.taxStructureUuid ?? undefined}
+          >
+            {shortUuid(row.original.taxStructureUuid) ?? "—"}
+            {row.original.taxStructureModel
+              ? ` · ${row.original.taxStructureModel}`
+              : ""}
           </span>
         ),
       },
@@ -909,7 +934,7 @@ function GstMappingsCard({
                 variant="ghost"
                 onClick={() =>
                   setToggle({
-                    uuid: r.gstMappingUuid,
+                    uuid: r.gstMappingUuid ?? r.mappingUuid ?? "",
                     version: r.version,
                     current: r.status ?? "ACTIVE",
                   })
@@ -940,7 +965,7 @@ function GstMappingsCard({
         <DataTable
           columns={columns}
           data={rows}
-          getRowId={(r) => r.gstMappingUuid}
+          getRowId={(r, i) => r.gstMappingUuid ?? r.mappingUuid ?? `gst-${i}`}
           isLoading={isLoading}
           skeletonRows={2}
           error={error}
@@ -1063,7 +1088,7 @@ function RelationshipsCard({
                 variant="ghost"
                 onClick={() =>
                   setToggle({
-                    uuid: r.relationshipUuid,
+                    uuid: r.relationshipUuid ?? (r as { mappingUuid?: string }).mappingUuid ?? "",
                     version: r.version,
                     current: r.status ?? "ACTIVE",
                   })
@@ -1094,7 +1119,7 @@ function RelationshipsCard({
         <DataTable
           columns={columns}
           data={rows}
-          getRowId={(r) => r.relationshipUuid}
+          getRowId={(r, i) => r.relationshipUuid ?? `rel-${i}`}
           isLoading={isLoading}
           skeletonRows={2}
           error={error}
@@ -1222,7 +1247,7 @@ function FitmentsCard({
                 variant="ghost"
                 onClick={() =>
                   setToggle({
-                    uuid: r.fitmentUuid,
+                    uuid: r.fitmentUuid ?? (r as { mappingUuid?: string }).mappingUuid ?? "",
                     version: r.version,
                     current: r.status ?? "ACTIVE",
                   })
@@ -1253,7 +1278,7 @@ function FitmentsCard({
         <DataTable
           columns={columns}
           data={rows}
-          getRowId={(r) => r.fitmentUuid}
+          getRowId={(r, i) => r.fitmentUuid ?? `fit-${i}`}
           isLoading={isLoading}
           skeletonRows={2}
           error={error}
@@ -1342,10 +1367,21 @@ function GeographyMappingsCard({
         id: "geography",
         header: "Geography",
         cell: ({ row }) => (
-          <span className="font-medium">
-            {row.original.geographyName ?? row.original.geographyCode ?? "—"}
+          <span
+            className="font-medium"
+            title={row.original.geographyUuid ?? undefined}
+          >
+            {row.original.geographyName ??
+              row.original.geographyCode ??
+              shortUuid(row.original.geographyUuid) ??
+              "—"}
           </span>
         ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) => row.original.geographyType ?? "—",
       },
       {
         id: "status",
@@ -1364,7 +1400,7 @@ function GeographyMappingsCard({
                 variant="ghost"
                 onClick={() =>
                   setToggle({
-                    uuid: r.geographyMappingUuid,
+                    uuid: r.geographyMappingUuid ?? r.mappingUuid ?? "",
                     version: r.version,
                     current: r.status ?? "ACTIVE",
                   })
@@ -1395,7 +1431,9 @@ function GeographyMappingsCard({
         <DataTable
           columns={columns}
           data={rows}
-          getRowId={(r) => r.geographyMappingUuid}
+          getRowId={(r, i) =>
+            r.geographyMappingUuid ?? r.mappingUuid ?? `geo-${i}`
+          }
           isLoading={isLoading}
           skeletonRows={2}
           error={error}
