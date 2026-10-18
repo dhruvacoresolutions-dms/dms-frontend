@@ -66,6 +66,180 @@ export const companiesNav: MainNav = [
   },
 ]
 
+/* ------------------------------------------------------------------ */
+/*  Primary navigation                                                 */
+/*                                                                     */
+/*  Organization / Access Control / Product & Pricing each own a       */
+/*  dedicated `Nav*` component (see `components/sidebar/nav-*`) so     */
+/*  they can evolve independently — e.g. Organization clubs its         */
+/*  Distributor entries into one expanding branch.                     */
+/*                                                                     */
+/*  `mainNav` holds only the plain top-level items that `NavMain`       */
+/*  renders; `primaryNav` composes everything for the top navbar.       */
+/* ------------------------------------------------------------------ */
+
+export const organizationNav: MainNav = [
+  {
+    title: "Users",
+    url: "/users",
+    icon: UserCog,
+    permission: PERMISSIONS.USER.VIEW,
+  },
+  {
+    title: "Employees",
+    url: "/employees",
+    icon: Briefcase,
+    permission: PERMISSIONS.EMPLOYEE.VIEW,
+  },
+  {
+    title: "Designations",
+    url: "/designations",
+    icon: ShieldCheck,
+    permission: PERMISSIONS.DESIGNATION.VIEW,
+  },
+  {
+    title: "Departments",
+    url: "/departments",
+    icon: Network,
+    permission: PERMISSIONS.DEPARTMENT.VIEW,
+  },
+  {
+    title: "Geographies",
+    url: "/geographies",
+    icon: MapPin,
+    permission: PERMISSIONS.GEOGRAPHY.VIEW,
+  },
+  {
+    title: "Suppliers",
+    url: "/suppliers",
+    icon: Truck,
+    permission: PERMISSIONS.SUPPLIER.VIEW,
+  },
+  {
+    title: "Distributors",
+    url: "#",
+    icon: Store,
+    items: [
+      {
+        title: "Distributor List",
+        url: "/distributors",
+        icon: Store,
+        permission: PERMISSIONS.DISTRIBUTOR.VIEW,
+      },
+      {
+        title: "Distributor References",
+        url: "/distributor-references",
+        icon: ListTree,
+        permission: PERMISSIONS.DISTRIBUTOR.MASTER_VIEW,
+      },
+    ],
+  },
+  {
+    title: "Master Data Upload",
+    url: "/master-data-upload",
+    icon: Upload,
+    // Visible when ANY master import code is granted; hidden otherwise.
+    permissions: [
+      PERMISSIONS.EMPLOYEE.IMPORT,
+      PERMISSIONS.DEPARTMENT.IMPORT,
+      PERMISSIONS.DESIGNATION.IMPORT,
+      PERMISSIONS.GEOGRAPHY.IMPORT,
+      PERMISSIONS.EMPLOYEE.GEOGRAPHY_IMPORT,
+    ],
+  },
+]
+
+export const accessControlNav: MainNav = [
+  {
+    title: "Roles",
+    url: "/roles",
+    icon: Shield,
+    permission: PERMISSIONS.ROLE.VIEW,
+  },
+  {
+    title: "Permission Sets",
+    url: "/permission-sets",
+    icon: KeyRound,
+    permission: PERMISSIONS.PERMISSION_SET.VIEW,
+  },
+  {
+    title: "Permissions",
+    url: "/permissions",
+    icon: FileCheck,
+    permission: PERMISSIONS.PERMISSION.VIEW,
+  },
+  {
+    title: "Permission Matrix",
+    url: "/permissions/matrix",
+    icon: ShieldCheck,
+    permission: PERMISSIONS.PERMISSION.VIEW,
+  },
+  {
+    title: "RBAC Audit",
+    url: "/audit/rbac",
+    icon: ShieldAlert,
+    // TODO: picks up its backend code once confirmed; visible meanwhile.
+  },
+]
+
+export const productPricingNav: MainNav = [
+  {
+    title: "Products",
+    url: "/products",
+    icon: Package,
+    permission: PERMISSIONS.PRODUCT.VIEW,
+  },
+  {
+    title: "Categories",
+    url: "/product-categories",
+    icon: ListTree,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "UOMs",
+    url: "/product-uoms",
+    icon: Ruler,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "Brands",
+    url: "/product-brands",
+    icon: Award,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "GST HSN",
+    url: "/gst-hsn",
+    icon: ReceiptText,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "Tax Codes",
+    url: "/gst-tax-codes",
+    icon: Landmark,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "Vehicle Masters",
+    url: "/vehicle-masters",
+    icon: Car,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "Support Masters",
+    url: "/support-masters",
+    icon: Wrench,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+  {
+    title: "Attributes",
+    url: "/product-attributes",
+    icon: Tags,
+    permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+]
+
+/** Plain top-level items rendered by `NavMain` in the sidebar. */
 export const mainNav: MainNav = [
   {
     title: "Dashboard",
@@ -73,153 +247,37 @@ export const mainNav: MainNav = [
     icon: LayoutDashboard,
     permission: PERMISSIONS.DASHBOARD.VIEW,
   },
+]
+
+/** Flatten nested branches to leaf items (the top navbar has no depth). */
+function flattenNav(items: MainNav): MainNav {
+  return items.flatMap((item) => {
+    if (item.items?.length) return flattenNav(item.items)
+    if (item.url === "#") return []
+    return [item]
+  })
+}
+
+/** Leaves + the three groups, consumed by the top navigation bar. */
+export const primaryNav: MainNav = [
+  ...mainNav,
   {
     title: "Organization",
-    url: "/organization",
+    url: "#",
     icon: Users,
-    items: [
-      {
-        title: "Users",
-        url: "/users",
-        icon: UserCog,
-        permission: PERMISSIONS.USER.VIEW,
-      },
-      {
-        title: "Employees",
-        url: "/employees",
-        icon: Briefcase,
-        permission: PERMISSIONS.EMPLOYEE.VIEW,
-      },
-      {
-        title: "Designations",
-        url: "/designations",
-        icon: ShieldCheck,
-        permission: PERMISSIONS.DESIGNATION.VIEW,
-      },
-      {
-        title: "Departments",
-        url: "/departments",
-        icon: Network,
-        permission: PERMISSIONS.DEPARTMENT.VIEW,
-      },
-      {
-        title: "Geographies",
-        url: "/geographies",
-        icon: MapPin,
-        permission: PERMISSIONS.GEOGRAPHY.VIEW,
-      },
-      {
-        title: "Master Data Upload",
-        url: "/master-data-upload",
-        icon: Upload,
-        // Visible when ANY master import code is granted; hidden otherwise.
-        permissions: [
-          PERMISSIONS.EMPLOYEE.IMPORT,
-          PERMISSIONS.DEPARTMENT.IMPORT,
-          PERMISSIONS.DESIGNATION.IMPORT,
-          PERMISSIONS.GEOGRAPHY.IMPORT,
-          PERMISSIONS.EMPLOYEE.GEOGRAPHY_IMPORT,
-        ],
-      },
-    ],
+    items: flattenNav(organizationNav),
   },
   {
-    title: "Access Management",
-    url: "/access-management",
+    title: "Access Control",
+    url: "#",
     icon: Lock,
-    items: [
-      {
-        title: "Roles",
-        url: "/roles",
-        icon: Shield,
-        permission: PERMISSIONS.ROLE.VIEW,
-      },
-      {
-        title: "Permission Sets",
-        url: "/permission-sets",
-        icon: KeyRound,
-        permission: PERMISSIONS.PERMISSION_SET.VIEW,
-      },
-      {
-        title: "Permissions",
-        url: "/permissions",
-        icon: FileCheck,
-        permission: PERMISSIONS.PERMISSION.VIEW,
-      },
-      {
-        title: "Permission Matrix",
-        url: "/permissions/matrix",
-        icon: ShieldCheck,
-        permission: PERMISSIONS.PERMISSION.VIEW,
-      },
-      {
-        title: "RBAC Audit",
-        url: "/audit/rbac",
-        icon: ShieldAlert,
-        // TODO: picks up its backend code once confirmed; visible meanwhile.
-      },
-    ],
+    items: accessControlNav,
   },
   {
     title: "Product & Pricing",
-    url: "/product-pricing",
+    url: "#",
     icon: Package,
-    items: [
-      {
-        title: "Products",
-        url: "/products",
-        icon: Package,
-        permission: PERMISSIONS.PRODUCT.VIEW,
-      },
-      {
-        title: "Categories",
-        url: "/product-categories",
-        icon: ListTree,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "UOMs",
-        url: "/product-uoms",
-        icon: Ruler,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "Brands",
-        url: "/product-brands",
-        icon: Award,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "GST HSN",
-        url: "/gst-hsn",
-        icon: ReceiptText,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "Tax Structures",
-        url: "/gst-tax-structures",
-        icon: Landmark,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "Vehicle Masters",
-        url: "/vehicle-masters",
-        icon: Car,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "Support Masters",
-        url: "/support-masters",
-        icon: Wrench,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-      {
-        title: "Attributes",
-        url: "/product-attributes",
-        icon: Tags,
-        permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
-      },
-    ],
+    items: productPricingNav,
   },
 ]
 
@@ -264,8 +322,8 @@ export const navGroups: NavGroup[] = [
         permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
       },
       {
-        title: "Tax Structures",
-        url: "/gst-tax-structures",
+        title: "Tax Codes",
+        url: "/gst-tax-codes",
         icon: Landmark,
         permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
       },
@@ -483,7 +541,14 @@ function flattenNavItems(items: MainNav): MainNav {
 
 const flatGroupItems = navGroups.flatMap((g) => flattenNavItems(g.items))
 
-const allNav = [...companiesNav, ...mainNav, ...flatGroupItems]
+const allNav = [
+  ...companiesNav,
+  ...mainNav,
+  ...organizationNav,
+  ...accessControlNav,
+  ...productPricingNav,
+  ...flatGroupItems,
+]
 
 function collectNavEntries(items: MainNav): { url: string; title: string }[] {
   return items.flatMap((item) => [
@@ -495,10 +560,15 @@ function collectNavEntries(items: MainNav): { url: string; title: string }[] {
 const navEntries = collectNavEntries(allNav)
 
 // Also register group labels for breadcrumb fallback
-const groupEntries = navGroups.map((g) => ({
-  url: `/${slugify(g.label)}`,
-  title: g.label,
-}))
+const groupEntries = [
+  ...navGroups.map((g) => ({
+    url: `/${slugify(g.label)}`,
+    title: g.label,
+  })),
+  { url: "/organization", title: "Organization" },
+  { url: "/access-management", title: "Access Control" },
+  { url: "/product-pricing", title: "Product & Pricing" },
+]
 
 export const navLabelByUrl = new Map<string, string>(
   [...navEntries, ...groupEntries].flatMap(({ url, title }) => [

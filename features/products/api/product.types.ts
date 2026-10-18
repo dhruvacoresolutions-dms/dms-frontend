@@ -216,9 +216,10 @@ export type ProductGstMappingResponse = {
   productUuid?: string
   hsnUuid?: string
   hsnCode?: string
-  taxStructureUuid?: string
-  taxStructureModel?: string
+  /** V2 GST tax code (see collection folder 14 "GST Tax Codes"). */
   taxCode?: string | null
+  /** `V2` for the current tax model. */
+  taxStructureModel?: string
   effectiveFrom?: string
   effectiveTo?: string | null
   status?: string
@@ -229,15 +230,16 @@ export type ProductGstMappingResponse = {
 
 export type CreateProductGstMappingRequest = {
   hsnUuid: string
-  taxStructureUuid: string
-  effectiveFrom?: string
+  taxCode: string
+  /** Required by the backend (`MappingRequest.required`). */
+  effectiveFrom: string
   effectiveTo?: string | null
   version?: number | null
 }
 
 export type UpdateProductGstMappingRequest = {
   hsnUuid?: string
-  taxStructureUuid?: string
+  taxCode?: string
   effectiveFrom?: string
   effectiveTo?: string | null
   version: number

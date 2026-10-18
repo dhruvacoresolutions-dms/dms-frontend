@@ -15,7 +15,7 @@ const baseUrl = (companyUuid: string) =>
   `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/product-field-template`
 
 const effectiveUrl = (companyUuid: string) =>
-  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/product-field-templates/effective`
+  `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/product-field-template/effective`
 
 function companyHeader(companyUuid: string): string {
   return resolveCompanyUuid(companyUuid)

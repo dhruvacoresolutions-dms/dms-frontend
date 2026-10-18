@@ -201,3 +201,53 @@ export async function uploadProductPriceImport(companyUuid: string, file: File) 
   })
   return data.data
 }
+
+// ── Product child imports (folder 22) ────────────────────────────────────────
+// Company-scoped bulk imports for product sub-resources:
+//   GET  .../<segment>/import/template?format=csv|xlsx
+//   POST .../<segment>/import   (multipart `file`)
+// Any invalid row rejects the whole file (synchronous, all-or-nothing).
+
+export type ProductChildImportSegment =
+  | "product-batches"
+  | "product-fitments"
+  | "product-gst-mappings"
+  | "product-relationships"
+
+const childImportBase = (
+  companyUuid: string,
+  segment: ProductChildImportSegment
+) => `/api/v1/companies/${resolveCompanyUuid(companyUuid)}/${segment}`
+
+export async function getProductChildImportTemplate(
+  companyUuid: string,
+  segment: ProductChildImportSegment,
+  format?: "csv" | "xlsx"
+) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${childImportBase(companyUuid, segment)}/import/template`,
+    {
+      headers: { "X-Company-Context": resolved },
+      params: format ? { format } : undefined,
+      responseType: "blob",
+    }
+  )
+  return data
+}
+
+export async function uploadProductChildImport(
+  companyUuid: string,
+  segment: ProductChildImportSegment,
+  file: File
+) {
+  const resolved = companyHeader(companyUuid)
+  const form = new FormData()
+  form.append("file", file, file.name)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{ importJobUuid?: string } & Record<string, unknown>>
+  >(`${childImportBase(companyUuid, segment)}/import`, form, {
+    headers: { "X-Company-Context": resolved },
+  })
+  return data.data
+}
