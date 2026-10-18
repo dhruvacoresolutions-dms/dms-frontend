@@ -53,7 +53,7 @@ export function ProductFilters({
         defaultValue={values.search}
         onChange={onSearchChange}
       />
-      <div className="w-full sm:w-64">
+      <div className="w-full sm:w-64" data-testid="product-category-filter">
         <ProductCategoryCombobox
           companyUuid={companyUuid}
           value={values.categoryUuid}
@@ -66,7 +66,10 @@ export function ProductFilters({
         value={values.lifecycleStatus}
         onValueChange={(v: string | null) => v && onLifecycleStatusChange(v)}
       >
-        <SelectTrigger className="w-full sm:w-36">
+        <SelectTrigger
+          data-testid="product-status-filter"
+          className="w-full sm:w-36"
+        >
           <SelectValue placeholder="Filter by status" />
         </SelectTrigger>
         <SelectContent className="p-2">

@@ -139,6 +139,7 @@ export function ProductPricesSection({
           </PermissionGate>
           <PermissionGate permission={PERMISSIONS.PRODUCT.UPDATE}>
             <Button
+              data-testid="add-price-btn"
               onClick={() => {
                 setRevisePrice(null)
                 setDialogOpen(true)
