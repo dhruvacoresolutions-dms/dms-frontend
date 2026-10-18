@@ -151,7 +151,9 @@ function ProductDetailContent({
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="prices">Prices</TabsTrigger>
+          <TabsTrigger value="prices" data-testid="tab-prices">
+            Prices
+          </TabsTrigger>
           <TabsTrigger value="batches">Batches</TabsTrigger>
           <TabsTrigger value="mappings">Mappings</TabsTrigger>
         </TabsList>

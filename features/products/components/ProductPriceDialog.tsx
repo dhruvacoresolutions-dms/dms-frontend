@@ -26,13 +26,32 @@ import {
 import { PriceTypeCombobox } from "./PriceTypeCombobox"
 import type { ProductPriceResponse } from "../api/product.types"
 
+function todayISO(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${now.getFullYear()}-${month}-${day}`
+}
+
+/** A revision must start strictly after the current price's effective date. */
+function nextDayISO(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number)
+  if (!y || !m || !d) return todayISO()
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + 1)
+  const month = String(dt.getUTCMonth() + 1).padStart(2, "0")
+  const day = String(dt.getUTCDate()).padStart(2, "0")
+  return `${dt.getUTCFullYear()}-${month}-${day}`
+}
+
 const priceSchema = z.object({
   priceTypeCode: z.string().min(1, "Price type is required"),
   amount: z
     .string()
     .min(1, "Amount is required")
     .regex(/^\d+(\.\d{1,4})?$/, "Invalid amount"),
-  effectiveFrom: z.string().optional(),
+  // Required by the API contract, even though a price may be open-ended.
+  effectiveFrom: z.string().min(1, "Effective from is required"),
   effectiveTo: z.string().optional(),
   batchUuid: z.string().optional(),
   externalReference: z.string().max(120).optional(),
@@ -65,7 +84,7 @@ export function ProductPriceDialog({
     defaultValues: {
       priceTypeCode: "",
       amount: "",
-      effectiveFrom: "",
+      effectiveFrom: todayISO(),
       effectiveTo: "",
       batchUuid: "",
       externalReference: "",
@@ -78,7 +97,7 @@ export function ProductPriceDialog({
       reset({
         priceTypeCode: price.priceTypeCode,
         amount: price.amount,
-        effectiveFrom: price.effectiveFrom ?? "",
+        effectiveFrom: nextDayISO(price.effectiveFrom ?? todayISO()),
         effectiveTo: price.effectiveTo ?? "",
         batchUuid: "",
         externalReference: price.externalReference ?? "",
@@ -87,7 +106,7 @@ export function ProductPriceDialog({
       reset({
         priceTypeCode: "",
         amount: "",
-        effectiveFrom: "",
+        effectiveFrom: todayISO(),
         effectiveTo: "",
         batchUuid: "",
         externalReference: "",
