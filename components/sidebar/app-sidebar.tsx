@@ -3,9 +3,17 @@
 import * as React from "react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
+import { NavOrganization } from "@/components/sidebar/nav-organization"
+import { NavAccessControl } from "@/components/sidebar/nav-access-control"
+import { NavProductPricing } from "@/components/sidebar/nav-product-pricing"
 import { CompaniesNav } from "@/components/sidebar/companies-nav"
 import { Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar"
-import { mainNav } from "@/configs/components/sidebar"
+import {
+  accessControlNav,
+  mainNav,
+  organizationNav,
+  productPricingNav,
+} from "@/configs/components/sidebar"
 import { useFilteredMainNav } from "@/hooks/use-filtered-nav"
 import { useAuthStore } from "@/stores/auth-store"
 
@@ -14,6 +22,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     (s) => s.session?.user?.roles.includes("PLATFORM_ADMINISTRATOR") ?? false
   )
   const filteredNav = useFilteredMainNav(mainNav)
+  const organizationItems = useFilteredMainNav(organizationNav)
+  const accessControlItems = useFilteredMainNav(accessControlNav)
+  const productPricingItems = useFilteredMainNav(productPricingNav)
   const { state, isMobile, setOpen } = useSidebar()
 
   // Hover-to-expand when collapsed to icon mode (desktop only).
@@ -73,6 +84,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {!isPlatformAdmin && (
           <>
             <NavMain items={filteredNav} />
+            <NavOrganization items={organizationItems} />
+            <NavProductPricing items={productPricingItems} />
+            <NavAccessControl items={accessControlItems} />
             {/* <NavGroups groups={filteredGroups} /> */}
           </>
         )}

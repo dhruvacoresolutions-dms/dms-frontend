@@ -27,7 +27,7 @@ import {
   useCreateProductGeographyMapping,
 } from "../hooks/use-product-mappings"
 import { GstHsnCombobox } from "@/features/gst-hsn/components/GstHsnCombobox"
-import { GstTaxStructureCombobox } from "@/features/gst-tax-structures/components/GstTaxStructureCombobox"
+import { GstTaxCodeCombobox } from "@/features/gst-tax-codes/components/GstTaxCodeCombobox"
 import { ProductCombobox } from "./ProductCombobox"
 import { RelationshipTypeCombobox } from "@/features/relationship-types/components/RelationshipTypeCombobox"
 import { VehicleVariantCombobox } from "@/features/vehicle-variants/components/VehicleVariantCombobox"
@@ -46,8 +46,8 @@ type BaseProps = {
 
 const gstSchema = z.object({
   hsnUuid: z.string().min(1, "HSN is required"),
-  taxStructureUuid: z.string().min(1, "Tax structure is required"),
-  effectiveFrom: z.string().optional(),
+  taxCode: z.string().min(1, "Tax code is required"),
+  effectiveFrom: z.string().min(1, "Effective from is required"),
   effectiveTo: z.string().optional(),
 })
 
@@ -60,12 +60,12 @@ export function ProductGstMappingDialog({
   const createMutation = useCreateProductGstMapping(companyUuid, productUuid)
   const { handleSubmit, control, reset } = useForm<z.infer<typeof gstSchema>>({
     resolver: zodResolver(gstSchema),
-    defaultValues: { hsnUuid: "", taxStructureUuid: "", effectiveFrom: "", effectiveTo: "" },
+    defaultValues: { hsnUuid: "", taxCode: "", effectiveFrom: "", effectiveTo: "" },
   })
 
   useEffect(() => {
     if (open)
-      reset({ hsnUuid: "", taxStructureUuid: "", effectiveFrom: "", effectiveTo: "" })
+      reset({ hsnUuid: "", taxCode: "", effectiveFrom: "", effectiveTo: "" })
   }, [open, reset])
 
   return (
@@ -79,8 +79,8 @@ export function ProductGstMappingDialog({
             createMutation.mutate(
               {
                 hsnUuid: values.hsnUuid,
-                taxStructureUuid: values.taxStructureUuid,
-                effectiveFrom: values.effectiveFrom || undefined,
+                taxCode: values.taxCode,
+                effectiveFrom: values.effectiveFrom,
                 effectiveTo: values.effectiveTo || undefined,
               },
               {
@@ -105,15 +105,15 @@ export function ProductGstMappingDialog({
             />
             <FormComboboxField
               control={control}
-              name="taxStructureUuid"
-              label="Tax Structure *"
+              name="taxCode"
+              label="Tax Code *"
               companyUuid={companyUuid}
-              Combobox={GstTaxStructureCombobox}
+              Combobox={GstTaxCodeCombobox}
             />
             <FormDateField
               control={control}
               name="effectiveFrom"
-              label="Effective From"
+              label="Effective From *"
             />
             <FormDateField
               control={control}

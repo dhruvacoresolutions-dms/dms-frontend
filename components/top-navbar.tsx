@@ -11,7 +11,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
-import { companiesNav, mainNav, navGroups } from "@/configs/components/sidebar"
+import { companiesNav, navGroups, primaryNav } from "@/configs/components/sidebar"
 import { useFilteredMainNav, useFilteredNavGroups } from "@/hooks/use-filtered-nav"
 import { useAuthStore } from "@/stores/auth-store"
 import { cn } from "@/lib/utils"
@@ -56,7 +56,7 @@ export function TopNavBar() {
   const isPlatformAdmin = useAuthStore(
     (s) => s.session?.user?.roles.includes("PLATFORM_ADMINISTRATOR") ?? false
   )
-  const filteredNav = useFilteredMainNav(mainNav)
+  const filteredNav = useFilteredMainNav(primaryNav)
   const filteredGroups = useFilteredNavGroups(navGroups)
   const visibleNav = isPlatformAdmin ? companiesNav : filteredNav
   const visibleGroups: NavGroup[] = isPlatformAdmin ? [] : filteredGroups

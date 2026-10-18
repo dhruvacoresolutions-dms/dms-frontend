@@ -37,7 +37,10 @@ import {
   useReactivateProduct,
 } from "@/features/products/hooks/use-product-mutations"
 import { exportProducts } from "@/features/products/api/product.api"
-import { ProductImportDialog } from "@/features/products/components/ProductImportDialog"
+import {
+  ProductImportDialog,
+  type ProductImportKind,
+} from "@/features/products/components/ProductImportDialog"
 import { ProductFilters } from "@/features/products/components/ProductFilters"
 import { PERMISSIONS } from "@/lib/permissions"
 import { toast } from "sonner"
@@ -67,7 +70,7 @@ function ProductsContent() {
   const [categoryUuid, setCategoryUuid] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
-  const [importOpen, setImportOpen] = useState(false)
+  const [importKind, setImportKind] = useState<ProductImportKind | null>(null)
   const [lifecycle, setLifecycle] = useState<LifecycleAction | null>(null)
 
   const { data, isLoading, error, refetch } = useProducts(companyUuid, {
@@ -255,10 +258,43 @@ function ProductsContent() {
         action={
           <div className="flex items-center gap-2">
             <PermissionGate permission={PERMISSIONS.PRODUCT.IMPORT}>
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                <Upload className="mr-2 size-4" />
-                Import
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline">
+                      <Upload className="mr-2 size-4" />
+                      Import
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="w-auto min-w-52">
+                  <DropdownMenuItem
+                    onClick={() => setImportKind("products")}
+                  >
+                    Products
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setImportKind("prices")}>
+                    Product prices
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setImportKind("batches")}>
+                    Product batches
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setImportKind("fitments")}>
+                    Product fitments
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setImportKind("gst-mappings")}
+                  >
+                    Product GST mappings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setImportKind("relationships")}
+                  >
+                    Product relationships
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </PermissionGate>
             <PermissionGate permission={PERMISSIONS.PRODUCT.CREATE}>
               <Button nativeButton={false} render={<Link href="/products/new" />}>
@@ -355,10 +391,10 @@ function ProductsContent() {
       />
 
       <ProductImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
+        open={importKind !== null}
+        onOpenChange={(open) => !open && setImportKind(null)}
         companyUuid={companyUuid}
-        kind="products"
+        kind={importKind ?? "products"}
         onUploadComplete={() => refetch()}
       />
     </div>

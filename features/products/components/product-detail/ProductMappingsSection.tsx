@@ -146,24 +146,16 @@ function GstMappingsCard({
         ),
       },
       {
-        id: "taxStructure",
-        header: "Tax Structure",
+        id: "taxCode",
+        header: "Tax Code",
         cell: ({ row }) => (
-          <span
-            className="font-mono text-sm"
-            title={row.original.taxStructureUuid ?? undefined}
-          >
-            {shortUuid(row.original.taxStructureUuid) ?? "—"}
+          <span className="font-mono text-sm">
+            {row.original.taxCode ?? "—"}
             {row.original.taxStructureModel
               ? ` · ${row.original.taxStructureModel}`
               : ""}
           </span>
         ),
-      },
-      {
-        id: "taxCode",
-        header: "Tax Code",
-        cell: ({ row }) => row.original.taxCode ?? "—",
       },
       {
         id: "effective",
