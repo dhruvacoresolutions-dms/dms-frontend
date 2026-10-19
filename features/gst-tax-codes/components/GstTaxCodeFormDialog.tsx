@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -21,8 +21,11 @@ import {
   FormSelectField,
   FormTextareaField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { requiredCode } from "@/lib/validations/master-data"
 import { useCreateGstTaxCode } from "../hooks/use-create-gst-tax-code"
 import { useCreateGstTaxCodeVersion } from "../hooks/use-create-gst-tax-code-version"
 import type {
@@ -32,7 +35,8 @@ import type {
   GstTaxCodeStatus,
 } from "../api/gst-tax-code.types"
 
-const optionalRate = z.coerce.number().optional()
+/** `GstTaxService.CESS_AMOUNT_BASES`. */
+const CESS_AMOUNT_BASES = ["PER_UNIT", "PER_QUANTITY", "PER_KG", "PER_LITRE"]
 
 const cessTypeOptions: { value: GstCessType; label: string }[] = [
   { value: "NONE", label: "None" },
@@ -46,27 +50,125 @@ const statusOptions: { value: GstTaxCodeStatus; label: string }[] = [
   { value: "INACTIVE", label: "Inactive" },
 ]
 
-const taxCodeSchema = z.object({
-  taxCode: z
+/**
+ * Rate / amount field. Mirrors `GstTaxService.numeric`: non-negative, at most
+ * four decimals. Whether a rate is required is enforced in `buildTaxCodeSchema`
+ * so a blank field reads as "missing" instead of zero.
+ */
+const rateNumber = (label: string) =>
+  z.coerce
+    .number()
+    .refine((v) => Number.isFinite(v), `${label} must be a number`)
+    .refine((v) => v >= 0, `${label} cannot be negative`)
+    .refine(
+      (v) => /^\d+(\.\d{1,4})?$/.test(String(v)),
+      `${label} allows at most 4 decimals`
+    )
+
+const round4 = (v: number) => Math.round(v * 1e4) / 1e4
+
+const baseTaxCodeSchema = z.object({
+  taxCode: requiredCode("Tax Code", 50),
+  description: z
     .string()
-    .min(1, "Tax code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9._-]+$/, "Use letters, digits, dot, underscore or dash"),
-  description: z.string().max(500).optional(),
-  totalRate: optionalRate,
-  cgstRate: optionalRate,
-  sgstRate: optionalRate,
-  igstRate: optionalRate,
+    .trim()
+    .max(500, "Description must not exceed 500 characters")
+    .optional(),
+  totalRate: rateNumber("Total Rate").optional(),
+  cgstRate: rateNumber("CGST Rate").optional(),
+  sgstRate: rateNumber("SGST Rate").optional(),
+  igstRate: rateNumber("IGST Rate").optional(),
   cessType: z.enum(["NONE", "PERCENTAGE", "FIXED_AMOUNT", "BOTH"]),
-  cessRate: optionalRate,
-  cessAmount: optionalRate,
-  cessAmountBasis: z.string().max(120).optional(),
+  cessRate: rateNumber("Cess Rate").optional(),
+  cessAmount: rateNumber("Cess Amount").optional(),
+  cessAmountBasis: z
+    .string()
+    .trim()
+    .max(120, "Cess amount basis must not exceed 120 characters")
+    .optional()
+    .refine(
+      (v) => !v || CESS_AMOUNT_BASES.includes(v.toUpperCase()),
+      `Allowed: ${CESS_AMOUNT_BASES.join(", ")}`
+    ),
   effectiveFrom: z.string().min(1, "Effective from is required"),
   effectiveTo: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 })
 
-type TaxCodeFormValues = z.infer<typeof taxCodeSchema>
+type TaxCodeFormValues = z.infer<typeof baseTaxCodeSchema>
+
+/**
+ * Mirrors `GstTaxService.validate` (+ `validateNextVersion` for a new version):
+ *  - all four rates required; total > 0; CGST + SGST = total and IGST = total
+ *  - cess fields must match cessType and cessBasis is only valid for a fixed cess
+ *  - effectiveTo must not precede effectiveFrom
+ *  - a new version must start today or later and strictly after the previous
+ *    version's start / end
+ */
+function buildTaxCodeSchema(
+  isNewVersion: boolean,
+  source: GstTaxCodeResponse | null
+) {
+  return baseTaxCodeSchema.superRefine((values, ctx) => {
+    const add = (path: string, message: string) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message })
+
+    const { totalRate, cgstRate, sgstRate, igstRate } = values
+    if (totalRate === undefined) add("totalRate", "Total rate is required")
+    else if (totalRate <= 0)
+      add("totalRate", "Total rate must be greater than 0")
+    if (cgstRate === undefined) add("cgstRate", "CGST rate is required")
+    if (sgstRate === undefined) add("sgstRate", "SGST rate is required")
+    if (igstRate === undefined) add("igstRate", "IGST rate is required")
+    if (
+      totalRate !== undefined &&
+      cgstRate !== undefined &&
+      sgstRate !== undefined &&
+      round4(cgstRate + sgstRate) !== round4(totalRate)
+    ) {
+      add("cgstRate", "CGST + SGST must equal the total rate")
+    }
+    if (
+      totalRate !== undefined &&
+      igstRate !== undefined &&
+      igstRate !== totalRate
+    ) {
+      add("igstRate", "IGST must equal the total rate")
+    }
+
+    if (
+      values.effectiveTo &&
+      values.effectiveFrom &&
+      values.effectiveTo < values.effectiveFrom
+    ) {
+      add("effectiveTo", "Effective to must not precede effective from")
+    }
+
+    const needsRate =
+      values.cessType === "PERCENTAGE" || values.cessType === "BOTH"
+    const needsAmount =
+      values.cessType === "FIXED_AMOUNT" || values.cessType === "BOTH"
+    if (needsRate && values.cessRate === undefined)
+      add("cessRate", "Cess rate is required for this cess type")
+    if (!needsRate && values.cessRate !== undefined)
+      add("cessRate", "Cess rate is only allowed for a percentage cess")
+    if (needsAmount && values.cessAmount === undefined)
+      add("cessAmount", "Cess amount is required for this cess type")
+    if (!needsAmount && values.cessAmount !== undefined)
+      add("cessAmount", "Cess amount is only allowed for a fixed cess")
+    if (values.cessAmountBasis && !needsAmount)
+      add("cessAmountBasis", "Cess amount basis requires a fixed cess amount")
+
+    if (isNewVersion && source) {
+      if (values.effectiveFrom < todayISO())
+        add("effectiveFrom", "Effective from must be today or later")
+      if (source.effectiveFrom && values.effectiveFrom <= source.effectiveFrom)
+        add("effectiveFrom", `Must start after ${source.effectiveFrom}`)
+      if (source.effectiveTo && values.effectiveFrom <= source.effectiveTo)
+        add("effectiveFrom", `Must start after ${source.effectiveTo}`)
+    }
+  })
+}
 
 type Props = {
   open: boolean
@@ -122,18 +224,29 @@ export function GstTaxCodeFormDialog({
   const createMutation = useCreateGstTaxCode(companyUuid)
   const versionMutation = useCreateGstTaxCodeVersion(companyUuid)
 
-  const { handleSubmit, control, reset, setValue } = useForm<TaxCodeFormValues>({
-    resolver: zodResolver(taxCodeSchema),
-    defaultValues: toFormDefaults(),
-  })
+  const schema = useMemo(
+    () => buildTaxCodeSchema(isNewVersion, source ?? null),
+    [isNewVersion, source]
+  )
+
+  const { handleSubmit, control, reset, setValue, getValues, setError } =
+    useForm<TaxCodeFormValues>({
+      resolver: zodResolver(schema),
+      defaultValues: toFormDefaults(),
+    })
 
   // Keep CGST and SGST in sync (intra-state rates are always equal).
   const cgstRate = useWatch({ control, name: "cgstRate" })
   const sgstRate = useWatch({ control, name: "sgstRate" })
+  const totalRate = useWatch({ control, name: "totalRate" })
+  const cessType = useWatch({ control, name: "cessType" })
+  const cessNeedsRate = cessType === "PERCENTAGE" || cessType === "BOTH"
+  const cessNeedsAmount = cessType === "FIXED_AMOUNT" || cessType === "BOTH"
   const prevRates = useRef<{
     cgst: number | undefined
     sgst: number | undefined
   }>({ cgst: undefined, sgst: undefined })
+  const prevTotalRate = useRef<string | number | undefined>(undefined)
   useEffect(() => {
     const prev = prevRates.current
     if (cgstRate !== prev.cgst && cgstRate !== sgstRate) {
@@ -150,10 +263,11 @@ export function GstTaxCodeFormDialog({
   useEffect(() => {
     if (!open) return
     if (isNewVersion && source) {
+      const total = rateToForm(source.totalRate)
       reset({
         taxCode: source.taxCode,
         description: source.description ?? "",
-        totalRate: rateToForm(source.totalRate),
+        totalRate: total,
         cgstRate: rateToForm(source.cgstRate),
         sgstRate: rateToForm(source.sgstRate),
         igstRate: rateToForm(source.igstRate),
@@ -165,10 +279,42 @@ export function GstTaxCodeFormDialog({
         effectiveTo: "",
         status: "ACTIVE",
       })
+      prevTotalRate.current = total
     } else {
       reset(toFormDefaults())
+      prevTotalRate.current = undefined
     }
   }, [open, isNewVersion, source, reset])
+
+  // Filling the total rate auto-completes the GST split: CGST and SGST each
+  // get half of the total (intra-state), while IGST mirrors the full rate
+  // (inter-state).
+  useEffect(() => {
+    // Read the live form value so a programmatic reset (defaults or a new
+    // version prefill) is never mistaken for a user edit. Number inputs hand
+    // back strings at runtime, so treat the value as unknown here.
+    const currentTotal: unknown = getValues("totalRate")
+    if (currentTotal === prevTotalRate.current) return
+    prevTotalRate.current = currentTotal as string | number | undefined
+
+    const numericTotal = Number(currentTotal)
+    if (
+      currentTotal === undefined ||
+      currentTotal === null ||
+      currentTotal === "" ||
+      !Number.isFinite(numericTotal)
+    ) {
+      setValue("cgstRate", undefined, { shouldValidate: true })
+      setValue("sgstRate", undefined, { shouldValidate: true })
+      setValue("igstRate", undefined, { shouldValidate: true })
+      return
+    }
+
+    const half = round4(numericTotal / 2)
+    setValue("cgstRate", half, { shouldValidate: true })
+    setValue("sgstRate", half, { shouldValidate: true })
+    setValue("igstRate", numericTotal, { shouldValidate: true })
+  }, [totalRate, getValues, setValue])
 
   const handleOpenChange = (next: boolean) => {
     if (!next) reset()
@@ -207,8 +353,10 @@ export function GstTaxCodeFormDialog({
             toast.success("New tax code version published")
             handleOpenChange(false)
           },
-          onError: (error) =>
-            toast.error(getApiErrorMessage(error, "Failed")),
+          onError: (error) => {
+            applyApiFieldErrors(error, setError)
+            toast.error(getApiErrorMessage(error, "Failed"))
+          },
         }
       )
       return
@@ -220,7 +368,10 @@ export function GstTaxCodeFormDialog({
           toast.success("GST tax code created")
           handleOpenChange(false)
         },
-        onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
+        onError: (error) => {
+          applyApiFieldErrors(error, setError)
+          toast.error(getApiErrorMessage(error, "Failed"))
+        },
       }
     )
   }
@@ -246,7 +397,7 @@ export function GstTaxCodeFormDialog({
                 <FormTextField
                   control={control}
                   name="taxCode"
-                  label="Tax Code *"
+                  label={requiredLabel("Tax Code", !isNewVersion)}
                   disabled={isNewVersion}
                 />
                 <FormSelectField
@@ -265,26 +416,30 @@ export function GstTaxCodeFormDialog({
 
             <FieldSet>
               <FieldLegend className="mb-3">GST Rates (%)</FieldLegend>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Entering the Total Rate auto-fills CGST and SGST (half each) and
+                IGST (full rate).
+              </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                 <FormPercentageField
                   control={control}
                   name="totalRate"
-                  label="Total Rate"
+                  label={requiredLabel("Total Rate")}
                 />
                 <FormPercentageField
                   control={control}
                   name="cgstRate"
-                  label="CGST Rate"
+                  label={requiredLabel("CGST Rate")}
                 />
                 <FormPercentageField
                   control={control}
                   name="sgstRate"
-                  label="SGST Rate"
+                  label={requiredLabel("SGST Rate")}
                 />
                 <FormPercentageField
                   control={control}
                   name="igstRate"
-                  label="IGST Rate"
+                  label={requiredLabel("IGST Rate")}
                 />
               </div>
             </FieldSet>
@@ -295,18 +450,18 @@ export function GstTaxCodeFormDialog({
                 <FormSelectField
                   control={control}
                   name="cessType"
-                  label="Cess Type"
+                  label={requiredLabel("Cess Type")}
                   options={cessTypeOptions}
                 />
                 <FormPercentageField
                   control={control}
                   name="cessRate"
-                  label="Cess Rate"
+                  label={requiredLabel("Cess Rate", cessNeedsRate)}
                 />
                 <FormNumberField
                   control={control}
                   name="cessAmount"
-                  label="Cess Amount"
+                  label={requiredLabel("Cess Amount", cessNeedsAmount)}
                   min={0}
                 />
               </div>
@@ -315,6 +470,10 @@ export function GstTaxCodeFormDialog({
                 name="cessAmountBasis"
                 label="Cess Amount Basis"
               />
+              <p className="text-xs text-muted-foreground">
+                Only for a fixed cess amount. Allowed values:{" "}
+                {CESS_AMOUNT_BASES.join(", ")}.
+              </p>
             </FieldSet>
 
             <FieldSet>
@@ -323,7 +482,7 @@ export function GstTaxCodeFormDialog({
                 <FormDateField
                   control={control}
                   name="effectiveFrom"
-                  label="Effective From *"
+                  label={requiredLabel("Effective From")}
                 />
                 <FormDateField
                   control={control}

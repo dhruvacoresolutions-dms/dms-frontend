@@ -16,23 +16,26 @@ import { FieldGroup } from "@/components/ui/field"
 import {
   FormComboboxField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import {
+  optionalText,
+  requiredCode,
+  requiredName,
+} from "@/lib/validations/master-data"
 import { useProductCategory } from "../hooks/use-product-category"
 import { useCreateProductCategory } from "../hooks/use-create-product-category"
 import { useUpdateProductCategory } from "../hooks/use-update-product-category"
 import { ProductCategoryCombobox } from "./ProductCategoryCombobox"
 
 const categorySchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9._-]+$/, "Only letters, numbers, dot, underscore, hyphen"),
-  name: z.string().min(1, "Name is required").max(160),
+  code: requiredCode("Code", 50),
+  name: requiredName("Name", 160),
   parentCategoryUuid: z.string().optional(),
-  description: z.string().max(500).optional(),
+  description: optionalText("Description", 500),
 })
 
 type CategoryFormValues = z.infer<typeof categorySchema>
@@ -71,10 +74,11 @@ export function ProductCategoryFormDialog({
   const createMutation = useCreateProductCategory(companyUuid)
   const updateMutation = useUpdateProductCategory(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: toFormDefaults(),
-  })
+  const { handleSubmit, control, reset, setError } =
+    useForm<CategoryFormValues>({
+      resolver: zodResolver(categorySchema),
+      defaultValues: toFormDefaults(),
+    })
 
   useEffect(() => {
     if (!open) return
@@ -121,6 +125,7 @@ export function ProductCategoryFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -143,6 +148,7 @@ export function ProductCategoryFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -168,10 +174,14 @@ export function ProductCategoryFormDialog({
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
                 {!isEdit && (
                   <FormComboboxField
                     control={control}

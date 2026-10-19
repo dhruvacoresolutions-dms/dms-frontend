@@ -4,12 +4,15 @@ export type CreateSupplierRequest = {
   supplierCode: string
   supplierName: string
   gstin?: string
-  addressLine?: string
+  addressLine: string
   geographyUuid?: string
   postalCode?: string
   phone?: string
   contactPerson?: string
   email?: string
+  addressLine2?: string
+  addressLine3?: string
+  pan: string
 }
 
 export type UpdateSupplierRequest = CreateSupplierRequest & {
@@ -33,6 +36,10 @@ export type SupplierResponse = {
   phone?: string | null
   contactPerson?: string | null
   email?: string | null
+  addressLine2?: string | null
+  addressLine3?: string | null
+  pan?: string | null
+  bankAccount?: unknown
   status: SupplierStatus
   version?: number
   createdAt?: string

@@ -5,7 +5,11 @@ import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { useGeographies } from "../hooks/use-geographies"
 import { getGeography } from "../api/geography.api"
-import type { GeographyResponse } from "../api/geography.types"
+import type {
+  GeographyResponse,
+  GeographyStatus,
+  GeographyType,
+} from "../api/geography.types"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -32,6 +36,13 @@ type Props = {
   size?: number
   /** Geography uuids to hide from options (e.g. already assigned) */
   excludeUuids?: string[]
+  /**
+   * Restrict selectable geographies to these types. A single type is filtered
+   * server-side; multiple types are filtered client-side.
+   */
+  types?: GeographyType[]
+  /** Restrict selectable geographies to a status (filtered server-side). */
+  status?: GeographyStatus
 }
 
 export function GeographyCombobox({
@@ -42,6 +53,8 @@ export function GeographyCombobox({
   disabled,
   size = 100,
   excludeUuids,
+  types,
+  status,
 }: Props) {
   const [inputValue, setInputValue] = React.useState("")
 
@@ -52,18 +65,31 @@ export function GeographyCombobox({
     return () => clearTimeout(t)
   }, [inputValue])
 
+  // A single allowed type is filtered by the API; several types are filtered
+  // client-side because the endpoint accepts one `type` at a time.
+  const serverType = types && types.length === 1 ? types[0] : undefined
   const geographiesQuery = useGeographies(companyUuid, {
     query: debouncedQuery || undefined,
+    type: serverType,
+    status,
     page: 0,
     size,
   })
 
-  const rawResults = React.useMemo(() => geographiesQuery.data?.content ?? [], [geographiesQuery.data?.content])
+  const rawResults = React.useMemo(
+    () => geographiesQuery.data?.content ?? [],
+    [geographiesQuery.data?.content]
+  )
+  const typeResults = React.useMemo(() => {
+    if (!types || types.length <= 1) return rawResults
+    const allowed = new Set<GeographyType>(types)
+    return rawResults.filter((g) => allowed.has(g.type))
+  }, [rawResults, types])
   const searchResults = React.useMemo(() => {
-    if (!excludeUuids || excludeUuids.length === 0) return rawResults
+    if (!excludeUuids || excludeUuids.length === 0) return typeResults
     const excluded = new Set(excludeUuids)
-    return rawResults.filter((g) => !excluded.has(g.geographyUuid))
-  }, [rawResults, excludeUuids])
+    return typeResults.filter((g) => !excluded.has(g.geographyUuid))
+  }, [typeResults, excludeUuids])
 
   // Fetch selected geography if value not in searchResults (to keep label)
   const selectedInResults = React.useMemo(
@@ -86,7 +112,9 @@ export function GeographyCombobox({
 
   const items = React.useMemo(() => {
     if (!selectedItem) return searchResults
-    if (searchResults.some((g) => g.geographyUuid === selectedItem.geographyUuid))
+    if (
+      searchResults.some((g) => g.geographyUuid === selectedItem.geographyUuid)
+    )
       return searchResults
     return [...searchResults, selectedItem]
   }, [searchResults, selectedItem])

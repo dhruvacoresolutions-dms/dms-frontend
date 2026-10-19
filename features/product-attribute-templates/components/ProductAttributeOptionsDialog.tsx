@@ -21,24 +21,31 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   FormNumberField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { PERMISSIONS } from "@/lib/permissions"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { requiredCode, requiredText } from "@/lib/validations/master-data"
 import { useProductAttributeOptions } from "../hooks/use-product-attribute-options"
 import { useCreateProductAttributeOption } from "../hooks/use-create-product-attribute-option"
 import { useUpdateProductAttributeOption } from "../hooks/use-update-product-attribute-option"
 import { useUpdateProductAttributeOptionStatus } from "../hooks/use-update-product-attribute-option-status"
 import type { ProductAttributeOptionResponse } from "../api/product-attribute-template.types"
 
+/**
+ * Mirrors `ProductAttributeModels.CreateOptionRequest` / `UpdateOptionRequest`:
+ * code @NotBlank @Size(max=50) @SafeCode (immutable after create),
+ * label @NotBlank @Size(max=160), displayOrder @NotNull.
+ */
 const optionSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid code"),
-  label: z.string().min(1, "Label is required").max(160),
-  displayOrder: z.coerce.number().int().min(0, "Order must be >= 0"),
+  code: requiredCode("Code", 50),
+  label: requiredText("Label", 160),
+  displayOrder: z.coerce
+    .number()
+    .int("Order must be a whole number")
+    .min(0, "Order must be >= 0"),
 })
 
 type OptionFormValues = z.infer<typeof optionSchema>
@@ -58,8 +65,9 @@ export function ProductAttributeOptionsDialog({
   attributeTemplateUuid,
   templateLabel,
 }: ProductAttributeOptionsDialogProps) {
-  const [editing, setEditing] =
-    useState<ProductAttributeOptionResponse | null>(null)
+  const [editing, setEditing] = useState<ProductAttributeOptionResponse | null>(
+    null
+  )
   const [statusToggle, setStatusToggle] =
     useState<ProductAttributeOptionResponse | null>(null)
 
@@ -81,7 +89,7 @@ export function ProductAttributeOptionsDialog({
     attributeTemplateUuid ?? ""
   )
 
-  const { handleSubmit, control, reset } = useForm<OptionFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<OptionFormValues>({
     resolver: zodResolver(optionSchema),
     defaultValues: { code: "", label: "", displayOrder: 0 },
   })
@@ -134,22 +142,14 @@ export function ProductAttributeOptionsDialog({
           return (
             <div className="flex items-center gap-1">
               <PermissionGate
-                permission={
-                  PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                }
+                permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditing(o)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setEditing(o)}>
                   <Pencil className="size-4" />
                 </Button>
               </PermissionGate>
               <PermissionGate
-                permission={
-                  PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS
-                }
+                permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}
               >
                 <Button
                   variant="ghost"
@@ -188,7 +188,10 @@ export function ProductAttributeOptionsDialog({
             toast.success("Option updated")
             setEditing(null)
           },
-          onError: (err) => toast.error(getApiErrorMessage(err, "Failed")),
+          onError: (err) => {
+            applyApiFieldErrors(err, setError)
+            toast.error(getApiErrorMessage(err, "Failed"))
+          },
         }
       )
       return
@@ -198,7 +201,10 @@ export function ProductAttributeOptionsDialog({
         toast.success("Option created")
         reset({ code: "", label: "", displayOrder: 0 })
       },
-      onError: (err) => toast.error(getApiErrorMessage(err, "Failed")),
+      onError: (err) => {
+        applyApiFieldErrors(err, setError)
+        toast.error(getApiErrorMessage(err, "Failed"))
+      },
     })
   }
 
@@ -224,18 +230,18 @@ export function ProductAttributeOptionsDialog({
                   <FormTextField
                     control={control}
                     name="code"
-                    label="Code"
+                    label={requiredLabel("Code", !editing)}
                     disabled={!!editing}
                   />
                   <FormTextField
                     control={control}
                     name="label"
-                    label="Label"
+                    label={requiredLabel("Label")}
                   />
                   <FormNumberField
                     control={control}
                     name="displayOrder"
-                    label="Order"
+                    label={requiredLabel("Order")}
                     step="1"
                     min={0}
                   />
@@ -305,8 +311,7 @@ export function ProductAttributeOptionsDialog({
                 toast.success("Option status updated")
                 setStatusToggle(null)
               },
-              onError: (err) =>
-                toast.error(getApiErrorMessage(err, "Failed")),
+              onError: (err) => toast.error(getApiErrorMessage(err, "Failed")),
             }
           )
         }}

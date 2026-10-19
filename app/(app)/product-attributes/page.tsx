@@ -76,7 +76,8 @@ function ProductAttributesContent() {
 }
 
 function AttributeTemplatesTab() {
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [productType, setProductType] = useState("")
   const [page, setPage] = useState(0)
@@ -141,7 +142,9 @@ function AttributeTemplatesTab() {
         id: "slot",
         header: "Slot",
         cell: ({ row }) => (
-          <span className="font-mono text-sm">{row.original.slotAssignment}</span>
+          <span className="font-mono text-sm">
+            {row.original.slotAssignment}
+          </span>
         ),
       },
       {
@@ -169,14 +172,9 @@ function AttributeTemplatesTab() {
               <DropdownMenuTrigger className="cursor-pointer">
                 <MoreHorizontal className="size-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-auto min-w-40"
-              >
+              <DropdownMenuContent align="end" className="w-auto min-w-40">
                 <PermissionGate
-                  permission={
-                    PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-                  }
+                  permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
                 >
                   <DropdownMenuItem
                     onClick={() => setEditingUuid(t.templateUuid)}
@@ -186,41 +184,28 @@ function AttributeTemplatesTab() {
                 </PermissionGate>
                 {t.dataType === "DROPDOWN" && (
                   <PermissionGate
-                    permission={
-                      PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW
-                    }
+                    permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW}
                   >
-                    <DropdownMenuItem
-                      onClick={() => setOptionsTemplate(t)}
-                    >
-                      <Settings2 className="mr-2 size-4" /> Manage
-                      Options
+                    <DropdownMenuItem onClick={() => setOptionsTemplate(t)}>
+                      <Settings2 className="mr-2 size-4" /> Manage Options
                     </DropdownMenuItem>
                   </PermissionGate>
                 )}
                 <DropdownMenuSeparator />
                 <PermissionGate
-                  permission={
-                    PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS
-                  }
+                  permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}
                 >
                   <DropdownMenuItem
-                    variant={
-                      t.status === "ACTIVE"
-                        ? "destructive"
-                        : "default"
-                    }
+                    variant={t.status === "ACTIVE" ? "destructive" : "default"}
                     onClick={() => setStatusToggle(t)}
                   >
                     {t.status === "ACTIVE" ? (
                       <>
-                        <ToggleLeft className="mr-2 size-4" />{" "}
-                        Deactivate
+                        <ToggleLeft className="mr-2 size-4" /> Deactivate
                       </>
                     ) : (
                       <>
-                        <ToggleRight className="mr-2 size-4" />{" "}
-                        Activate
+                        <ToggleRight className="mr-2 size-4" /> Activate
                       </>
                     )}
                   </DropdownMenuItem>
@@ -287,7 +272,16 @@ function AttributeTemplatesTab() {
             ? "Try a different search or clear filters."
             : "Create an attribute template to get started.",
         }}
-        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          pageSize: size,
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
+        }}
       />
 
       <ProductAttributeTemplateFormDialog
@@ -341,8 +335,7 @@ function AttributeTemplatesTab() {
                 toast.success("Status updated")
                 setStatusToggle(null)
               },
-              onError: (err) =>
-                toast.error(getApiErrorMessage(err, "Failed")),
+              onError: (err) => toast.error(getApiErrorMessage(err, "Failed")),
             }
           )
         }}
@@ -351,8 +344,12 @@ function AttributeTemplatesTab() {
   )
 }
 
+/** `ProductFieldRegistry.fixed` / `CurrentProductFieldRegistry.fixed*` keys. */
+const FIXED_TEMPLATE_KEYS = new Set(["code", "name"])
+
 function FieldTemplateTab() {
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const { data, isLoading, error, refetch } =
     useProductFieldTemplate(companyUuid)
   const updateMutation = useUpdateProductFieldTemplate(companyUuid)
@@ -389,7 +386,9 @@ function FieldTemplateTab() {
     fieldKey: string,
     patch: Partial<UpdateProductFieldTemplateField>
   ) => {
-    setRows(draft.map((r) => (r.fieldKey === fieldKey ? { ...r, ...patch } : r)))
+    setRows(
+      draft.map((r) => (r.fieldKey === fieldKey ? { ...r, ...patch } : r))
+    )
   }
 
   const applicabilityOf = (fieldKey: string) =>
@@ -420,14 +419,12 @@ function FieldTemplateTab() {
           const r = row.original
           return (
             <PermissionGate
-              permission={
-                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-              }
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
             >
               {(allowed) => (
                 <Checkbox
                   checked={r.visible}
-                  disabled={!allowed}
+                  disabled={!allowed || FIXED_TEMPLATE_KEYS.has(r.fieldKey)}
                   onCheckedChange={(checked) =>
                     updateRow(r.fieldKey, {
                       visible: checked === true,
@@ -446,17 +443,18 @@ function FieldTemplateTab() {
           const r = row.original
           return (
             <PermissionGate
-              permission={
-                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-              }
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
             >
               {(allowed) => (
                 <Checkbox
                   checked={r.mandatory}
-                  disabled={!allowed}
+                  disabled={!allowed || FIXED_TEMPLATE_KEYS.has(r.fieldKey)}
                   onCheckedChange={(checked) =>
                     updateRow(r.fieldKey, {
                       mandatory: checked === true,
+                      // A mandatory field that stays hidden can never be
+                      // satisfied — the backend rejects that combination.
+                      visible: checked === true ? true : r.visible,
                     })
                   }
                 />
@@ -472,9 +470,7 @@ function FieldTemplateTab() {
           const r = row.original
           return (
             <PermissionGate
-              permission={
-                PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE
-              }
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
             >
               {(allowed) => (
                 <Input
@@ -500,6 +496,34 @@ function FieldTemplateTab() {
   )
 
   const handleSave = () => {
+    // Backend mirror: display orders must be unique non-negative integers,
+    // mandatory implies visible, and the fixed fields (code / name) must stay
+    // visible + mandatory (`ProductFieldTemplateService.updateCurrent`).
+    const orders = new Set<number>()
+    for (const row of draft) {
+      if (!Number.isInteger(row.displayOrder) || row.displayOrder < 0) {
+        toast.error(
+          `Display order for ${row.fieldKey} must be a non-negative whole number`
+        )
+        return
+      }
+      if (orders.has(row.displayOrder)) {
+        toast.error(`Display order ${row.displayOrder} is used more than once`)
+        return
+      }
+      orders.add(row.displayOrder)
+      if (row.mandatory && !row.visible) {
+        toast.error(`Mandatory field ${row.fieldKey} must also be visible`)
+        return
+      }
+      if (
+        FIXED_TEMPLATE_KEYS.has(row.fieldKey) &&
+        (!row.visible || !row.mandatory)
+      ) {
+        toast.error(`${row.fieldKey} must remain visible and mandatory`)
+        return
+      }
+    }
     updateMutation.mutate(
       { fields: draft },
       {

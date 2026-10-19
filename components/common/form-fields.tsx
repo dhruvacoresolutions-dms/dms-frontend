@@ -3,6 +3,7 @@
  * Each field lives in its own file; import from here or deep-import per file.
  */
 export type { BaseFieldProps, BackendComboboxProps } from "./form/types"
+export { requiredLabel } from "./form/RequiredLabel"
 export { FormTextField } from "./form/FormTextField"
 export { FormNumberField } from "./form/FormNumberField"
 export { FormPercentageField } from "./form/FormPercentageField"
