@@ -14,12 +14,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
-import { FormSelectField, FormTextField } from "@/components/common/form-fields"
+import {
+  FormSelectField,
+  FormTextField,
+  requiredLabel,
+} from "@/components/common/form-fields"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { PERMISSIONS } from "@/lib/permissions"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { optionalName, requiredName } from "@/lib/validations/master-data"
+import { requiredBankAccount, requiredIfsc } from "@/lib/validations/party"
 import { useDistributorBankAccount } from "../hooks/use-distributor-bank-account"
 import { useUpsertDistributorBankAccount } from "../hooks/use-upsert-distributor-bank-account"
 import type { BankAccountType } from "../api/distributor.types"
@@ -31,12 +38,18 @@ const ACCOUNT_TYPES: { value: BankAccountType; label: string }[] = [
   { value: "CC", label: "Cash Credit (CC)" },
 ]
 
+/**
+ * Mirrors `DistributorBankAccountValidator` (identical for suppliers):
+ * bankName/accountHolderName required @SafeName ≤120, accountNumber 9–18
+ * digits, ifscCode required (`^[A-Z]{4}0[A-Z0-9]{6}$`, upper-cased),
+ * branchName optional @SafeName ≤120, accountType required.
+ */
 const bankSchema = z.object({
-  bankName: z.string().min(1, "Bank name is required").max(150),
-  accountHolderName: z.string().min(1, "Account holder is required").max(150),
-  accountNumber: z.string().min(1, "Account number is required").max(34),
-  ifscCode: z.string().max(11).optional(),
-  branchName: z.string().max(150).optional(),
+  bankName: requiredName("Bank name", 120),
+  accountHolderName: requiredName("Account holder", 120),
+  accountNumber: requiredBankAccount("Account number"),
+  ifscCode: requiredIfsc("IFSC code"),
+  branchName: optionalName("Branch name", 120),
   accountType: z.enum(["SAVINGS", "CURRENT", "OD", "CC"]),
 })
 
@@ -72,7 +85,7 @@ export function DistributorBankAccountSection({
 
   const account = data?.bankAccount ?? null
 
-  const { handleSubmit, control, reset } = useForm<BankFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<BankFormValues>({
     resolver: zodResolver(bankSchema),
     defaultValues: {
       bankName: "",
@@ -102,7 +115,7 @@ export function DistributorBankAccountSection({
         bankName: values.bankName.trim(),
         accountHolderName: values.accountHolderName.trim(),
         accountNumber: values.accountNumber.trim(),
-        ifscCode: values.ifscCode?.trim() || undefined,
+        ifscCode: values.ifscCode.trim().toUpperCase(),
         branchName: values.branchName?.trim() || undefined,
         accountType: values.accountType,
         version: account?.version,
@@ -112,7 +125,10 @@ export function DistributorBankAccountSection({
           toast.success("Bank account saved")
           setOpen(false)
         },
-        onError: (err) => toast.error(getApiErrorMessage(err, "Failed")),
+        onError: (err) => {
+          applyApiFieldErrors(err, setError)
+          toast.error(getApiErrorMessage(err, "Failed"))
+        },
       }
     )
   }
@@ -172,50 +188,55 @@ export function DistributorBankAccountSection({
           <DialogHeader>
             <DialogTitle>Bank Account</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-4"
+            noValidate
+          >
             <FieldGroup>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <FormTextField
                   control={control}
                   name="bankName"
-                  label="Bank Name *"
-                  maxLength={150}
+                  label={requiredLabel("Bank Name")}
+                  maxLength={120}
                 />
                 <FormTextField
                   control={control}
                   name="accountHolderName"
-                  label="Account Holder *"
-                  maxLength={150}
+                  label={requiredLabel("Account Holder")}
+                  maxLength={120}
                 />
                 <FormTextField
                   control={control}
                   name="accountNumber"
-                  label="Account Number *"
-                  maxLength={34}
+                  label={requiredLabel("Account Number")}
+                  maxLength={18}
                   autoComplete="off"
                 />
                 <FormTextField
                   control={control}
                   name="ifscCode"
-                  label="IFSC Code"
+                  label={requiredLabel("IFSC Code")}
                   maxLength={11}
                 />
                 <FormTextField
                   control={control}
                   name="branchName"
                   label="Branch"
-                  maxLength={150}
+                  maxLength={120}
                 />
                 <FormSelectField
                   control={control}
                   name="accountType"
-                  label="Account Type"
+                  label={requiredLabel("Account Type")}
                   options={ACCOUNT_TYPES}
                 />
               </div>
             </FieldGroup>
             <p className="text-xs text-muted-foreground">
-              The account number is write-only and must be re-entered on every save.
+              The account number is write-only and must be re-entered on every
+              save.
             </p>
             <div className="flex justify-end gap-2">
               <Button

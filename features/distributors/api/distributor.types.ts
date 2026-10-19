@@ -16,21 +16,27 @@ export type BankAccountType = "SAVINGS" | "CURRENT" | "OD" | "CC"
 export type CreateDistributorRequest = {
   distributorCode: string
   distributorName: string
-  legalName?: string
-  distributorTypeUuid?: string
+  legalName: string
+  distributorTypeUuid: string
+  parentDistributorUuid?: string
   businessConstitutionUuid?: string
   effectiveFrom?: string
-  primaryContactName?: string
-  mobileNumber?: string
+  primaryContactName: string
+  mobileNumber: string
   email?: string
-  addressLine1?: string
-  postalCode?: string
-  geographyUuid?: string
+  addressLine1: string
+  addressLine2?: string
+  postalCode: string
+  geographyUuid: string
   geographyType?: string
-  taxRegistrationStatus?: TaxRegistrationStatus
-  taxProfileUuid?: string
+  taxRegistrationStatus: TaxRegistrationStatus
+  pan?: string
+  gstin?: string
+  taxProfileUuid: string
   paymentTermsUuid?: string
   creditAllowed?: boolean
+  creditLimit?: number
+  creditDays?: number
   supplierUuid?: string
   sfaEnabled?: boolean
   orderBookingEnabled?: boolean
@@ -54,6 +60,9 @@ export type DistributorResponse = {
   distributorTypeUuid?: string | null
   distributorTypeCode?: string | null
   distributorTypeName?: string | null
+  parentDistributorUuid?: string | null
+  parentDistributorCode?: string | null
+  parentDistributorName?: string | null
   businessConstitutionUuid?: string | null
   businessConstitutionCode?: string | null
   businessConstitutionName?: string | null
@@ -62,10 +71,13 @@ export type DistributorResponse = {
   mobileNumber?: string | null
   email?: string | null
   addressLine1?: string | null
+  addressLine2?: string | null
   postalCode?: string | null
   geographyUuid?: string | null
   geographyType?: string | null
   taxRegistrationStatus?: TaxRegistrationStatus | null
+  pan?: string | null
+  gstin?: string | null
   taxProfileUuid?: string | null
   taxProfileCode?: string | null
   taxProfileName?: string | null
@@ -73,6 +85,8 @@ export type DistributorResponse = {
   paymentTermCode?: string | null
   paymentTermName?: string | null
   creditAllowed?: boolean
+  creditLimit?: number | null
+  creditDays?: number | null
   supplierUuid?: string | null
   sfaEnabled?: boolean
   orderBookingEnabled?: boolean
@@ -96,26 +110,31 @@ export type DistributorListParams = {
 export type CreateDistributorBranchRequest = {
   branchCode: string
   branchName: string
-  branchType?: BranchType
+  branchType: BranchType
   isPrimary?: boolean
-  addressLine1?: string
-  geographyUuid?: string
+  addressLine1: string
+  addressLine2?: string
+  geographyUuid: string
   geographyType?: string
-  postalCode?: string
+  postalCode: string
   contactPerson?: string
   mobileNumber?: string
   email?: string
+  latitude?: number
+  longitude?: number
   branchGstin?: string
   warehouseEnabled?: boolean
-  storageType?: StorageType
+  storageType?: StorageType | null
   coldChainEnabled?: boolean
   serviceFacilityEnabled?: boolean
   effectiveFrom?: string
+  effectiveTo?: string
 }
 
-export type UpdateDistributorBranchRequest = Partial<CreateDistributorBranchRequest> & {
-  version?: number
-}
+export type UpdateDistributorBranchRequest =
+  Partial<CreateDistributorBranchRequest> & {
+    version?: number
+  }
 
 export type UpdateDistributorBranchStatusRequest = {
   status: DistributorStatus
@@ -129,18 +148,22 @@ export type DistributorBranchResponse = {
   branchType?: BranchType | null
   isPrimary?: boolean
   addressLine1?: string | null
+  addressLine2?: string | null
   geographyUuid?: string | null
   geographyType?: string | null
   postalCode?: string | null
   contactPerson?: string | null
   mobileNumber?: string | null
   email?: string | null
+  latitude?: number | null
+  longitude?: number | null
   branchGstin?: string | null
   warehouseEnabled?: boolean
   storageType?: StorageType | null
   coldChainEnabled?: boolean
   serviceFacilityEnabled?: boolean
   effectiveFrom?: string | null
+  effectiveTo?: string | null
   status: DistributorStatus
   version?: number
   createdAt?: string
@@ -160,14 +183,15 @@ export type CreateDistributorLicenseRequest = {
   licenseType: LicenseType
   licenseNumber: string
   issuingAuthority?: string
-  validFrom?: string
-  validTo?: string
+  validFrom: string
+  validTo: string
   branchUuid?: string
 }
 
-export type UpdateDistributorLicenseRequest = CreateDistributorLicenseRequest & {
-  version?: number
-}
+export type UpdateDistributorLicenseRequest =
+  CreateDistributorLicenseRequest & {
+    version?: number
+  }
 
 export type UpdateDistributorLicenseStatusRequest = {
   status: DistributorStatus
@@ -204,9 +228,9 @@ export type UpsertDistributorBankRequest = {
   bankName: string
   accountHolderName: string
   accountNumber: string
-  ifscCode?: string
+  ifscCode: string
   branchName?: string
-  accountType?: BankAccountType
+  accountType: BankAccountType
   version?: number
 }
 

@@ -18,8 +18,11 @@ import {
   FormDateField,
   FormSelectField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { optionalText, requiredText } from "@/lib/validations/master-data"
 import { DistributorBranchCombobox } from "./DistributorBranchCombobox"
 import { useCreateDistributorLicense } from "../hooks/use-create-distributor-license"
 import { useUpdateDistributorLicense } from "../hooks/use-update-distributor-license"
@@ -34,19 +37,25 @@ const LICENSE_TYPES: { value: LicenseType; label: string }[] = [
   { value: "OTHER", label: "Other" },
 ]
 
+/**
+ * Mirrors `CreateDistributorLicenseRequest` / `UpdateDistributorLicenseRequest`:
+ * licenseType @NotNull, licenseNumber @NotBlank @Size(max=60),
+ * issuingAuthority @Size(max=120), validFrom/validTo @NotNull, and
+ * validTo must not precede validFrom (`DistributorLicenseService.rules`).
+ */
 const licenseSchema = z
   .object({
     licenseType: z.enum(["DRUG", "FOOD_TRADE", "OTHER"]),
-    licenseNumber: z.string().min(1, "License number is required").max(80),
-    issuingAuthority: z.string().max(200).optional(),
-    validFrom: z.string().optional(),
-    validTo: z.string().optional(),
+    licenseNumber: requiredText("License number", 60),
+    issuingAuthority: optionalText("Issuing authority", 120),
+    validFrom: z.string().min(1, "Valid from is required"),
+    validTo: z.string().min(1, "Valid to is required"),
     branchUuid: z.string().optional(),
   })
-  .refine(
-    (v) => !v.validFrom || !v.validTo || v.validTo >= v.validFrom,
-    { message: "Valid To must be on or after Valid From", path: ["validTo"] }
-  )
+  .refine((v) => !v.validFrom || !v.validTo || v.validTo >= v.validFrom, {
+    message: "Valid To must be on or after Valid From",
+    path: ["validTo"],
+  })
 
 type LicenseFormValues = z.infer<typeof licenseSchema>
 
@@ -77,13 +86,21 @@ export function DistributorLicenseDialog({
   license,
 }: Props) {
   const isEdit = !!license
-  const createMutation = useCreateDistributorLicense(companyUuid, distributorUuid)
-  const updateMutation = useUpdateDistributorLicense(companyUuid, distributorUuid)
+  const createMutation = useCreateDistributorLicense(
+    companyUuid,
+    distributorUuid
+  )
+  const updateMutation = useUpdateDistributorLicense(
+    companyUuid,
+    distributorUuid
+  )
 
-  const { handleSubmit, control, reset } = useForm<LicenseFormValues>({
-    resolver: zodResolver(licenseSchema),
-    defaultValues: toFormDefaults(),
-  })
+  const { handleSubmit, control, reset, setError } = useForm<LicenseFormValues>(
+    {
+      resolver: zodResolver(licenseSchema),
+      defaultValues: toFormDefaults(),
+    }
+  )
 
   useEffect(() => {
     if (!open) return
@@ -113,8 +130,8 @@ export function DistributorLicenseDialog({
       licenseType: values.licenseType,
       licenseNumber: values.licenseNumber.trim(),
       issuingAuthority: values.issuingAuthority?.trim() || undefined,
-      validFrom: values.validFrom || undefined,
-      validTo: values.validTo || undefined,
+      validFrom: values.validFrom,
+      validTo: values.validTo,
       branchUuid: values.branchUuid || undefined,
     }
 
@@ -129,7 +146,10 @@ export function DistributorLicenseDialog({
             toast.success("License updated")
             handleOpenChange(false)
           },
-          onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
+          onError: (error) => {
+            applyApiFieldErrors(error, setError)
+            toast.error(getApiErrorMessage(error, "Failed"))
+          },
         }
       )
       return
@@ -140,7 +160,10 @@ export function DistributorLicenseDialog({
         toast.success("License created")
         handleOpenChange(false)
       },
-      onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
+      onError: (error) => {
+        applyApiFieldErrors(error, setError)
+        toast.error(getApiErrorMessage(error, "Failed"))
+      },
     })
   }
 
@@ -148,36 +171,46 @@ export function DistributorLicenseDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit License" : "Create License"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Edit License" : "Create License"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <FormSelectField
                 control={control}
                 name="licenseType"
-                label="License Type"
+                label={requiredLabel("License Type")}
                 options={LICENSE_TYPES}
               />
               <FormTextField
                 control={control}
                 name="licenseNumber"
-                label="License Number *"
-                maxLength={80}
+                label={requiredLabel("License Number")}
+                maxLength={60}
               />
               <FormTextField
                 control={control}
                 name="issuingAuthority"
                 label="Issuing Authority"
-                maxLength={200}
+                maxLength={120}
                 className="lg:col-span-2"
               />
               <FormDateField
                 control={control}
                 name="validFrom"
-                label="Valid From"
+                label={requiredLabel("Valid From")}
               />
-              <FormDateField control={control} name="validTo" label="Valid To" />
+              <FormDateField
+                control={control}
+                name="validTo"
+                label={requiredLabel("Valid To")}
+              />
               <FormComboboxField
                 control={control}
                 name="branchUuid"

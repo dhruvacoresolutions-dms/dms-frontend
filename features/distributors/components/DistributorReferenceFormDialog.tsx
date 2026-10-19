@@ -17,8 +17,15 @@ import {
   FormSwitchField,
   FormTextareaField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import {
+  optionalText,
+  requiredCode,
+  requiredName,
+} from "@/lib/validations/master-data"
 import { useCreateDistributorReference } from "../hooks/use-create-distributor-reference"
 import { useUpdateDistributorReference } from "../hooks/use-update-distributor-reference"
 import type {
@@ -26,14 +33,19 @@ import type {
   DistributorReferenceResponse,
 } from "../api/distributor-reference.types"
 
+/**
+ * Mirrors `CreateReferenceRequest` / `UpdateReferenceRequest`:
+ *  - code @NotBlank @Size(max=30) @SafeCode (create only, immutable after)
+ *  - name @NotBlank @Size(max=120) @SafeName
+ *  - description @Size(max=500)
+ *  - requiresParent is rejected unless the kind is DISTRIBUTOR_TYPE, so the
+ *    switch is only rendered (and only sent) for distributor types
+ *    (`DistributorReferenceService.type`).
+ */
 const referenceSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(40)
-    .regex(/^[A-Za-z0-9._-]+$/, "Only letters, numbers, dot, underscore, hyphen"),
-  name: z.string().min(1, "Name is required").max(160),
-  description: z.string().max(500).optional(),
+  code: requiredCode("Code", 30),
+  name: requiredName("Name", 120),
+  description: optionalText("Description", 500),
   requiresParent: z.boolean(),
 })
 
@@ -58,13 +70,20 @@ export function DistributorReferenceFormDialog({
   reference,
 }: Props) {
   const isEdit = !!reference
+  const supportsParent = kind === "distributor-types"
   const createMutation = useCreateDistributorReference(companyUuid, kind)
   const updateMutation = useUpdateDistributorReference(companyUuid, kind)
 
-  const { handleSubmit, control, reset } = useForm<ReferenceFormValues>({
-    resolver: zodResolver(referenceSchema),
-    defaultValues: { code: "", name: "", description: "", requiresParent: false },
-  })
+  const { handleSubmit, control, reset, setError } =
+    useForm<ReferenceFormValues>({
+      resolver: zodResolver(referenceSchema),
+      defaultValues: {
+        code: "",
+        name: "",
+        description: "",
+        requiresParent: false,
+      },
+    })
 
   useEffect(() => {
     if (!open) return
@@ -88,6 +107,10 @@ export function DistributorReferenceFormDialog({
   const isPending = createMutation.isPending || updateMutation.isPending
 
   const onSubmit = (values: ReferenceFormValues) => {
+    // Omitted (undefined) rather than `false` for non-distributor types: the
+    // backend rejects a non-null `requiresParent` for every other kind.
+    const requiresParent = supportsParent ? values.requiresParent : undefined
+
     if (isEdit && reference) {
       updateMutation.mutate(
         {
@@ -95,7 +118,7 @@ export function DistributorReferenceFormDialog({
           input: {
             name: values.name.trim(),
             description: values.description?.trim() || undefined,
-            requiresParent: values.requiresParent,
+            requiresParent,
             version: reference.version,
           },
         },
@@ -104,7 +127,10 @@ export function DistributorReferenceFormDialog({
             toast.success(`${singular} updated`)
             handleOpenChange(false)
           },
-          onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
+          onError: (error) => {
+            applyApiFieldErrors(error, setError)
+            toast.error(getApiErrorMessage(error, "Failed"))
+          },
         }
       )
       return
@@ -112,10 +138,10 @@ export function DistributorReferenceFormDialog({
 
     createMutation.mutate(
       {
-        code: values.code.trim(),
+        code: values.code.trim().toUpperCase(),
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
-        requiresParent: values.requiresParent,
+        requiresParent,
       },
       {
         onSuccess: () => {
@@ -123,7 +149,10 @@ export function DistributorReferenceFormDialog({
           reset()
           handleOpenChange(false)
         },
-        onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
+        onError: (error) => {
+          applyApiFieldErrors(error, setError)
+          toast.error(getApiErrorMessage(error, "Failed"))
+        },
       }
     )
   }
@@ -136,28 +165,40 @@ export function DistributorReferenceFormDialog({
             {isEdit ? `Edit ${singular}` : `Create ${singular}`}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <FormTextField
                 control={control}
                 name="code"
-                label="Code *"
+                label={requiredLabel("Code", !isEdit)}
                 disabled={isEdit}
+                maxLength={30}
               />
-              <FormTextField control={control} name="name" label="Name *" />
+              <FormTextField
+                control={control}
+                name="name"
+                label={requiredLabel("Name")}
+                maxLength={120}
+              />
               <FormTextareaField
                 control={control}
                 name="description"
                 label="Description"
                 className="lg:col-span-2"
               />
-              <FormSwitchField
-                control={control}
-                name="requiresParent"
-                label="Requires Parent"
-                className="lg:col-span-2"
-              />
+              {supportsParent && (
+                <FormSwitchField
+                  control={control}
+                  name="requiresParent"
+                  label="Requires Parent"
+                  className="lg:col-span-2"
+                />
+              )}
             </div>
           </FieldGroup>
           <div className="flex justify-end gap-2">

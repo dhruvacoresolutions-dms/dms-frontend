@@ -149,6 +149,21 @@ function buildProductSchema(requiredFields: string[]) {
         })
       }
     }
+
+    // Backend `ProductCoreService.validate`: net weight and weight UOM must be
+    // supplied together (blank weight UOM counts as absent).
+    const hasWeight =
+      values.netWeight !== undefined && values.netWeight !== null
+    const hasWeightUom = !!values.weightUom?.trim()
+    if (hasWeight !== hasWeightUom) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: hasWeight ? ["weightUom"] : ["netWeight"],
+        message: hasWeight
+          ? "Weight UOM is required when Net Weight is supplied"
+          : "Net Weight is required when Weight UOM is supplied",
+      })
+    }
   })
 }
 
