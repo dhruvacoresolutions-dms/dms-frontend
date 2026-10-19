@@ -13,21 +13,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
-import { FormTextField } from "@/components/common/form-fields"
+import { FormTextField, requiredLabel } from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import {
+  optionalText,
+  requiredCode,
+  requiredName,
+} from "@/lib/validations/master-data"
 import { useProductUom } from "../hooks/use-product-uom"
 import { useCreateProductUom } from "../hooks/use-create-product-uom"
 import { useUpdateProductUom } from "../hooks/use-update-product-uom"
 
 const uomSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9._-]+$/, "Only letters, numbers, dot, underscore, hyphen"),
-  name: z.string().min(1, "Name is required").max(160),
-  description: z.string().max(500).optional(),
+  code: requiredCode("Code", 30),
+  name: requiredName("Name", 120),
+  description: optionalText("Description", 500),
 })
 
 type UomFormValues = z.infer<typeof uomSchema>
@@ -62,7 +64,7 @@ export function ProductUomFormDialog({
   const createMutation = useCreateProductUom(companyUuid)
   const updateMutation = useUpdateProductUom(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<UomFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<UomFormValues>({
     resolver: zodResolver(uomSchema),
     defaultValues: toFormDefaults(),
   })
@@ -110,6 +112,7 @@ export function ProductUomFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -129,6 +132,7 @@ export function ProductUomFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -154,10 +158,14 @@ export function ProductUomFormDialog({
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
                 <FormTextField
                   control={control}
                   name="description"

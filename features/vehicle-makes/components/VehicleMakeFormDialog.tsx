@@ -14,20 +14,22 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
-import { FormTextField } from "@/components/common/form-fields"
+import { FormTextField, requiredLabel } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import {
+  optionalText,
+  requiredCode,
+  requiredName,
+} from "@/lib/validations/master-data"
 import { useVehicleMake } from "../hooks/use-vehicle-make"
 import { useCreateVehicleMake } from "../hooks/use-create-vehicle-make"
 import { useUpdateVehicleMake } from "../hooks/use-update-vehicle-make"
 
 const makeSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid code"),
-  name: z.string().min(1, "Name is required").max(160),
-  description: z.string().max(500).optional(),
+  code: requiredCode("Code", 50),
+  name: requiredName("Name", 160),
+  description: optionalText("Description", 500),
 })
 
 type MakeFormValues = z.infer<typeof makeSchema>
@@ -54,7 +56,7 @@ export function VehicleMakeFormDialog({
   const createMutation = useCreateVehicleMake(companyUuid)
   const updateMutation = useUpdateVehicleMake(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<MakeFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<MakeFormValues>({
     resolver: zodResolver(makeSchema),
     defaultValues: { code: "", name: "", description: "" },
   })
@@ -93,9 +95,7 @@ export function VehicleMakeFormDialog({
           input: {
             name: values.name,
             description: values.description || undefined,
-            ...(make?.version !== undefined
-              ? { version: make.version }
-              : {}),
+            ...(make?.version !== undefined ? { version: make.version } : {}),
           },
         },
         {
@@ -104,6 +104,7 @@ export function VehicleMakeFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -123,6 +124,7 @@ export function VehicleMakeFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -148,10 +150,14 @@ export function VehicleMakeFormDialog({
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
                 <FormTextField
                   control={control}
                   name="description"

@@ -13,21 +13,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
-import { FormTextField } from "@/components/common/form-fields"
+import { FormTextField, requiredLabel } from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import {
+  optionalText,
+  requiredCode,
+  requiredName,
+} from "@/lib/validations/master-data"
 import { useProductBrand } from "../hooks/use-product-brand"
 import { useCreateProductBrand } from "../hooks/use-create-product-brand"
 import { useUpdateProductBrand } from "../hooks/use-update-product-brand"
 
 const brandSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9._-]+$/, "Only letters, numbers, dot, underscore, hyphen"),
-  name: z.string().min(1, "Name is required").max(160),
-  description: z.string().max(500).optional(),
+  code: requiredCode("Code", 50),
+  name: requiredName("Name", 160),
+  description: optionalText("Description", 500),
 })
 
 type BrandFormValues = z.infer<typeof brandSchema>
@@ -62,7 +64,7 @@ export function ProductBrandFormDialog({
   const createMutation = useCreateProductBrand(companyUuid)
   const updateMutation = useUpdateProductBrand(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<BrandFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<BrandFormValues>({
     resolver: zodResolver(brandSchema),
     defaultValues: toFormDefaults(),
   })
@@ -110,6 +112,7 @@ export function ProductBrandFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -129,6 +132,7 @@ export function ProductBrandFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -154,10 +158,14 @@ export function ProductBrandFormDialog({
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
                 <FormTextField
                   control={control}
                   name="description"

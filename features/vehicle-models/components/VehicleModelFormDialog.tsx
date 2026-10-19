@@ -17,8 +17,11 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   FormComboboxField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { requiredCode, requiredName } from "@/lib/validations/master-data"
 import { useVehicleModel } from "../hooks/use-vehicle-model"
 import { useCreateVehicleModel } from "../hooks/use-create-vehicle-model"
 import { useUpdateVehicleModel } from "../hooks/use-update-vehicle-model"
@@ -26,12 +29,8 @@ import { VehicleMakeCombobox } from "@/features/vehicle-makes/components/Vehicle
 
 const modelSchema = z.object({
   makeUuid: z.string().min(1, "Make is required"),
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid code"),
-  name: z.string().min(1, "Name is required").max(160),
+  code: requiredCode("Code", 50),
+  name: requiredName("Name", 160),
 })
 
 type ModelFormValues = z.infer<typeof modelSchema>
@@ -58,7 +57,7 @@ export function VehicleModelFormDialog({
   const createMutation = useCreateVehicleModel(companyUuid)
   const updateMutation = useUpdateVehicleModel(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<ModelFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<ModelFormValues>({
     resolver: zodResolver(modelSchema),
     defaultValues: { makeUuid: "", code: "", name: "" },
   })
@@ -97,9 +96,7 @@ export function VehicleModelFormDialog({
           input: {
             makeUuid: values.makeUuid,
             name: values.name,
-            ...(model?.version !== undefined
-              ? { version: model.version }
-              : {}),
+            ...(model?.version !== undefined ? { version: model.version } : {}),
           },
         },
         {
@@ -108,6 +105,7 @@ export function VehicleModelFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -127,6 +125,7 @@ export function VehicleModelFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -152,17 +151,21 @@ export function VehicleModelFormDialog({
                 <FormComboboxField
                   control={control}
                   name="makeUuid"
-                  label="Make"
+                  label={requiredLabel("Make")}
                   companyUuid={companyUuid}
                   Combobox={VehicleMakeCombobox}
                 />
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

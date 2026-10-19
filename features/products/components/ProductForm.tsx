@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,13 +15,22 @@ import {
   FormTextareaField,
   FormSwitchField,
   FormComboboxField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { FieldGroup } from "@/components/ui/field"
 import { Stepper } from "@/components/ui/stepper"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import {
+  optionalName,
+  optionalText,
+  requiredCode,
+  requiredName,
+} from "@/lib/validations/master-data"
 import { useProduct } from "../hooks/use-product"
 import { useCreateProduct } from "../hooks/use-product-mutations"
 import { useUpdateProduct } from "../hooks/use-product-mutations"
+import { useEffectiveProductFieldTemplate } from "@/features/product-field-template/hooks/use-effective-product-field-template"
 import { ProductCategoryCombobox } from "@/features/product-categories/components/ProductCategoryCombobox"
 import { ProductUomCombobox } from "@/features/product-uoms/components/ProductUomCombobox"
 import { ProductBrandCombobox } from "@/features/product-brands/components/ProductBrandCombobox"
@@ -30,29 +39,128 @@ import type {
   UpdateProductRequest,
 } from "../api/product.types"
 
-const productSchema = z.object({
-  code: z.string().min(1, "Code is required").max(60),
-  name: z.string().min(1, "Name is required").max(200),
-  shortName: z.string().max(60).optional(),
-  description: z.string().max(1000).optional(),
-  productType: z.string().max(60).optional(),
+/**
+ * Base field rules mirror the backend `ProductCoreRequest` /
+ * `UpdateProductCoreRequest` constraints:
+ *  - code     @NotBlank @Size(max=100) @SafeCode
+ *  - name     @NotBlank @Size(max=300) @SafeName
+ *  - shortName @Size(max=160) @SafeName
+ *  - description @Size(max=2000)
+ *  - productType @Size(max=40)
+ *  - barcode  @Size(max=20)
+ *  - netWeight @DecimalMin(0) @Digits(integer=12,fraction=6)
+ *  - weightUom @Size(max=20)
+ *  - automotive: manufacturer @Size(max=160) @SafeName, partNumber/oemPartNumber
+ *    @Size(max=100), packQuantity @Positive int, grossWeight @Digits(12,6)
+ */
+const baseProductSchema = z.object({
+  code: requiredCode("Code", 100),
+  name: requiredName("Name", 300),
+  shortName: optionalName("Short Name", 160),
+  description: optionalText("Description", 2000),
+  productType: z
+    .string()
+    .trim()
+    .max(40, "Product Type must not exceed 40 characters")
+    .optional(),
   categoryUuid: z.string().optional(),
-  barcode: z.string().max(60).optional(),
+  barcode: z
+    .string()
+    .trim()
+    .max(20, "Barcode must not exceed 20 characters")
+    .optional(),
   baseUomUuid: z.string().optional(),
   salesUomUuid: z.string().optional(),
   purchaseUomUuid: z.string().optional(),
-  netWeight: z.coerce.number().nonnegative().optional(),
-  weightUom: z.string().max(10).optional(),
+  netWeight: z.coerce
+    .number()
+    .nonnegative("Net Weight cannot be negative")
+    .max(999_999_999_999, "Net Weight is too large")
+    .refine(
+      (v) => /^\d+(\.\d{1,6})?$/.test(String(v)),
+      "Net Weight allows at most 6 decimals"
+    )
+    .optional(),
+  weightUom: z
+    .string()
+    .trim()
+    .max(20, "Weight UOM must not exceed 20 characters")
+    .optional(),
   batchTrackingEnabled: z.boolean().optional(),
   brandUuid: z.string().optional(),
-  manufacturer: z.string().max(200).optional(),
-  partNumber: z.string().max(100).optional(),
-  oemPartNumber: z.string().max(100).optional(),
-  packQuantity: z.coerce.number().int().positive().optional(),
-  grossWeight: z.coerce.number().nonnegative().optional(),
+  manufacturer: optionalName("Manufacturer", 160),
+  partNumber: z
+    .string()
+    .trim()
+    .max(100, "Part Number must not exceed 100 characters")
+    .optional(),
+  oemPartNumber: z
+    .string()
+    .trim()
+    .max(100, "OEM Part Number must not exceed 100 characters")
+    .optional(),
+  packQuantity: z.coerce
+    .number()
+    .int("Pack Quantity must be a whole number")
+    .positive("Pack Quantity must be greater than 0")
+    .optional(),
+  grossWeight: z.coerce
+    .number()
+    .nonnegative("Gross Weight cannot be negative")
+    .max(999_999_999_999, "Gross Weight is too large")
+    .refine(
+      (v) => /^\d+(\.\d{1,6})?$/.test(String(v)),
+      "Gross Weight allows at most 6 decimals"
+    )
+    .optional(),
 })
 
-type ProductFormValues = z.infer<typeof productSchema>
+type ProductFormValues = z.infer<typeof baseProductSchema>
+
+/** Fields the backend always requires regardless of the company template. */
+const FIXED_REQUIRED_FIELDS = ["code", "name"] as const
+
+/**
+ * Adds the company-configured mandatory product fields
+ * (`product_field_template`) on top of the base rules. The backend rejects a
+ * create/update when a mandatory field is missing, so the same check runs here.
+ */
+function buildProductSchema(requiredFields: string[]) {
+  const required = new Set(requiredFields)
+  return baseProductSchema.superRefine((values, ctx) => {
+    const record = values as Record<string, unknown>
+    for (const key of required) {
+      if (
+        FIXED_REQUIRED_FIELDS.includes(
+          key as (typeof FIXED_REQUIRED_FIELDS)[number]
+        )
+      )
+        continue
+      const value = record[key]
+      const present =
+        value !== undefined &&
+        value !== null &&
+        !(typeof value === "string" && value.trim() === "")
+      if (!present) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: "This field is required",
+        })
+      }
+    }
+  })
+}
+
+const schemaCache = new Map<string, ReturnType<typeof buildProductSchema>>()
+function productSchemaFor(requiredFields: string[]) {
+  const cacheKey = [...requiredFields].sort().join("|")
+  const cached = schemaCache.get(cacheKey)
+  if (cached) return cached
+  const schema = buildProductSchema(requiredFields)
+  schemaCache.set(cacheKey, schema)
+  return schema
+}
 
 type ProductFormProps = {
   companyUuid: string
@@ -144,10 +252,50 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
   )
   const createMutation = useCreateProduct(companyUuid)
   const updateMutation = useUpdateProduct(companyUuid)
+  const { data: fieldTemplate } = useEffectiveProductFieldTemplate(companyUuid)
 
   const [currentStep, setCurrentStep] = useState(0)
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(
     () => new Set([0])
+  )
+
+  // Effective template drives both visibility and the red required marker so the
+  // form matches what the backend will accept for this company + vertical.
+  const fieldRules = useMemo(() => {
+    const map = new Map<string, { visible: boolean; mandatory: boolean }>()
+    for (const field of fieldTemplate?.fields ?? []) {
+      map.set(field.fieldKey, {
+        visible: field.visible,
+        mandatory: field.mandatory,
+      })
+    }
+    return map
+  }, [fieldTemplate])
+
+  const requiredFieldKeys = useMemo(() => {
+    // Only enforce mandatory flags for fields this form actually renders —
+    // vertical-specific template keys (e.g. FMCG) have no input here, so
+    // requiring them would make the form impossible to submit.
+    const formKeys = new Set(Object.keys(baseProductSchema.shape))
+    const mandatory = [...fieldRules.entries()]
+      .filter(([key, rule]) => rule.mandatory && formKeys.has(key))
+      .map(([key]) => key)
+    return Array.from(new Set<string>([...FIXED_REQUIRED_FIELDS, ...mandatory]))
+  }, [fieldRules])
+
+  const isFieldRequired = useCallback(
+    (key: keyof ProductFormValues) => requiredFieldKeys.includes(key),
+    [requiredFieldKeys]
+  )
+  const isFieldVisible = useCallback(
+    (key: keyof ProductFormValues) => {
+      const rule = fieldRules.get(key)
+      if (!rule) return true
+      // A mandatory field must always be fillable, even if a stale template
+      // row left it hidden (the backend still enforces it on create/update).
+      return rule.visible || rule.mandatory
+    },
+    [fieldRules]
   )
 
   const {
@@ -156,9 +304,10 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
     reset,
     trigger,
     clearErrors,
+    setError,
     formState: { errors },
   } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchemaFor(requiredFieldKeys)),
     // Validate only when Next / stepper / Submit is clicked — never per field.
     mode: "onSubmit",
     reValidateMode: "onSubmit",
@@ -201,6 +350,9 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
 
   const cancelHref =
     isEdit && productUuid ? `/products/${productUuid}` : "/products"
+
+  const fieldLabel = (key: keyof ProductFormValues, text: string) =>
+    requiredLabel(text, isFieldRequired(key))
 
   const handleNext = async () => {
     const fields = STEP_FIELDS[currentStep]
@@ -300,8 +452,10 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
             toast.success("Product updated")
             router.push(`/products/${productUuid}`)
           },
-          onError: (error) =>
-            toast.error(getApiErrorMessage(error, "Update failed")),
+          onError: (error) => {
+            applyApiFieldErrors(error, setError)
+            toast.error(getApiErrorMessage(error, "Update failed"))
+          },
         }
       )
       return
@@ -328,8 +482,10 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
         toast.success("Product created")
         router.push(`/products/${created.productUuid}`)
       },
-      onError: (error) =>
-        toast.error(getApiErrorMessage(error, "Creation failed")),
+      onError: (error) => {
+        applyApiFieldErrors(error, setError)
+        toast.error(getApiErrorMessage(error, "Creation failed"))
+      },
     })
   }
 
@@ -372,7 +528,7 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
       >
         <div className="flex-1 space-y-6 pb-4">
           {currentStep === 0 && (
-            <div className="animate-in fade-in-50 space-y-6 duration-200">
+            <div className="animate-in space-y-6 duration-200 fade-in-50">
               <div className="space-y-1.5 border-b pb-5">
                 <h2 className="text-[15px] font-semibold tracking-tight">
                   Basic Information
@@ -383,48 +539,66 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
               </div>
               <FieldGroup>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <FormTextField
-                    control={control}
-                    name="code"
-                    label="Code *"
-                    disabled={isEdit}
-                  />
-                  <FormTextField control={control} name="name" label="Name *" />
-                  <FormTextField
-                    control={control}
-                    name="shortName"
-                    label="Short Name"
-                  />
-                  <FormTextField
-                    control={control}
-                    name="productType"
-                    label="Product Type"
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="categoryUuid"
-                    label="Category"
-                    companyUuid={companyUuid}
-                    Combobox={ProductCategoryCombobox}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="barcode"
-                    label="Barcode"
-                  />
-                  <FormTextareaField
-                    control={control}
-                    name="description"
-                    label="Description"
-                    className="lg:col-span-3"
-                  />
+                  {isFieldVisible("code") && (
+                    <FormTextField
+                      control={control}
+                      name="code"
+                      label={fieldLabel("code", "Code")}
+                      disabled={isEdit}
+                    />
+                  )}
+                  {isFieldVisible("name") && (
+                    <FormTextField
+                      control={control}
+                      name="name"
+                      label={fieldLabel("name", "Name")}
+                    />
+                  )}
+                  {isFieldVisible("shortName") && (
+                    <FormTextField
+                      control={control}
+                      name="shortName"
+                      label={fieldLabel("shortName", "Short Name")}
+                    />
+                  )}
+                  {isFieldVisible("productType") && (
+                    <FormTextField
+                      control={control}
+                      name="productType"
+                      label={fieldLabel("productType", "Product Type")}
+                    />
+                  )}
+                  {isFieldVisible("categoryUuid") && (
+                    <FormComboboxField
+                      control={control}
+                      name="categoryUuid"
+                      label={fieldLabel("categoryUuid", "Category")}
+                      companyUuid={companyUuid}
+                      Combobox={ProductCategoryCombobox}
+                    />
+                  )}
+                  {isFieldVisible("barcode") && (
+                    <FormTextField
+                      control={control}
+                      name="barcode"
+                      label={fieldLabel("barcode", "Barcode")}
+                    />
+                  )}
+                  {isFieldVisible("description") && (
+                    <FormTextareaField
+                      control={control}
+                      name="description"
+                      label={fieldLabel("description", "Description")}
+                      className="lg:col-span-3"
+                    />
+                  )}
                 </div>
               </FieldGroup>
             </div>
           )}
 
           {currentStep === 1 && (
-            <div className="animate-in fade-in-50 space-y-6 duration-200">
+            <div className="animate-in space-y-6 duration-200 fade-in-50">
               <div className="space-y-1.5 border-b pb-5">
                 <h2 className="text-[15px] font-semibold tracking-tight">
                   Units & Weight
@@ -435,50 +609,62 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
               </div>
               <FieldGroup>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <FormComboboxField
-                    control={control}
-                    name="baseUomUuid"
-                    label="Base UOM"
-                    companyUuid={companyUuid}
-                    Combobox={ProductUomCombobox}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="salesUomUuid"
-                    label="Sales UOM"
-                    companyUuid={companyUuid}
-                    Combobox={ProductUomCombobox}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="purchaseUomUuid"
-                    label="Purchase UOM"
-                    companyUuid={companyUuid}
-                    Combobox={ProductUomCombobox}
-                  />
-                  <FormNumberField
-                    control={control}
-                    name="netWeight"
-                    label="Net Weight"
-                  />
-                  <FormTextField
-                    control={control}
-                    name="weightUom"
-                    label="Weight UOM"
-                  />
-                  <FormSwitchField
-                    control={control}
-                    name="batchTrackingEnabled"
-                    label="Batch Tracking"
-                    hint="Track inventory by batch"
-                  />
+                  {isFieldVisible("baseUomUuid") && (
+                    <FormComboboxField
+                      control={control}
+                      name="baseUomUuid"
+                      label={fieldLabel("baseUomUuid", "Base UOM")}
+                      companyUuid={companyUuid}
+                      Combobox={ProductUomCombobox}
+                    />
+                  )}
+                  {isFieldVisible("salesUomUuid") && (
+                    <FormComboboxField
+                      control={control}
+                      name="salesUomUuid"
+                      label={fieldLabel("salesUomUuid", "Sales UOM")}
+                      companyUuid={companyUuid}
+                      Combobox={ProductUomCombobox}
+                    />
+                  )}
+                  {isFieldVisible("purchaseUomUuid") && (
+                    <FormComboboxField
+                      control={control}
+                      name="purchaseUomUuid"
+                      label={fieldLabel("purchaseUomUuid", "Purchase UOM")}
+                      companyUuid={companyUuid}
+                      Combobox={ProductUomCombobox}
+                    />
+                  )}
+                  {isFieldVisible("netWeight") && (
+                    <FormNumberField
+                      control={control}
+                      name="netWeight"
+                      label={fieldLabel("netWeight", "Net Weight")}
+                    />
+                  )}
+                  {isFieldVisible("weightUom") && (
+                    <FormTextField
+                      control={control}
+                      name="weightUom"
+                      label={fieldLabel("weightUom", "Weight UOM")}
+                    />
+                  )}
+                  {isFieldVisible("batchTrackingEnabled") && (
+                    <FormSwitchField
+                      control={control}
+                      name="batchTrackingEnabled"
+                      label="Batch Tracking"
+                      hint="Track inventory by batch"
+                    />
+                  )}
                 </div>
               </FieldGroup>
             </div>
           )}
 
           {currentStep === 2 && (
-            <div className="animate-in fade-in-50 space-y-6 duration-200">
+            <div className="animate-in space-y-6 duration-200 fade-in-50">
               <div className="space-y-1.5 border-b pb-5">
                 <h2 className="text-[15px] font-semibold tracking-tight">
                   Automotive Details{" "}
@@ -492,40 +678,52 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
               </div>
               <FieldGroup>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <FormComboboxField
-                    control={control}
-                    name="brandUuid"
-                    label="Brand"
-                    companyUuid={companyUuid}
-                    Combobox={ProductBrandCombobox}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="manufacturer"
-                    label="Manufacturer"
-                  />
-                  <FormTextField
-                    control={control}
-                    name="partNumber"
-                    label="Part Number"
-                  />
-                  <FormTextField
-                    control={control}
-                    name="oemPartNumber"
-                    label="OEM Part Number"
-                  />
-                  <FormNumberField
-                    control={control}
-                    name="packQuantity"
-                    label="Pack Quantity"
-                    step="1"
-                    min={1}
-                  />
-                  <FormNumberField
-                    control={control}
-                    name="grossWeight"
-                    label="Gross Weight"
-                  />
+                  {isFieldVisible("brandUuid") && (
+                    <FormComboboxField
+                      control={control}
+                      name="brandUuid"
+                      label={fieldLabel("brandUuid", "Brand")}
+                      companyUuid={companyUuid}
+                      Combobox={ProductBrandCombobox}
+                    />
+                  )}
+                  {isFieldVisible("manufacturer") && (
+                    <FormTextField
+                      control={control}
+                      name="manufacturer"
+                      label={fieldLabel("manufacturer", "Manufacturer")}
+                    />
+                  )}
+                  {isFieldVisible("partNumber") && (
+                    <FormTextField
+                      control={control}
+                      name="partNumber"
+                      label={fieldLabel("partNumber", "Part Number")}
+                    />
+                  )}
+                  {isFieldVisible("oemPartNumber") && (
+                    <FormTextField
+                      control={control}
+                      name="oemPartNumber"
+                      label={fieldLabel("oemPartNumber", "OEM Part Number")}
+                    />
+                  )}
+                  {isFieldVisible("packQuantity") && (
+                    <FormNumberField
+                      control={control}
+                      name="packQuantity"
+                      label={fieldLabel("packQuantity", "Pack Quantity")}
+                      step="1"
+                      min={1}
+                    />
+                  )}
+                  {isFieldVisible("grossWeight") && (
+                    <FormNumberField
+                      control={control}
+                      name="grossWeight"
+                      label={fieldLabel("grossWeight", "Gross Weight")}
+                    />
+                  )}
                 </div>
               </FieldGroup>
             </div>

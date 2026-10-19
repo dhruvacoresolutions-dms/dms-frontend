@@ -16,19 +16,43 @@ import { FieldGroup } from "@/components/ui/field"
 import {
   FormTextField,
   FormDateField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
 import {
   useCreateProductBatch,
   useUpdateProductBatch,
 } from "../hooks/use-product-batches"
 import type { ProductBatchResponse } from "../api/product.types"
 
-const batchSchema = z.object({
-  batchNumber: z.string().min(1, "Batch number is required").max(100),
-  manufacturingDate: z.string().optional(),
-  expiryDate: z.string().optional(),
-})
+/**
+ * Mirrors the backend `ProductBatchModels.CreateRequest` / `UpdateRequest`
+ * contract: batchNumber @NotBlank @Size(max=100) (create only); manufacturing
+ * and expiry dates are optional but a supplied expiry must not precede the
+ * manufacturing date (`ProductBatchService.dates`). Batch tracking also has to
+ * be enabled on the product (enforced server-side).
+ */
+const batchSchema = z
+  .object({
+    batchNumber: z
+      .string()
+      .trim()
+      .min(1, "Batch number is required")
+      .max(100, "Batch number must not exceed 100 characters"),
+    manufacturingDate: z.string().optional(),
+    expiryDate: z.string().optional(),
+  })
+  .refine(
+    (values) =>
+      !values.manufacturingDate ||
+      !values.expiryDate ||
+      values.expiryDate >= values.manufacturingDate,
+    {
+      path: ["expiryDate"],
+      message: "Expiry date must not precede manufacturing date",
+    }
+  )
 
 type BatchFormValues = z.infer<typeof batchSchema>
 
@@ -51,7 +75,7 @@ export function ProductBatchDialog({
   const createMutation = useCreateProductBatch(companyUuid, productUuid)
   const updateMutation = useUpdateProductBatch(companyUuid, productUuid)
 
-  const { handleSubmit, control, reset } = useForm<BatchFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<BatchFormValues>({
     resolver: zodResolver(batchSchema),
     defaultValues: { batchNumber: "", manufacturingDate: "", expiryDate: "" },
   })
@@ -84,8 +108,10 @@ export function ProductBatchDialog({
             toast.success("Batch updated")
             onOpenChange(false)
           },
-          onError: (error) =>
-            toast.error(getApiErrorMessage(error, "Update failed")),
+          onError: (error) => {
+            applyApiFieldErrors(error, setError)
+            toast.error(getApiErrorMessage(error, "Update failed"))
+          },
         }
       )
       return
@@ -101,8 +127,10 @@ export function ProductBatchDialog({
           toast.success("Batch created")
           onOpenChange(false)
         },
-        onError: (error) =>
-          toast.error(getApiErrorMessage(error, "Creation failed")),
+        onError: (error) => {
+          applyApiFieldErrors(error, setError)
+          toast.error(getApiErrorMessage(error, "Creation failed"))
+        },
       }
     )
   }
@@ -113,12 +141,16 @@ export function ProductBatchDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Batch" : "Add Batch"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FieldGroup>
             <FormTextField
               control={control}
               name="batchNumber"
-              label="Batch Number *"
+              label={requiredLabel("Batch Number", !isEdit)}
               disabled={isEdit}
             />
             <FormDateField
@@ -131,6 +163,9 @@ export function ProductBatchDialog({
               name="expiryDate"
               label="Expiry Date"
             />
+            <p className="text-xs text-muted-foreground">
+              The product must have batch tracking enabled.
+            </p>
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button

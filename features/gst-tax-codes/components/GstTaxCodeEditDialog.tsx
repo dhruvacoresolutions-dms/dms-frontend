@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -19,15 +19,45 @@ import {
   FormTextareaField,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
 import { usePatchGstTaxCodeVersion } from "../hooks/use-patch-gst-tax-code-version"
 import type { GstTaxCodeResponse } from "../api/gst-tax-code.types"
 
-const schema = z.object({
-  description: z.string().max(500).optional(),
+const baseSchema = z.object({
+  description: z
+    .string()
+    .trim()
+    .max(500, "Description must not exceed 500 characters")
+    .optional(),
   effectiveTo: z.string().optional(),
 })
 
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof baseSchema>
+
+/**
+ * Mirrors `GstTaxService.patch`: only description/status/effectiveTo can change,
+ * `effectiveTo` cannot be cleared or extended — it may only be shortened inside
+ * the version's existing range.
+ */
+function buildSchema(source: GstTaxCodeResponse | null) {
+  return baseSchema.superRefine((values, ctx) => {
+    if (!values.effectiveTo) return
+    if (source?.effectiveFrom && values.effectiveTo < source.effectiveFrom) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["effectiveTo"],
+        message: `Must be on or after ${source.effectiveFrom}`,
+      })
+    }
+    if (source?.effectiveTo && values.effectiveTo > source.effectiveTo) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["effectiveTo"],
+        message: `May only be shortened; the current end date is ${source.effectiveTo}`,
+      })
+    }
+  })
+}
 
 type Props = {
   open: boolean
@@ -48,7 +78,8 @@ export function GstTaxCodeEditDialog({
   source,
 }: Props) {
   const patchMutation = usePatchGstTaxCodeVersion(companyUuid)
-  const { handleSubmit, control, reset } = useForm<FormValues>({
+  const schema = useMemo(() => buildSchema(source), [source])
+  const { handleSubmit, control, reset, setError } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { description: "", effectiveTo: "" },
   })
@@ -68,13 +99,18 @@ export function GstTaxCodeEditDialog({
 
   const onSubmit = (values: FormValues) => {
     if (!source) return
+    const effectiveTo = values.effectiveTo?.trim()
     patchMutation.mutate(
       {
         versionUuid: source.taxVersionUuid,
         taxCode: source.taxCode,
         input: {
-          description: values.description?.trim() ? values.description.trim() : null,
-          effectiveTo: values.effectiveTo?.trim() ? values.effectiveTo.trim() : null,
+          description: values.description?.trim()
+            ? values.description.trim()
+            : null,
+          // Omitting the key leaves the current end date untouched; sending null
+          // is rejected by the backend ("effectiveTo cannot be cleared").
+          ...(effectiveTo ? { effectiveTo } : {}),
         },
       },
       {
@@ -82,7 +118,10 @@ export function GstTaxCodeEditDialog({
           toast.success("Tax code version updated")
           handleOpenChange(false)
         },
-        onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
+        onError: (error) => {
+          applyApiFieldErrors(error, setError)
+          toast.error(getApiErrorMessage(error, "Failed"))
+        },
       }
     )
   }
@@ -97,7 +136,11 @@ export function GstTaxCodeEditDialog({
             Rates can only be changed by publishing a new version.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FieldGroup>
             <FormTextareaField
               control={control}
@@ -109,6 +152,11 @@ export function GstTaxCodeEditDialog({
               name="effectiveTo"
               label="Effective To"
             />
+            <p className="text-xs text-muted-foreground">
+              {source?.effectiveTo
+                ? `The end date may only be shortened (currently ${source.effectiveTo}).`
+                : "Setting an end date closes this version from that date."}
+            </p>
           </FieldGroup>
           <div className="flex justify-end gap-2">
             <Button

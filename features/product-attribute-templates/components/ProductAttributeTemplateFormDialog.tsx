@@ -19,8 +19,11 @@ import {
   FormNumberField,
   FormSelectField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { requiredText } from "@/lib/validations/master-data"
 import { useProductAttributeTemplate } from "../hooks/use-product-attribute-template"
 import { useCreateProductAttributeTemplate } from "../hooks/use-create-product-attribute-template"
 import { useUpdateProductAttributeTemplate } from "../hooks/use-update-product-attribute-template"
@@ -34,20 +37,26 @@ function slotsFor(dataType: ProductAttributeDataType): string[] {
   return [1, 2, 3, 4].map((n) => `${dataType}_${n}`)
 }
 
+/**
+ * Mirrors `ProductAttributeModels.CreateTemplateRequest`:
+ * productType @NotBlank @Size(max=40), attributeKey @NotBlank @Size(max=100),
+ * label @NotBlank @Size(max=160), dataType/slotAssignment @NotNull,
+ * displayOrder @NotNull. The slot must belong to the selected data type (the
+ * backend rejects a mismatched pair).
+ */
 const templateSchema = z.object({
-  productType: z.string().min(1, "Product type is required").max(100),
-  attributeKey: z
-    .string()
-    .min(1, "Attribute key is required")
-    .max(100)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid attribute key"),
-  label: z.string().min(1, "Label is required").max(160),
+  productType: requiredText("Product Type", 40),
+  attributeKey: requiredText("Attribute Key", 100),
+  label: requiredText("Label", 160),
   dataType: z.enum(["NUMBER", "TEXT", "DATE", "BOOLEAN", "DROPDOWN"], {
     required_error: "Data type is required",
   }),
   slotAssignment: z.string().min(1, "Slot is required"),
   mandatory: z.boolean(),
-  displayOrder: z.coerce.number().int().min(0, "Order must be >= 0"),
+  displayOrder: z.coerce
+    .number()
+    .int("Display order must be a whole number")
+    .min(0, "Order must be >= 0"),
 })
 
 type TemplateFormValues = z.infer<typeof templateSchema>
@@ -84,7 +93,7 @@ export function ProductAttributeTemplateFormDialog({
   const createMutation = useCreateProductAttributeTemplate(companyUuid)
   const updateMutation = useUpdateProductAttributeTemplate(companyUuid)
 
-  const { handleSubmit, setValue, control, reset } =
+  const { handleSubmit, setValue, control, reset, setError } =
     useForm<TemplateFormValues>({
       resolver: zodResolver(templateSchema),
       defaultValues: toFormDefaults(),
@@ -154,6 +163,7 @@ export function ProductAttributeTemplateFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -177,6 +187,7 @@ export function ProductAttributeTemplateFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -202,20 +213,24 @@ export function ProductAttributeTemplateFormDialog({
                 <FormTextField
                   control={control}
                   name="productType"
-                  label="Product Type"
+                  label={requiredLabel("Product Type", !isEdit)}
                   disabled={isEdit}
                 />
                 <FormTextField
                   control={control}
                   name="attributeKey"
-                  label="Attribute Key"
+                  label={requiredLabel("Attribute Key", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="label" label="Label" />
+                <FormTextField
+                  control={control}
+                  name="label"
+                  label={requiredLabel("Label")}
+                />
                 <FormNumberField
                   control={control}
                   name="displayOrder"
-                  label="Display Order"
+                  label={requiredLabel("Display Order")}
                   step="1"
                   min={0}
                 />
@@ -223,7 +238,7 @@ export function ProductAttributeTemplateFormDialog({
                   <FormSelectField
                     control={control}
                     name="dataType"
-                    label="Data Type"
+                    label={requiredLabel("Data Type", !isEdit)}
                     options={DATA_TYPE_OPTIONS}
                     disabled={isEdit}
                   />
@@ -237,7 +252,7 @@ export function ProductAttributeTemplateFormDialog({
                   <FormSelectField
                     control={control}
                     name="slotAssignment"
-                    label="Slot Assignment"
+                    label={requiredLabel("Slot Assignment", !isEdit)}
                     options={slotOptions}
                     disabled={isEdit || !dataTypeValue}
                   />

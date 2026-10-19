@@ -18,8 +18,10 @@ import {
   FormDateField,
   FormTextareaField,
   FormComboboxField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
 import {
   useCreateProductGstMapping,
   useCreateProductRelationship,
@@ -44,12 +46,30 @@ type BaseProps = {
 
 // ── GST mapping ──────────────────────────────────────────────────────────────
 
-const gstSchema = z.object({
-  hsnUuid: z.string().min(1, "HSN is required"),
-  taxCode: z.string().min(1, "Tax code is required"),
-  effectiveFrom: z.string().min(1, "Effective from is required"),
-  effectiveTo: z.string().optional(),
-})
+/**
+ * Mirrors `ProductGstModels.MappingRequest`: hsnUuid @NotNull,
+ * taxCode @NotBlank @Size(max=50) (normalised to upper case), effectiveFrom
+ * @NotNull, effectiveTo must not precede effectiveFrom.
+ */
+const gstSchema = z
+  .object({
+    hsnUuid: z.string().min(1, "HSN is required"),
+    taxCode: z
+      .string()
+      .trim()
+      .min(1, "Tax code is required")
+      .max(50, "Tax code must not exceed 50 characters"),
+    effectiveFrom: z.string().min(1, "Effective from is required"),
+    effectiveTo: z.string().optional(),
+  })
+  .refine(
+    (values) =>
+      !values.effectiveTo || values.effectiveTo >= values.effectiveFrom,
+    {
+      path: ["effectiveTo"],
+      message: "Effective to must not precede effective from",
+    }
+  )
 
 export function ProductGstMappingDialog({
   open,
@@ -58,9 +78,16 @@ export function ProductGstMappingDialog({
   productUuid,
 }: BaseProps) {
   const createMutation = useCreateProductGstMapping(companyUuid, productUuid)
-  const { handleSubmit, control, reset } = useForm<z.infer<typeof gstSchema>>({
+  const { handleSubmit, control, reset, setError } = useForm<
+    z.infer<typeof gstSchema>
+  >({
     resolver: zodResolver(gstSchema),
-    defaultValues: { hsnUuid: "", taxCode: "", effectiveFrom: "", effectiveTo: "" },
+    defaultValues: {
+      hsnUuid: "",
+      taxCode: "",
+      effectiveFrom: "",
+      effectiveTo: "",
+    },
   })
 
   useEffect(() => {
@@ -79,7 +106,7 @@ export function ProductGstMappingDialog({
             createMutation.mutate(
               {
                 hsnUuid: values.hsnUuid,
-                taxCode: values.taxCode,
+                taxCode: values.taxCode.trim().toUpperCase(),
                 effectiveFrom: values.effectiveFrom,
                 effectiveTo: values.effectiveTo || undefined,
               },
@@ -88,32 +115,35 @@ export function ProductGstMappingDialog({
                   toast.success("GST mapping added")
                   onOpenChange(false)
                 },
-                onError: (error) =>
-                  toast.error(getApiErrorMessage(error, "Creation failed")),
+                onError: (error) => {
+                  applyApiFieldErrors(error, setError)
+                  toast.error(getApiErrorMessage(error, "Creation failed"))
+                },
               }
             )
           )}
           className="space-y-4"
+          noValidate
         >
           <FieldGroup>
             <FormComboboxField
               control={control}
               name="hsnUuid"
-              label="HSN *"
+              label={requiredLabel("HSN")}
               companyUuid={companyUuid}
               Combobox={GstHsnCombobox}
             />
             <FormComboboxField
               control={control}
               name="taxCode"
-              label="Tax Code *"
+              label={requiredLabel("Tax Code")}
               companyUuid={companyUuid}
               Combobox={GstTaxCodeCombobox}
             />
             <FormDateField
               control={control}
               name="effectiveFrom"
-              label="Effective From *"
+              label={requiredLabel("Effective From")}
             />
             <FormDateField
               control={control}
@@ -122,7 +152,11 @@ export function ProductGstMappingDialog({
             />
           </FieldGroup>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
@@ -137,6 +171,10 @@ export function ProductGstMappingDialog({
 
 // ── Relationship ─────────────────────────────────────────────────────────────
 
+/**
+ * Mirrors `ProductRelationshipModels.CreateRequest`: relatedProductUuid and
+ * relationshipTypeUuid are @NotNull; the description is free text.
+ */
 const relSchema = z.object({
   relatedProductUuid: z.string().min(1, "Related product is required"),
   relationshipTypeUuid: z.string().min(1, "Relationship type is required"),
@@ -150,22 +188,29 @@ export function ProductRelationshipDialog({
   productUuid,
 }: BaseProps) {
   const createMutation = useCreateProductRelationship(companyUuid, productUuid)
-  const { handleSubmit, control, reset } = useForm<z.infer<typeof relSchema>>({
+  const { handleSubmit, control, reset, setError } = useForm<
+    z.infer<typeof relSchema>
+  >({
     resolver: zodResolver(relSchema),
-    defaultValues: { relatedProductUuid: "", relationshipTypeUuid: "", description: "" },
+    defaultValues: {
+      relatedProductUuid: "",
+      relationshipTypeUuid: "",
+      description: "",
+    },
   })
 
   useEffect(() => {
     if (open) {
-      reset({ relatedProductUuid: "", relationshipTypeUuid: "", description: "" })
+      reset({
+        relatedProductUuid: "",
+        relationshipTypeUuid: "",
+        description: "",
+      })
     }
   }, [open, reset])
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Relationship</DialogTitle>
@@ -183,18 +228,21 @@ export function ProductRelationshipDialog({
                   toast.success("Relationship added")
                   onOpenChange(false)
                 },
-                onError: (error) =>
-                  toast.error(getApiErrorMessage(error, "Creation failed")),
+                onError: (error) => {
+                  applyApiFieldErrors(error, setError)
+                  toast.error(getApiErrorMessage(error, "Creation failed"))
+                },
               }
             )
           )}
           className="space-y-4"
+          noValidate
         >
           <FieldGroup>
             <FormComboboxField
               control={control}
               name="relatedProductUuid"
-              label="Related Product *"
+              label={requiredLabel("Related Product")}
               companyUuid={companyUuid}
               Combobox={ProductCombobox}
               comboboxProps={{ excludeIds: [productUuid] }}
@@ -202,7 +250,7 @@ export function ProductRelationshipDialog({
             <FormComboboxField
               control={control}
               name="relationshipTypeUuid"
-              label="Relationship Type *"
+              label={requiredLabel("Relationship Type")}
               companyUuid={companyUuid}
               Combobox={RelationshipTypeCombobox}
             />
@@ -213,7 +261,11 @@ export function ProductRelationshipDialog({
             />
           </FieldGroup>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
@@ -228,14 +280,28 @@ export function ProductRelationshipDialog({
 
 // ── Fitment ──────────────────────────────────────────────────────────────────
 
-const fitmentSchema = z.object({
-  variantUuid: z.string().min(1, "Variant is required"),
-  fuelTypeUuid: z.string().optional(),
-  engine: z.string().max(120).optional(),
-  yearFrom: z.string().optional(),
-  yearTo: z.string().optional(),
-  fitmentPositionUuid: z.string().optional(),
-})
+/**
+ * Mirrors `VehicleFitmentModels.FitmentRequest`: variantUuid @NotNull, engine
+ * @Size(max=100), yearTo must not precede yearFrom.
+ */
+const fitmentSchema = z
+  .object({
+    variantUuid: z.string().min(1, "Variant is required"),
+    fuelTypeUuid: z.string().optional(),
+    engine: z
+      .string()
+      .trim()
+      .max(100, "Engine must not exceed 100 characters")
+      .optional(),
+    yearFrom: z.string().optional(),
+    yearTo: z.string().optional(),
+    fitmentPositionUuid: z.string().optional(),
+  })
+  .refine(
+    (values) =>
+      !values.yearFrom || !values.yearTo || values.yearTo >= values.yearFrom,
+    { path: ["yearTo"], message: "Year To must not precede Year From" }
+  )
 
 export function ProductFitmentDialog({
   open,
@@ -244,7 +310,9 @@ export function ProductFitmentDialog({
   productUuid,
 }: BaseProps) {
   const createMutation = useCreateProductFitment(companyUuid, productUuid)
-  const { handleSubmit, control, reset } = useForm<z.infer<typeof fitmentSchema>>({
+  const { handleSubmit, control, reset, setError } = useForm<
+    z.infer<typeof fitmentSchema>
+  >({
     resolver: zodResolver(fitmentSchema),
     defaultValues: {
       variantUuid: "",
@@ -292,19 +360,22 @@ export function ProductFitmentDialog({
                   toast.success("Fitment added")
                   onOpenChange(false)
                 },
-                onError: (error) =>
-                  toast.error(getApiErrorMessage(error, "Creation failed")),
+                onError: (error) => {
+                  applyApiFieldErrors(error, setError)
+                  toast.error(getApiErrorMessage(error, "Creation failed"))
+                },
               }
             )
           )}
           className="space-y-4"
+          noValidate
         >
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <FormComboboxField
                 control={control}
                 name="variantUuid"
-                label="Variant *"
+                label={requiredLabel("Variant")}
                 companyUuid={companyUuid}
                 Combobox={VehicleVariantCombobox}
               />
@@ -315,11 +386,7 @@ export function ProductFitmentDialog({
                 companyUuid={companyUuid}
                 Combobox={FuelTypeCombobox}
               />
-              <FormTextField
-                control={control}
-                name="engine"
-                label="Engine"
-              />
+              <FormTextField control={control} name="engine" label="Engine" />
               <FormComboboxField
                 control={control}
                 name="fitmentPositionUuid"
@@ -332,15 +399,15 @@ export function ProductFitmentDialog({
                 name="yearFrom"
                 label="Year From"
               />
-              <FormDateField
-                control={control}
-                name="yearTo"
-                label="Year To"
-              />
+              <FormDateField control={control} name="yearTo" label="Year To" />
             </div>
           </FieldGroup>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
@@ -355,6 +422,7 @@ export function ProductFitmentDialog({
 
 // ── Geography mapping ────────────────────────────────────────────────────────
 
+/** Mirrors `ProductGeographyMappingModels.MappingRequest`: geographyUuid @NotNull. */
 const geoSchema = z.object({
   geographyUuid: z.string().min(1, "Geography is required"),
 })
@@ -369,7 +437,9 @@ export function ProductGeographyMappingDialog({
     companyUuid,
     productUuid
   )
-  const { handleSubmit, control, reset } = useForm<z.infer<typeof geoSchema>>({
+  const { handleSubmit, control, reset, setError } = useForm<
+    z.infer<typeof geoSchema>
+  >({
     resolver: zodResolver(geoSchema),
     defaultValues: { geographyUuid: "" },
   })
@@ -393,24 +463,31 @@ export function ProductGeographyMappingDialog({
                   toast.success("Mapping added")
                   onOpenChange(false)
                 },
-                onError: (error) =>
-                  toast.error(getApiErrorMessage(error, "Creation failed")),
+                onError: (error) => {
+                  applyApiFieldErrors(error, setError)
+                  toast.error(getApiErrorMessage(error, "Creation failed"))
+                },
               }
             )
           )}
           className="space-y-4"
+          noValidate
         >
           <FieldGroup>
             <FormComboboxField
               control={control}
               name="geographyUuid"
-              label="Geography *"
+              label={requiredLabel("Geography")}
               companyUuid={companyUuid}
               Combobox={GeographyCombobox}
             />
           </FieldGroup>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>

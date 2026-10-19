@@ -17,8 +17,11 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   FormComboboxField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { requiredCode, requiredName } from "@/lib/validations/master-data"
 import { useVehicleVariant } from "../hooks/use-vehicle-variant"
 import { useCreateVehicleVariant } from "../hooks/use-create-vehicle-variant"
 import { useUpdateVehicleVariant } from "../hooks/use-update-vehicle-variant"
@@ -26,12 +29,8 @@ import { VehicleModelCombobox } from "@/features/vehicle-models/components/Vehic
 
 const variantSchema = z.object({
   modelUuid: z.string().min(1, "Model is required"),
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid code"),
-  name: z.string().min(1, "Name is required").max(160),
+  code: requiredCode("Code", 50),
+  name: requiredName("Name", 160),
 })
 
 type VariantFormValues = z.infer<typeof variantSchema>
@@ -58,10 +57,12 @@ export function VehicleVariantFormDialog({
   const createMutation = useCreateVehicleVariant(companyUuid)
   const updateMutation = useUpdateVehicleVariant(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<VariantFormValues>({
-    resolver: zodResolver(variantSchema),
-    defaultValues: { modelUuid: "", code: "", name: "" },
-  })
+  const { handleSubmit, control, reset, setError } = useForm<VariantFormValues>(
+    {
+      resolver: zodResolver(variantSchema),
+      defaultValues: { modelUuid: "", code: "", name: "" },
+    }
+  )
 
   useEffect(() => {
     if (!open) return
@@ -108,6 +109,7 @@ export function VehicleVariantFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -127,6 +129,7 @@ export function VehicleVariantFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -152,17 +155,21 @@ export function VehicleVariantFormDialog({
                 <FormComboboxField
                   control={control}
                   name="modelUuid"
-                  label="Model"
+                  label={requiredLabel("Model")}
                   companyUuid={companyUuid}
                   Combobox={VehicleModelCombobox}
                 />
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

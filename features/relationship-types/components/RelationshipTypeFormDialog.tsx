@@ -14,19 +14,17 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
-import { FormTextField } from "@/components/common/form-fields"
+import { FormTextField, requiredLabel } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { requiredCode, requiredName } from "@/lib/validations/master-data"
 import { useRelationshipType } from "../hooks/use-relationship-type"
 import { useCreateRelationshipType } from "../hooks/use-create-relationship-type"
 import { useUpdateRelationshipType } from "../hooks/use-update-relationship-type"
 
 const relationshipTypeSchema = z.object({
-  code: z
-    .string()
-    .min(1, "Code is required")
-    .max(50)
-    .regex(/^[A-Za-z0-9_-]+$/, "Invalid code"),
-  name: z.string().min(1, "Name is required").max(160),
+  code: requiredCode("Code", 50),
+  name: requiredName("Name", 160),
 })
 
 type RelationshipTypeFormValues = z.infer<typeof relationshipTypeSchema>
@@ -51,7 +49,7 @@ export function RelationshipTypeFormDialog({
   const createMutation = useCreateRelationshipType(companyUuid)
   const updateMutation = useUpdateRelationshipType(companyUuid)
 
-  const { handleSubmit, control, reset } =
+  const { handleSubmit, control, reset, setError } =
     useForm<RelationshipTypeFormValues>({
       resolver: zodResolver(relationshipTypeSchema),
       defaultValues: { code: "", name: "" },
@@ -100,6 +98,7 @@ export function RelationshipTypeFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -115,6 +114,7 @@ export function RelationshipTypeFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -140,10 +140,14 @@ export function RelationshipTypeFormDialog({
                 <FormTextField
                   control={control}
                   name="code"
-                  label="Code"
+                  label={requiredLabel("Code", !isEdit)}
                   disabled={isEdit}
                 />
-                <FormTextField control={control} name="name" label="Name" />
+                <FormTextField
+                  control={control}
+                  name="name"
+                  label={requiredLabel("Name")}
+                />
               </div>
             </FieldGroup>
             <div className="flex justify-end gap-2">

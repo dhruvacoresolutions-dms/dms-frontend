@@ -16,20 +16,44 @@ import { FieldGroup } from "@/components/ui/field"
 import {
   FormDateField,
   FormTextField,
+  requiredLabel,
 } from "@/components/common/form-fields"
 import { Spinner } from "@/components/ui/spinner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { optionalText, requiredCode } from "@/lib/validations/master-data"
 import { useGstHsn } from "../hooks/use-gst-hsn"
 import { useCreateGstHsn } from "../hooks/use-create-gst-hsn"
 import { useUpdateGstHsn } from "../hooks/use-update-gst-hsn"
 
-const hsnSchema = z.object({
-  hsnCode: z.string().min(1, "HSN code is required").max(20),
-  description: z.string().max(500).optional(),
-  effectiveFrom: z.string().optional(),
-  effectiveTo: z.string().optional(),
-  gstProductType: z.string().max(50).optional(),
-})
+/**
+ * Mirrors `CreateGstHsnRequest` / `UpdateGstHsnRequest`:
+ * hsnCode @NotBlank @Size(max=20) @SafeCode (create only, immutable after),
+ * description @Size(max=500), gstProductType @Size(max=30), effective dates
+ * optional but "to" must not precede "from".
+ */
+const hsnSchema = z
+  .object({
+    hsnCode: requiredCode("HSN Code", 20),
+    description: optionalText("Description", 500),
+    effectiveFrom: z.string().optional(),
+    effectiveTo: z.string().optional(),
+    gstProductType: z
+      .string()
+      .trim()
+      .max(30, "Product Type must not exceed 30 characters")
+      .optional(),
+  })
+  .refine(
+    (values) =>
+      !values.effectiveFrom ||
+      !values.effectiveTo ||
+      values.effectiveTo >= values.effectiveFrom,
+    {
+      path: ["effectiveTo"],
+      message: "Effective to must not precede effective from",
+    }
+  )
 
 type HsnFormValues = z.infer<typeof hsnSchema>
 
@@ -65,7 +89,7 @@ export function GstHsnFormDialog({
   const createMutation = useCreateGstHsn(companyUuid)
   const updateMutation = useUpdateGstHsn(companyUuid)
 
-  const { handleSubmit, control, reset } = useForm<HsnFormValues>({
+  const { handleSubmit, control, reset, setError } = useForm<HsnFormValues>({
     resolver: zodResolver(hsnSchema),
     defaultValues: toFormDefaults(),
   })
@@ -123,6 +147,7 @@ export function GstHsnFormDialog({
             handleOpenChange(false)
           },
           onError: (error) => {
+            applyApiFieldErrors(error, setError)
             toast.error(getApiErrorMessage(error, "Failed"))
           },
         }
@@ -144,6 +169,7 @@ export function GstHsnFormDialog({
           handleOpenChange(false)
         },
         onError: (error) => {
+          applyApiFieldErrors(error, setError)
           toast.error(getApiErrorMessage(error, "Failed"))
         },
       }
@@ -170,7 +196,7 @@ export function GstHsnFormDialog({
                   <FormTextField
                     control={control}
                     name="hsnCode"
-                    label="HSN Code"
+                    label={requiredLabel("HSN Code", !isEdit)}
                     disabled={isEdit}
                   />
                   {isEdit && (
