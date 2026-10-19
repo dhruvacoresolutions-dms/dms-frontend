@@ -122,18 +122,21 @@ export function GstTaxCodeFormDialog({
   const createMutation = useCreateGstTaxCode(companyUuid)
   const versionMutation = useCreateGstTaxCodeVersion(companyUuid)
 
-  const { handleSubmit, control, reset, setValue } = useForm<TaxCodeFormValues>({
-    resolver: zodResolver(taxCodeSchema),
-    defaultValues: toFormDefaults(),
-  })
+  const { handleSubmit, control, reset, setValue, getValues } =
+    useForm<TaxCodeFormValues>({
+      resolver: zodResolver(taxCodeSchema),
+      defaultValues: toFormDefaults(),
+    })
 
   // Keep CGST and SGST in sync (intra-state rates are always equal).
   const cgstRate = useWatch({ control, name: "cgstRate" })
   const sgstRate = useWatch({ control, name: "sgstRate" })
+  const totalRate = useWatch({ control, name: "totalRate" })
   const prevRates = useRef<{
     cgst: number | undefined
     sgst: number | undefined
   }>({ cgst: undefined, sgst: undefined })
+  const prevTotalRate = useRef<string | number | undefined>(undefined)
   useEffect(() => {
     const prev = prevRates.current
     if (cgstRate !== prev.cgst && cgstRate !== sgstRate) {
@@ -150,10 +153,11 @@ export function GstTaxCodeFormDialog({
   useEffect(() => {
     if (!open) return
     if (isNewVersion && source) {
+      const total = rateToForm(source.totalRate)
       reset({
         taxCode: source.taxCode,
         description: source.description ?? "",
-        totalRate: rateToForm(source.totalRate),
+        totalRate: total,
         cgstRate: rateToForm(source.cgstRate),
         sgstRate: rateToForm(source.sgstRate),
         igstRate: rateToForm(source.igstRate),
@@ -165,10 +169,42 @@ export function GstTaxCodeFormDialog({
         effectiveTo: "",
         status: "ACTIVE",
       })
+      prevTotalRate.current = total
     } else {
       reset(toFormDefaults())
+      prevTotalRate.current = undefined
     }
   }, [open, isNewVersion, source, reset])
+
+  // Filling the total rate auto-completes the GST split: CGST and SGST each
+  // get half of the total (intra-state), while IGST mirrors the full rate
+  // (inter-state).
+  useEffect(() => {
+    // Read the live form value so a programmatic reset (defaults or a new
+    // version prefill) is never mistaken for a user edit. Number inputs hand
+    // back strings at runtime, so treat the value as unknown here.
+    const currentTotal: unknown = getValues("totalRate")
+    if (currentTotal === prevTotalRate.current) return
+    prevTotalRate.current = currentTotal as string | number | undefined
+
+    const numericTotal = Number(currentTotal)
+    if (
+      currentTotal === undefined ||
+      currentTotal === null ||
+      currentTotal === "" ||
+      !Number.isFinite(numericTotal)
+    ) {
+      setValue("cgstRate", undefined, { shouldValidate: true })
+      setValue("sgstRate", undefined, { shouldValidate: true })
+      setValue("igstRate", undefined, { shouldValidate: true })
+      return
+    }
+
+    const half = numericTotal / 2
+    setValue("cgstRate", half, { shouldValidate: true })
+    setValue("sgstRate", half, { shouldValidate: true })
+    setValue("igstRate", numericTotal, { shouldValidate: true })
+  }, [totalRate, getValues, setValue])
 
   const handleOpenChange = (next: boolean) => {
     if (!next) reset()
@@ -207,8 +243,7 @@ export function GstTaxCodeFormDialog({
             toast.success("New tax code version published")
             handleOpenChange(false)
           },
-          onError: (error) =>
-            toast.error(getApiErrorMessage(error, "Failed")),
+          onError: (error) => toast.error(getApiErrorMessage(error, "Failed")),
         }
       )
       return
@@ -265,6 +300,10 @@ export function GstTaxCodeFormDialog({
 
             <FieldSet>
               <FieldLegend className="mb-3">GST Rates (%)</FieldLegend>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Entering the Total Rate auto-fills CGST and SGST (half each) and
+                IGST (full rate).
+              </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                 <FormPercentageField
                   control={control}
