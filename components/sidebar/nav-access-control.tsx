@@ -20,10 +20,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
-import {
-  CollapsedNavPopup,
-  type CollapsedNavLink,
-} from "@/components/sidebar/collapsed-nav-popup"
 import { cn } from "@/lib/utils"
 import type { MainNav, SidebarNavItem } from "@/types/components/sidebar"
 
@@ -35,14 +31,6 @@ function collectUrls(items: MainNav): string[] {
   return items
     .flatMap((item) => [item.url, ...collectUrls(item.items ?? [])])
     .filter((url) => url !== "#")
-}
-
-function collectLeafLinks(items: MainNav): CollapsedNavLink[] {
-  return items.flatMap((item) => {
-    if (item.items?.length) return collectLeafLinks(item.items)
-    if (item.url === "#") return []
-    return [{ title: item.title, url: item.url }]
-  })
 }
 
 function getActiveUrl(pathname: string, items: MainNav): string | null {
@@ -72,7 +60,6 @@ function isBranchActive(
 
 type RenderContext = {
   activeUrl: string | null
-  iconMode: boolean
   openMap: Record<string, boolean>
   setOpen: (key: string, next: boolean) => void
   closeMobileSidebar: () => void
@@ -90,20 +77,6 @@ function renderNavItems(
     const isOpen = hasChildren
       ? (ctx.openMap[key] ?? isBranchActive(item, ctx.activeUrl))
       : false
-
-    // Icon-collapsed desktop mode hides inline submenus, so top-level
-    // parents with children render a hover flyout instead.
-    if (hasChildren && ctx.iconMode && depth === 0) {
-      return (
-        <CollapsedNavPopup
-          key={key}
-          title={item.title}
-          icon={item.icon && <item.icon />}
-          triggerActive={isBranchActive(item, ctx.activeUrl)}
-          links={collectLeafLinks([item])}
-        />
-      )
-    }
 
     const chevron = (
       <ChevronRightIcon
@@ -178,8 +151,7 @@ function renderNavItems(
 
 export function NavAccessControl({ items }: { items: MainNav }) {
   const pathname = usePathname()
-  const { state, isMobile, setOpenMobile } = useSidebar()
-  const iconMode = !isMobile && state === "collapsed"
+  const { isMobile, setOpenMobile } = useSidebar()
   const activeUrl = getActiveUrl(pathname, items)
   const [openMap, setOpenMap] = React.useState<Record<string, boolean>>({})
 
@@ -192,7 +164,6 @@ export function NavAccessControl({ items }: { items: MainNav }) {
           items,
           {
             activeUrl,
-            iconMode,
             openMap,
             setOpen: (key, next) =>
               setOpenMap((prev) => ({ ...prev, [key]: next })),

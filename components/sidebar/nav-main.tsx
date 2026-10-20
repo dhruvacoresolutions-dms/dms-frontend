@@ -18,7 +18,6 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
 import { ChevronRightIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { MainNav } from "@/types/components/sidebar"
@@ -52,10 +51,7 @@ function isGroupActive(item: { url: string; items?: { url: string }[] }, pathnam
 
 export function NavMain({ items }: { items: MainNav }) {
   const pathname = usePathname()
-  const { state, isMobile, setOpenMobile } = useSidebar()
-  // Icon-collapsed (desktop) mode hides inline submenus, so parents with
-  // children render a hover popup instead.
-  const iconMode = !isMobile && state === "collapsed"
+  const { isMobile, setOpenMobile } = useSidebar()
   const activeUrl = getActiveUrl(pathname, items)
   // Mobile: close the sheet immediately when a navigation link is tapped.
   // Parent items with children only expand — they never close.
@@ -79,21 +75,6 @@ export function NavMain({ items }: { items: MainNav }) {
           const isOpen = hasChildren
             ? (openMap[item.title] ?? isGroupActive(item, pathname, items))
             : false
-          if (hasChildren && iconMode) {
-            return (
-              <CollapsedNavPopup
-                key={item.title}
-                title={item.title}
-                icon={item.icon && <item.icon />}
-                triggerActive={isGroupActive(item, pathname, items)}
-                links={item.items!.map((subItem) => ({
-                  title: subItem.title,
-                  url: subItem.url,
-                  active: activeUrl === subItem.url,
-                }))}
-              />
-            )
-          }
           return (
             <Collapsible
               key={item.title}

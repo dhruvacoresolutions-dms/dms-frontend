@@ -19,7 +19,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
-import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
 import { cn } from "@/lib/utils"
 import type { NavGroup, SidebarNavItem } from "@/types/components/sidebar"
 
@@ -57,10 +56,7 @@ function isItemActive(item: SidebarNavItem, activeUrl: string | null): boolean {
 
 export function NavGroups({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname()
-  const { state, isMobile, setOpenMobile } = useSidebar()
-  // Icon-collapsed (desktop) mode hides inline submenus, so parents with
-  // children render a hover popup instead.
-  const iconMode = !isMobile && state === "collapsed"
+  const { isMobile, setOpenMobile } = useSidebar()
   const activeUrl = getActiveUrl(pathname, groups)
   // Mobile: close the sheet immediately when a navigation link is tapped.
   // Parent items with children only expand — they never close.
@@ -94,22 +90,6 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
                 ? (openMap[key] ?? isItemActive(item, activeUrl))
                 : false
               const active = activeUrl === item.url
-
-              if (hasChildren && iconMode) {
-                return (
-                  <CollapsedNavPopup
-                    key={item.title}
-                    title={item.title}
-                    icon={item.icon && <item.icon />}
-                    triggerActive={isItemActive(item, activeUrl)}
-                    links={item.items!.map((sub) => ({
-                      title: sub.title,
-                      url: sub.url,
-                      active: activeUrl === sub.url,
-                    }))}
-                  />
-                )
-              }
 
               return (
                 <Collapsible
