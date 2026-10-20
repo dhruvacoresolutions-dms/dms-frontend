@@ -316,6 +316,12 @@ export const mainNav: MainNav = [
     icon: LayoutDashboard,
     permission: PERMISSIONS.DASHBOARD.VIEW,
   },
+  {
+    title: "Visit Plans",
+    url: "/visit-plans",
+    icon: MapPinCheck,
+    permission: PERMISSIONS.VISIT_PLAN.VIEW,
+  },
 ]
 
 /** Flatten nested branches to leaf items (the top navbar has no depth). */
