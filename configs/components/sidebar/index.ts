@@ -48,6 +48,11 @@ import {
   MapPinCheck,
   // Financial Management
   CalendarDays,
+  CalendarRange,
+  CalendarOff,
+  CalendarClock,
+  CalendarCheck,
+  Settings2,
   BadgePercent,
   Landmark,
   // Reports
@@ -236,6 +241,44 @@ export const productPricingNav: MainNav = [
     url: "/product-attributes",
     icon: Tags,
     permission: PERMISSIONS.PRODUCT.SUPPORTING_MASTER_VIEW,
+  },
+]
+
+/**
+ * Company Calendar module: fiscal years / accounting periods, holidays,
+ * weekly-off rules, the effective calendar and visit/claim settings.
+ */
+export const companyCalendarNav: MainNav = [
+  {
+    title: "Fiscal Years",
+    url: "/company-calendar/fiscal-years",
+    icon: CalendarRange,
+    permission: PERMISSIONS.COMPANY_CALENDAR.VIEW,
+  },
+  {
+    title: "Holidays",
+    url: "/company-calendar/holidays",
+    icon: CalendarOff,
+    permission: PERMISSIONS.COMPANY_CALENDAR.VIEW,
+  },
+  {
+    title: "Weekly Off Rule",
+    url: "/company-calendar/weekly-off",
+    icon: CalendarClock,
+    permission: PERMISSIONS.COMPANY_CALENDAR.VIEW,
+  },
+  {
+    title: "Effective Calendar",
+    url: "/company-calendar/effective",
+    icon: CalendarCheck,
+    permission: PERMISSIONS.COMPANY_CALENDAR.VIEW,
+  },
+  {
+    title: "Calendar Settings",
+    url: "/company-calendar/settings",
+    icon: Settings2,
+    // Visible when either visit-radius or claim-policy read access is granted.
+    permissions: [PERMISSIONS.VISIT_RADIUS.VIEW, PERMISSIONS.CLAIM_POLICY.VIEW],
   },
 ]
 
@@ -479,6 +522,11 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Company Calendar",
+    icon: CalendarDays,
+    items: [...companyCalendarNav],
+  },
+  {
     label: "Financial Management",
     icon: Landmark,
     items: [
@@ -547,6 +595,7 @@ const allNav = [
   ...organizationNav,
   ...accessControlNav,
   ...productPricingNav,
+  ...companyCalendarNav,
   ...flatGroupItems,
 ]
 

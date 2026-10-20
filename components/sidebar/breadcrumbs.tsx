@@ -19,6 +19,9 @@ const formatSegment = (segment: string) =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ")
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const getLabel = (path: string) => {
   const exact = navLabelByUrl.get(path)
   if (exact) return exact
@@ -27,6 +30,7 @@ const getLabel = (path: string) => {
   if (lastSegment) {
     const bySlug = navLabelByUrl.get(`/${lastSegment.toLowerCase()}`)
     if (bySlug) return bySlug
+    if (UUID_PATTERN.test(lastSegment)) return "Details"
     return formatSegment(lastSegment)
   }
 
@@ -54,7 +58,9 @@ export function SidebarBreadcrumbs() {
           <React.Fragment key={`${index}-${crumb.href}`}>
             <BreadcrumbItem>
               {crumb.isCurrent ? (
-                <BreadcrumbPage className="text-topbar-foreground">{crumb.label}</BreadcrumbPage>
+                <BreadcrumbPage className="text-topbar-foreground">
+                  {crumb.label}
+                </BreadcrumbPage>
               ) : (
                 <BreadcrumbLink
                   render={<Link href={crumb.href} />}

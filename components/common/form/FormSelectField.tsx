@@ -31,6 +31,7 @@ export function FormSelectField<T extends FieldValues>({
         <Field className={className}>
           <FieldLabel>{label}</FieldLabel>
           <Select
+            items={options}
             value={field.value ?? ""}
             onValueChange={(v: string | null) => {
               if (v) field.onChange(v)

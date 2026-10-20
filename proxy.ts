@@ -24,6 +24,7 @@ const protectedRoutes = [
   "/suppliers",
   "/distributors",
   "/distributor-references",
+  "/company-calendar",
   "/vehicle-masters",
   "/support-masters",
   "/product-attributes",

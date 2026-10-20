@@ -6,10 +6,12 @@ import { NavMain } from "@/components/sidebar/nav-main"
 import { NavOrganization } from "@/components/sidebar/nav-organization"
 import { NavAccessControl } from "@/components/sidebar/nav-access-control"
 import { NavProductPricing } from "@/components/sidebar/nav-product-pricing"
+import { NavCompanyCalendar } from "@/components/sidebar/nav-company-calendar"
 import { CompaniesNav } from "@/components/sidebar/companies-nav"
 import { Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar"
 import {
   accessControlNav,
+  companyCalendarNav,
   mainNav,
   organizationNav,
   productPricingNav,
@@ -25,6 +27,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const organizationItems = useFilteredMainNav(organizationNav)
   const accessControlItems = useFilteredMainNav(accessControlNav)
   const productPricingItems = useFilteredMainNav(productPricingNav)
+  const companyCalendarItems = useFilteredMainNav(companyCalendarNav)
   const { state, isMobile, setOpen } = useSidebar()
 
   // Hover-to-expand when collapsed to icon mode (desktop only).
@@ -86,6 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <NavMain items={filteredNav} />
             <NavOrganization items={organizationItems} />
             <NavProductPricing items={productPricingItems} />
+            <NavCompanyCalendar items={companyCalendarItems} />
             <NavAccessControl items={accessControlItems} />
             {/* <NavGroups groups={filteredGroups} /> */}
           </>
