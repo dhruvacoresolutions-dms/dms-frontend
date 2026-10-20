@@ -2,7 +2,6 @@
 
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
-import { CalendarSectionNav } from "@/features/company-calendar/components/CalendarSectionNav"
 import { EffectiveCalendarView } from "@/features/company-calendar/components/EffectiveCalendarView"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
@@ -25,7 +24,6 @@ function EffectiveCalendarContent() {
         title="Effective Calendar"
         description="Working days, holidays and accounting periods for any date range"
       />
-      <CalendarSectionNav />
       <EffectiveCalendarView companyUuid={companyUuid} />
     </div>
   )

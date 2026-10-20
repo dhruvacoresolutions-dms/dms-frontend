@@ -4,7 +4,6 @@ import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
-import { CalendarSectionNav } from "@/features/company-calendar/components/CalendarSectionNav"
 import { VisitRadiusCard } from "@/features/company-calendar/components/VisitRadiusCard"
 import { ClaimPolicyCard } from "@/features/company-calendar/components/ClaimPolicyCard"
 import { PermissionGate } from "@/components/auth/PermissionGate"
@@ -43,7 +42,6 @@ function CalendarSettingsContent() {
         title="Calendar Settings"
         description="Visit radius and expense-claim policy used for field activity"
       />
-      <CalendarSectionNav />
 
       {isLoading ? (
         <LoadingState message="Loading calendar settings…" />

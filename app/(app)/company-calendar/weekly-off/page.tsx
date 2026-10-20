@@ -2,7 +2,6 @@
 
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
-import { CalendarSectionNav } from "@/features/company-calendar/components/CalendarSectionNav"
 import { WeeklyOffRuleForm } from "@/features/company-calendar/components/WeeklyOffRuleForm"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
@@ -25,7 +24,6 @@ function WeeklyOffContent() {
         title="Weekly Off Rule"
         description="Weekly offs and alternate Saturdays used to resolve the company calendar"
       />
-      <CalendarSectionNav />
       <div className="max-w-3xl">
         <WeeklyOffRuleForm companyUuid={companyUuid} />
       </div>

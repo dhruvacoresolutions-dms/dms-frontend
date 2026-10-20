@@ -17,7 +17,6 @@ import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
-import { CalendarSectionNav } from "@/features/company-calendar/components/CalendarSectionNav"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
@@ -299,8 +298,6 @@ function FiscalYearDetailContent() {
           </div>
         }
       />
-
-      <CalendarSectionNav />
 
       <Card size="sm">
         <CardHeader>

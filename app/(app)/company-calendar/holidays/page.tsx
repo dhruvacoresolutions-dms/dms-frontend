@@ -15,7 +15,6 @@ import { toast } from "sonner"
 
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
-import { CalendarSectionNav } from "@/features/company-calendar/components/CalendarSectionNav"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { DatePicker } from "@/components/common/DatePicker"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -220,8 +219,6 @@ function HolidaysContent() {
           </PermissionGate>
         }
       />
-
-      <CalendarSectionNav />
 
       <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
         <div className="sm:w-44">

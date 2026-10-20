@@ -15,7 +15,6 @@ import { toast } from "sonner"
 
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
-import { CalendarSectionNav } from "@/features/company-calendar/components/CalendarSectionNav"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
@@ -170,8 +169,6 @@ function FiscalYearsContent() {
           </PermissionGate>
         }
       />
-
-      <CalendarSectionNav />
 
       <DataTable
         columns={columns}
