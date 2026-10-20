@@ -2,14 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
 import { companiesNav } from "@/configs/components/sidebar"
 
 export function CompaniesNav() {
@@ -20,13 +20,11 @@ export function CompaniesNav() {
   }
 
   return (
-    <SidebarGroup className="pt-2">
-      <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-sidebar-foreground/70">
-        Platform
-      </SidebarGroupLabel>
+    <CollapsibleNavGroup label="Platform">
       <SidebarMenu>
         {companiesNav.map((item) => {
-          const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`)
+          const isActive =
+            pathname === item.url || pathname.startsWith(`${item.url}/`)
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
@@ -42,6 +40,6 @@ export function CompaniesNav() {
           )
         })}
       </SidebarMenu>
-    </SidebarGroup>
+    </CollapsibleNavGroup>
   )
 }

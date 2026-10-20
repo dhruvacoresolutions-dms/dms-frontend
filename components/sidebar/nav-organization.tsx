@@ -11,8 +11,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,6 +19,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
 import {
   CollapsedNavPopup,
   type CollapsedNavLink,
@@ -57,7 +56,10 @@ function getActiveUrl(pathname: string, items: MainNav): string | null {
   return best
 }
 
-function isBranchActive(item: SidebarNavItem, activeUrl: string | null): boolean {
+function isBranchActive(
+  item: SidebarNavItem,
+  activeUrl: string | null
+): boolean {
   if (!activeUrl) return false
   if (
     item.url !== "#" &&
@@ -116,7 +118,10 @@ function renderNavItems(
     if (hasChildren) {
       trigger =
         depth === 0 ? (
-          <SidebarMenuButton tooltip={item.title} render={<CollapsibleTrigger />}>
+          <SidebarMenuButton
+            tooltip={item.title}
+            render={<CollapsibleTrigger />}
+          >
             {item.icon && <item.icon />}
             <span>{item.title}</span>
             {chevron}
@@ -181,11 +186,7 @@ export function NavOrganization({ items }: { items: MainNav }) {
   if (items.length === 0) return null
 
   return (
-    <SidebarGroup className="pt-2">
-      <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-sidebar-foreground/70 [&>svg]:text-sidebar-foreground/70">
-        <Users className="size-3.5" />
-        Organization
-      </SidebarGroupLabel>
+    <CollapsibleNavGroup label="Organization" icon={Users}>
       <SidebarMenu>
         {renderNavItems(
           items,
@@ -203,6 +204,6 @@ export function NavOrganization({ items }: { items: MainNav }) {
           0
         )}
       </SidebarMenu>
-    </SidebarGroup>
+    </CollapsibleNavGroup>
   )
 }

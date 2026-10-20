@@ -10,8 +10,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,6 +18,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
 import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
 import { cn } from "@/lib/utils"
 import type { NavGroup, SidebarNavItem } from "@/types/components/sidebar"
@@ -29,7 +28,9 @@ function normalizePath(pathname: string) {
 }
 
 function collectUrlsRecursive(items: SidebarNavItem[]): string[] {
-  return items.flatMap((i) => [i.url, ...collectUrlsRecursive(i.items ?? [])]).filter((u) => u !== "#")
+  return items
+    .flatMap((i) => [i.url, ...collectUrlsRecursive(i.items ?? [])])
+    .filter((u) => u !== "#")
 }
 
 function getActiveUrl(pathname: string, groups: NavGroup[]): string | null {
@@ -46,7 +47,11 @@ function getActiveUrl(pathname: string, groups: NavGroup[]): string | null {
 
 function isItemActive(item: SidebarNavItem, activeUrl: string | null): boolean {
   if (!activeUrl) return false
-  if (item.url !== "#" && (activeUrl === item.url || activeUrl.startsWith(item.url + "/"))) return true
+  if (
+    item.url !== "#" &&
+    (activeUrl === item.url || activeUrl.startsWith(item.url + "/"))
+  )
+    return true
   return item.items?.some((sub) => isItemActive(sub, activeUrl)) ?? false
 }
 
@@ -75,11 +80,12 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
   return (
     <>
       {groups.map((group) => (
-        <SidebarGroup key={group.label} className="pt-3">
-          <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-sidebar-foreground/70 [&>svg]:text-sidebar-foreground/70">
-            {group.icon && <group.icon className="size-3.5" />}
-            {group.label}
-          </SidebarGroupLabel>
+        <CollapsibleNavGroup
+          key={group.label}
+          label={group.label}
+          icon={group.icon}
+          className="pt-3"
+        >
           <SidebarMenu>
             {group.items.map((item) => {
               const hasChildren = !!item.items?.length
@@ -159,7 +165,7 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
               )
             })}
           </SidebarMenu>
-        </SidebarGroup>
+        </CollapsibleNavGroup>
       ))}
     </>
   )

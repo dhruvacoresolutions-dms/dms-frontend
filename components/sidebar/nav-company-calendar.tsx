@@ -11,8 +11,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,6 +19,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
 import {
   CollapsedNavPopup,
   type CollapsedNavLink,
@@ -187,11 +186,7 @@ export function NavCompanyCalendar({ items }: { items: MainNav }) {
   if (items.length === 0) return null
 
   return (
-    <SidebarGroup className="pt-2">
-      <SidebarGroupLabel className="mb-2 border-b border-sidebar-border/60 pb-2 font-extrabold tracking-widest text-sidebar-foreground/70 uppercase [&>svg]:text-sidebar-foreground/70">
-        <CalendarDays className="size-3.5" />
-        Company Calendar
-      </SidebarGroupLabel>
+    <CollapsibleNavGroup label="Company Calendar" icon={CalendarDays}>
       <SidebarMenu>
         {renderNavItems(
           items,
@@ -209,6 +204,6 @@ export function NavCompanyCalendar({ items }: { items: MainNav }) {
           0
         )}
       </SidebarMenu>
-    </SidebarGroup>
+    </CollapsibleNavGroup>
   )
 }
