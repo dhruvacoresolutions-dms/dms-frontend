@@ -2,14 +2,22 @@
 
 import { useMemo, useState } from "react"
 import { endOfMonth, format, parseISO, startOfMonth } from "date-fns"
-import { CalendarCheck, CalendarOff, CalendarX, Sun } from "lucide-react"
+import {
+  AlertCircle,
+  CalendarCheck,
+  CalendarMinus,
+  CalendarOff,
+  CalendarX,
+  RotateCcw,
+} from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { DatePicker } from "@/components/common/DatePicker"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
+import { StatusBadge } from "@/components/common/StatusBadge"
 import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Field, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { EFFECTIVE_REASON_LABELS } from "../configs/calendar.constants"
 import { useEffectiveCalendar } from "../hooks/use-effective-calendar"
@@ -26,7 +34,7 @@ const REASON_STYLES: Record<string, string> = {
   WEEKLY_OFF:
     "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300",
   ALTERNATE_SATURDAY:
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300",
 }
 
 function ReasonBadge({ day }: { day: EffectiveDay }) {
@@ -56,10 +64,16 @@ type EffectiveCalendarViewProps = {
 export function EffectiveCalendarView({
   companyUuid,
 }: EffectiveCalendarViewProps) {
-  const today = new Date()
-  const [from, setFrom] = useState(format(startOfMonth(today), "yyyy-MM-dd"))
-  const [to, setTo] = useState(format(endOfMonth(today), "yyyy-MM-dd"))
+  const now = new Date()
+  const defaultFrom = format(startOfMonth(now), "yyyy-MM-dd")
+  const defaultTo = format(endOfMonth(now), "yyyy-MM-dd")
+  const todayIso = format(now, "yyyy-MM-dd")
+
+  const [from, setFrom] = useState(defaultFrom)
+  const [to, setTo] = useState(defaultTo)
   const [geographyUuid, setGeographyUuid] = useState<string | null>(null)
+
+  const isDefaultRange = from === defaultFrom && to === defaultTo
 
   const validationError = useMemo(() => {
     if (!from || !to) return "Select both the From and To dates."
@@ -133,9 +147,7 @@ export function EffectiveCalendarView({
           return (
             <span className="flex flex-wrap items-center gap-2">
               <span>{period.name}</span>
-              <Badge variant="outline" className="capitalize">
-                {period.status.toLowerCase()}
-              </Badge>
+              <StatusBadge status={period.status} />
             </span>
           )
         },
@@ -149,51 +161,60 @@ export function EffectiveCalendarView({
       label: "Working days",
       value: summary.working,
       icon: CalendarCheck,
-      className: "text-green-600 dark:text-green-400",
+      iconClassName:
+        "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300",
     },
     {
       label: "Holidays",
       value: summary.holidays,
       icon: CalendarX,
-      className: "text-red-600 dark:text-red-400",
+      iconClassName:
+        "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300",
     },
     {
       label: "Weekly offs",
       value: summary.weeklyOffs,
       icon: CalendarOff,
-      className: "text-blue-600 dark:text-blue-400",
+      iconClassName:
+        "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300",
     },
     {
       label: "Alternate Saturdays",
       value: summary.alternateSaturdays,
-      icon: Sun,
-      className: "text-violet-600 dark:text-violet-400",
+      icon: CalendarMinus,
+      iconClassName:
+        "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300",
     },
   ]
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <Field className="w-full sm:w-52">
-          <FieldLabel>From</FieldLabel>
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
+        <div className="sm:w-44">
+          <label htmlFor="effective-from" className="sr-only">
+            From date
+          </label>
           <DatePicker
+            id="effective-from"
             value={from}
             onValueChange={(value) => setFrom(value ?? "")}
-            hasError={!!validationError && !from}
-            placeholder="Select start date"
+            hasError={!!validationError}
+            placeholder="From date"
           />
-        </Field>
-        <Field className="w-full sm:w-52">
-          <FieldLabel>To</FieldLabel>
+        </div>
+        <div className="sm:w-44">
+          <label htmlFor="effective-to" className="sr-only">
+            To date
+          </label>
           <DatePicker
+            id="effective-to"
             value={to}
             onValueChange={(value) => setTo(value ?? "")}
-            hasError={!!validationError && !to}
-            placeholder="Select end date"
+            hasError={!!validationError}
+            placeholder="To date"
           />
-        </Field>
-        <Field className="w-full sm:w-64">
-          <FieldLabel>Geography (optional)</FieldLabel>
+        </div>
+        <div className="col-span-2 sm:w-64">
           <GeographyCombobox
             companyUuid={companyUuid}
             value={geographyUuid}
@@ -201,9 +222,22 @@ export function EffectiveCalendarView({
             placeholder="All geographies"
             status="ACTIVE"
           />
-        </Field>
+        </div>
+        {!isDefaultRange ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="justify-self-start"
+            onClick={() => {
+              setFrom(defaultFrom)
+              setTo(defaultTo)
+            }}
+          >
+            <RotateCcw className="mr-2 size-4" /> This month
+          </Button>
+        ) : null}
         {!validationError && from && to ? (
-          <p className="pb-2 text-xs text-muted-foreground">
+          <p className="col-span-2 text-xs text-muted-foreground sm:ml-auto">
             {inclusiveDayCount(from, to)} day(s), {formatCalendarDate(from)} to{" "}
             {formatCalendarDate(to)}
           </p>
@@ -211,23 +245,39 @@ export function EffectiveCalendarView({
       </div>
 
       {validationError ? (
-        <p className="text-sm text-destructive">{validationError}</p>
+        <p
+          role="alert"
+          className="flex items-center gap-1.5 text-sm text-destructive"
+        >
+          <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          {validationError}
+        </p>
       ) : null}
 
       {!validationError ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div
+          className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+          aria-live="polite"
+        >
           {summaryCards.map((card) => (
             <Card key={card.label} size="sm">
-              <CardContent className="flex items-center gap-3">
-                <card.icon className={cn("size-5", card.className)} />
+              <CardContent className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-2xl leading-none font-semibold">
-                    {card.value}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     {card.label}
                   </p>
+                  <p className="mt-1 text-2xl leading-none font-semibold tabular-nums">
+                    {card.value}
+                  </p>
                 </div>
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-md",
+                    card.iconClassName
+                  )}
+                >
+                  <card.icon className="size-4" aria-hidden="true" />
+                </span>
               </CardContent>
             </Card>
           ))}
@@ -241,6 +291,9 @@ export function EffectiveCalendarView({
         isLoading={!validationError && isLoading}
         error={validationError ? undefined : error}
         onRetry={() => void refetch()}
+        rowClassName={(day) =>
+          day.date === todayIso ? "bg-muted/40" : undefined
+        }
         empty={{
           icon: CalendarCheck,
           title: "No calendar days",

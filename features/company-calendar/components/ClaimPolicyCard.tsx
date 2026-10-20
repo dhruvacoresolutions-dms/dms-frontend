@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
   FormNumberField,
   FormSelectField,
@@ -31,6 +31,7 @@ import { usePermission } from "@/hooks/use-permission"
 import { CLAIM_WINDOW_MODE_OPTIONS } from "../configs/calendar.constants"
 import { useUpdateClaimPolicy } from "../hooks/use-update-claim-policy"
 import { getCalendarErrorMessage } from "../utils/calendar.utils"
+import { TimezoneCombobox } from "./TimezoneCombobox"
 import type { CalendarSettings } from "../api/company-calendar.types"
 
 function isValidIanaZone(value: string): boolean {
@@ -77,19 +78,6 @@ export function ClaimPolicyCard({
   const updateMutation = useUpdateClaimPolicy(companyUuid)
   const { can } = usePermission()
   const canManage = can("CLAIM_POLICY", "MANAGE")
-
-  const timezones = useMemo(() => {
-    try {
-      const supported = (
-        Intl as unknown as {
-          supportedValuesOf?: (key: string) => string[]
-        }
-      ).supportedValuesOf?.("timeZone")
-      return supported?.length ? supported : []
-    } catch {
-      return []
-    }
-  }, [])
 
   const { control, handleSubmit, reset, setError } = useForm<PolicyFormValues>({
     resolver: zodResolver(policySchema),
@@ -147,28 +135,19 @@ export function ClaimPolicyCard({
           className="space-y-4"
           noValidate
         >
-          <FieldGroup>
+          <FieldGroup className="max-w-sm">
             <Controller
               control={control}
               name="companyTimezone"
               render={({ field, fieldState }) => (
                 <Field>
                   <FieldLabel>{requiredLabel("Company timezone")}</FieldLabel>
-                  <Input
-                    list="company-calendar-timezones"
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
+                  <TimezoneCombobox
+                    value={field.value}
+                    onValueChange={field.onChange}
                     disabled={!canManage || updateMutation.isPending}
-                    placeholder="Enter IANA timezone"
-                    autoComplete="off"
-                    aria-invalid={!!fieldState.error}
+                    hasError={!!fieldState.error}
                   />
-                  <datalist id="company-calendar-timezones">
-                    {timezones.map((zone) => (
-                      <option key={zone} value={zone} />
-                    ))}
-                  </datalist>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
               )}
@@ -194,7 +173,14 @@ export function ClaimPolicyCard({
           {canManage ? (
             <div className="flex justify-end">
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save claim policy"}
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save claim policy"
+                )}
               </Button>
             </div>
           ) : (

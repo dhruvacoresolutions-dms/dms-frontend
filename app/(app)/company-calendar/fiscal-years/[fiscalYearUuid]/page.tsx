@@ -2,10 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useParams } from "next/navigation"
-import Link from "next/link"
 import { addDays, format, parseISO } from "date-fns"
 import {
-  ArrowLeft,
   CalendarClock,
   Lock,
   MoreHorizontal,
@@ -34,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { usePermission } from "@/hooks/use-permission"
 import { PERMISSIONS } from "@/lib/permissions"
 import { FiscalYearFormDialog } from "@/features/company-calendar/components/FiscalYearFormDialog"
 import { AccountingPeriodFormDialog } from "@/features/company-calendar/components/AccountingPeriodFormDialog"
@@ -45,6 +44,7 @@ import {
   formatCalendarDate,
   formatCalendarDateTime,
   getCalendarErrorMessage,
+  inclusiveDayCount,
 } from "@/features/company-calendar/utils/calendar.utils"
 import type { AccountingPeriod } from "@/features/company-calendar/api/company-calendar.types"
 
@@ -81,6 +81,30 @@ function FiscalYearDetailContent() {
     (year) => year.uuid === fiscalYearUuid
   )
   const periods = useMemo(() => periodsQuery.data ?? [], [periodsQuery.data])
+  const { can } = usePermission()
+  const canManageCalendar = can("COMPANY_CALENDAR", "MANAGE")
+  const canClosePeriod = can("ACCOUNTING_PERIOD", "CLOSE")
+  const canReopenPeriod = can("ACCOUNTING_PERIOD", "REOPEN")
+
+  const coverage = useMemo(() => {
+    if (!fiscalYear) return { periodCount: 0, percent: 0 }
+    const totalDays = inclusiveDayCount(
+      fiscalYear.startDate,
+      fiscalYear.endDate
+    )
+    const coveredDays = periods.reduce(
+      (total, period) =>
+        total + inclusiveDayCount(period.startDate, period.endDate),
+      0
+    )
+    return {
+      periodCount: periods.length,
+      percent:
+        totalDays > 0
+          ? Math.min(100, Math.round((coveredDays / totalDays) * 100))
+          : 0,
+    }
+  }, [periods, fiscalYear])
 
   const { sortedPeriods, suggestedStartDate, canCreatePeriod } = useMemo(() => {
     const sorted = [...periods].sort((a, b) =>
@@ -104,8 +128,8 @@ function FiscalYearDetailContent() {
     }
   }, [periods, fiscalYear])
 
-  const columns = useMemo<DataTableColumn<AccountingPeriod>[]>(
-    () => [
+  const columns = useMemo<DataTableColumn<AccountingPeriod>[]>(() => {
+    const base: DataTableColumn<AccountingPeriod>[] = [
       {
         id: "name",
         header: "Period",
@@ -133,6 +157,13 @@ function FiscalYearDetailContent() {
         header: "Audit",
         cell: ({ row }) => {
           const period = row.original
+          if (period.status === "CLOSED" && period.closedAt) {
+            return (
+              <span className="text-xs">
+                Closed {formatCalendarDateTime(period.closedAt)}
+              </span>
+            )
+          }
           if (period.reopenedAt) {
             return (
               <div className="max-w-64 space-y-0.5 text-xs">
@@ -148,68 +179,65 @@ function FiscalYearDetailContent() {
               </div>
             )
           }
-          if (period.status === "CLOSED" && period.closedAt) {
-            return (
-              <span className="text-xs">
-                Closed {formatCalendarDateTime(period.closedAt)}
-              </span>
-            )
-          }
           return <span className="text-muted-foreground">—</span>
         },
       },
-      {
+    ]
+
+    if (canManageCalendar || canClosePeriod || canReopenPeriod) {
+      base.push({
         id: "actions",
         header: "",
         cell: ({ row }) => {
           const period = row.original
           const isOpen = period.status === "OPEN"
+          const showEdit = canManageCalendar && isOpen
+          const showClose = canClosePeriod && isOpen
+          const showReopen = canReopenPeriod && !isOpen
+          const showSeparator = showEdit && (showClose || showReopen)
+
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger className="cursor-pointer">
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Actions for ${period.name}`}
+                  />
+                }
+              >
                 <MoreHorizontal className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto min-w-44">
-                <PermissionGate
-                  permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}
-                >
-                  {isOpen ? (
-                    <DropdownMenuItem onClick={() => setEditingPeriod(period)}>
-                      <Pencil className="mr-2 size-4" /> Edit
-                    </DropdownMenuItem>
-                  ) : null}
-                </PermissionGate>
-                <DropdownMenuSeparator />
-                {isOpen ? (
-                  <PermissionGate
-                    permission={PERMISSIONS.ACCOUNTING_PERIOD.CLOSE}
+                {showEdit ? (
+                  <DropdownMenuItem onClick={() => setEditingPeriod(period)}>
+                    <Pencil className="mr-2 size-4" /> Edit
+                  </DropdownMenuItem>
+                ) : null}
+                {showSeparator ? <DropdownMenuSeparator /> : null}
+                {showClose ? (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setClosingPeriod(period)}
                   >
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setClosingPeriod(period)}
-                    >
-                      <Lock className="mr-2 size-4" /> Close period
-                    </DropdownMenuItem>
-                  </PermissionGate>
-                ) : (
-                  <PermissionGate
-                    permission={PERMISSIONS.ACCOUNTING_PERIOD.REOPEN}
-                  >
-                    <DropdownMenuItem
-                      onClick={() => setReopeningPeriod(period)}
-                    >
-                      <Unlock className="mr-2 size-4" /> Reopen period
-                    </DropdownMenuItem>
-                  </PermissionGate>
-                )}
+                    <Lock className="mr-2 size-4" /> Close period
+                  </DropdownMenuItem>
+                ) : null}
+                {showReopen ? (
+                  <DropdownMenuItem onClick={() => setReopeningPeriod(period)}>
+                    <Unlock className="mr-2 size-4" /> Reopen period
+                  </DropdownMenuItem>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           )
         },
-      },
-    ],
-    []
-  )
+      })
+    }
+
+    return base
+  }, [canManageCalendar, canClosePeriod, canReopenPeriod])
 
   if (yearsQuery.isLoading) return <LoadingState />
   if (yearsQuery.error) {
@@ -228,16 +256,9 @@ function FiscalYearDetailContent() {
       <div className="flex flex-1 flex-col gap-4">
         <PageHeader
           title="Fiscal year not found"
-          description="The fiscal year may belong to another company or no longer exists."
-          action={
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href="/company-calendar/fiscal-years" />}
-            >
-              <ArrowLeft className="mr-2 size-4" /> Back to fiscal years
-            </Button>
-          }
+          description="The fiscal year may belong to another company or no longer exists"
+          backHref="/company-calendar/fiscal-years"
+          backLabel="Back to fiscal years"
         />
       </div>
     )
@@ -250,15 +271,10 @@ function FiscalYearDetailContent() {
         description={`Fiscal year ${formatCalendarDate(
           fiscalYear.startDate
         )} – ${formatCalendarDate(fiscalYear.endDate)}`}
+        backHref="/company-calendar/fiscal-years"
+        backLabel="Back to fiscal years"
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href="/company-calendar/fiscal-years" />}
-            >
-              <ArrowLeft className="mr-2 size-4" /> Back
-            </Button>
             <PermissionGate permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}>
               <Button
                 variant="outline"
@@ -299,15 +315,30 @@ function FiscalYearDetailContent() {
               </dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Start date</dt>
-              <dd className="mt-1 font-medium">
-                {formatCalendarDate(fiscalYear.startDate)}
+              <dt className="text-muted-foreground">Accounting periods</dt>
+              <dd className="mt-1 font-medium tabular-nums">
+                {coverage.periodCount}
               </dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">End date</dt>
-              <dd className="mt-1 font-medium">
-                {formatCalendarDate(fiscalYear.endDate)}
+              <dt className="text-muted-foreground">Coverage</dt>
+              <dd className="mt-1">
+                <span className="font-medium tabular-nums">
+                  {coverage.percent}%
+                </span>
+                <div
+                  role="progressbar"
+                  aria-label="Fiscal year covered by accounting periods"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={coverage.percent}
+                  className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                >
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-300"
+                    style={{ width: `${coverage.percent}%` }}
+                  />
+                </div>
               </dd>
             </div>
             <div>
@@ -322,14 +353,12 @@ function FiscalYearDetailContent() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold">Accounting periods</h2>
-          <p className="text-sm text-muted-foreground">
-            Periods must stay inside the fiscal year and be contiguous, with no
-            gaps or overlaps.
-          </p>
-        </div>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">Accounting periods</h2>
+        <p className="text-sm text-muted-foreground">
+          Periods must stay inside the fiscal year and be contiguous, with no
+          gaps or overlaps.
+        </p>
       </div>
 
       <DataTable
@@ -342,9 +371,11 @@ function FiscalYearDetailContent() {
         empty={{
           icon: CalendarClock,
           title: "No accounting periods yet",
-          description: `Create the first period starting on ${formatCalendarDate(
-            fiscalYear.startDate
-          )}.`,
+          description: canManageCalendar
+            ? `Create the first period starting on ${formatCalendarDate(
+                fiscalYear.startDate
+              )}.`
+            : "No accounting periods have been added to this fiscal year yet.",
           action: (
             <PermissionGate permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}>
               <Button onClick={() => setCreateOpen(true)}>

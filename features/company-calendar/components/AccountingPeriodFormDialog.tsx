@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -229,13 +230,16 @@ export function AccountingPeriodFormDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending
-                ? isEdit
-                  ? "Saving..."
-                  : "Creating..."
-                : isEdit
-                  ? "Save changes"
-                  : "Create"}
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  {isEdit ? "Saving..." : "Creating..."}
+                </>
+              ) : isEdit ? (
+                "Save changes"
+              ) : (
+                "Create"
+              )}
             </Button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -90,7 +91,7 @@ export function VisitRadiusCard({
           className="space-y-4"
           noValidate
         >
-          <FieldGroup>
+          <FieldGroup className="max-w-sm">
             <FormNumberField
               control={control}
               name="visitRadiusMeters"
@@ -103,7 +104,14 @@ export function VisitRadiusCard({
           {canManage ? (
             <div className="flex justify-end">
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save radius"}
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save radius"
+                )}
               </Button>
             </div>
           ) : (

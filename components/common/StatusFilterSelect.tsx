@@ -13,6 +13,8 @@ type StatusFilterSelectProps = {
   value: "ALL" | string
   onChange: (value: "ALL" | string) => void
   className?: string
+  /** Accessible name for the trigger (the trigger itself has no visible label). */
+  ariaLabel?: string
 }
 
 /**
@@ -23,10 +25,17 @@ export function StatusFilterSelect({
   value,
   onChange,
   className,
+  ariaLabel = "Filter by status",
 }: StatusFilterSelectProps) {
   return (
-    <Select value={value} onValueChange={(v: string | null) => v && onChange(v)}>
-      <SelectTrigger className={cn("w-full sm:w-36", className)}>
+    <Select
+      value={value}
+      onValueChange={(v: string | null) => v && onChange(v)}
+    >
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className={cn("w-full sm:w-36", className)}
+      >
         <SelectValue placeholder="Filter by status" />
       </SelectTrigger>
       <SelectContent className="p-2">

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { getGeography } from "@/features/geographies/api/geography.api"
 import { geographyKeys } from "@/features/geographies/api/geography-keys"
 
@@ -29,7 +30,12 @@ export function GeographyLabel({
     return <span className="text-muted-foreground">Company-wide</span>
   }
   if (isLoading) {
-    return <span className="text-muted-foreground">Loading…</span>
+    return (
+      <span className="inline-flex items-center" aria-busy="true">
+        <span className="sr-only">Loading geography</span>
+        <Skeleton className="h-4 w-24" />
+      </span>
+    )
   }
   if (!data) {
     return (

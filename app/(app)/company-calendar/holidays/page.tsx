@@ -1,12 +1,14 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import {
+  AlertCircle,
   CalendarOff,
   MoreHorizontal,
   Pencil,
   Plus,
   ToggleLeft,
+  ToggleRight,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -20,7 +22,6 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { StatusFilterSelect } from "@/components/common/StatusFilterSelect"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,11 +32,13 @@ import {
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
+import { usePermission } from "@/hooks/use-permission"
 import { PERMISSIONS } from "@/lib/permissions"
 import { HolidayFormDialog } from "@/features/company-calendar/components/HolidayFormDialog"
 import { GeographyLabel } from "@/features/company-calendar/components/GeographyLabel"
 import { useHolidays } from "@/features/company-calendar/hooks/use-holidays"
 import { useInactivateHoliday } from "@/features/company-calendar/hooks/use-inactivate-holiday"
+import { useUpdateHoliday } from "@/features/company-calendar/hooks/use-update-holiday"
 import {
   formatCalendarDate,
   getCalendarErrorMessage,
@@ -61,14 +64,22 @@ function HolidaysContent() {
     "ALL" | "ACTIVE" | "INACTIVE"
   >("ALL")
   const [page, setPage] = useState(0)
-  const [size, setSize] = useState(20)
+  const [size, setSize] = useState(10)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Holiday | null>(null)
   const [inactivating, setInactivating] = useState<Holiday | null>(null)
 
+  const { can } = usePermission()
+  const canManage = can("COMPANY_CALENDAR", "MANAGE")
+
   const partialRange = !!from !== !!to
   const reversedRange = !!from && !!to && from > to
+  const dateFilterError = partialRange
+    ? "Select both the From and To dates to filter by date range."
+    : reversedRange
+      ? "From date must be on or before the To date."
+      : null
 
   const { data, isLoading, error, refetch } = useHolidays(companyUuid, {
     from: partialRange || reversedRange ? undefined : from,
@@ -80,12 +91,37 @@ function HolidaysContent() {
   })
 
   const inactivateMutation = useInactivateHoliday(companyUuid)
+  const { mutate: updateHoliday } = useUpdateHoliday(companyUuid)
 
   const holidays = data?.content ?? []
   const hasFilters = !!from || !!to || !!geographyUuid || statusFilter !== "ALL"
 
-  const columns = useMemo<DataTableColumn<Holiday>[]>(
-    () => [
+  const handleActivate = useCallback(
+    (holiday: Holiday) => {
+      updateHoliday(
+        {
+          holidayUuid: holiday.uuid,
+          input: {
+            holidayDate: holiday.holidayDate,
+            name: holiday.name,
+            geographyUuid: holiday.geographyUuid,
+            status: "ACTIVE",
+          },
+        },
+        {
+          onSuccess: () => toast.success("Holiday activated"),
+          onError: (err) =>
+            toast.error(
+              getCalendarErrorMessage(err, "Failed to activate holiday")
+            ),
+        }
+      )
+    },
+    [updateHoliday]
+  )
+
+  const columns = useMemo<DataTableColumn<Holiday>[]>(() => {
+    const base: DataTableColumn<Holiday>[] = [
       {
         id: "holidayDate",
         header: "Date",
@@ -115,47 +151,53 @@ function HolidaysContent() {
         header: "Status",
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
-      {
+    ]
+
+    if (canManage) {
+      base.push({
         id: "actions",
         header: "",
         cell: ({ row }) => {
           const holiday = row.original
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger className="cursor-pointer">
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Actions for ${holiday.name}`}
+                  />
+                }
+              >
                 <MoreHorizontal className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto min-w-44">
-                <PermissionGate
-                  permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}
-                >
-                  <DropdownMenuItem onClick={() => setEditing(holiday)}>
-                    <Pencil className="mr-2 size-4" /> Edit
-                  </DropdownMenuItem>
-                </PermissionGate>
+                <DropdownMenuItem onClick={() => setEditing(holiday)}>
+                  <Pencil className="mr-2 size-4" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {holiday.status === "ACTIVE" ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <PermissionGate
-                      permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}
-                    >
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setInactivating(holiday)}
-                      >
-                        <ToggleLeft className="mr-2 size-4" /> Inactivate
-                      </DropdownMenuItem>
-                    </PermissionGate>
-                  </>
-                ) : null}
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setInactivating(holiday)}
+                  >
+                    <ToggleLeft className="mr-2 size-4" /> Deactivate
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => handleActivate(holiday)}>
+                    <ToggleRight className="mr-2 size-4" /> Activate
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )
         },
-      },
-    ],
-    [companyUuid]
-  )
+      })
+    }
+
+    return base
+  }, [companyUuid, canManage, handleActivate])
 
   const clearFilters = () => {
     setFrom(undefined)
@@ -169,7 +211,7 @@ function HolidaysContent() {
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Holidays"
-        description="Company-wide and geography-specific holidays used by the effective calendar."
+        description="Company-wide and geography-specific holidays excluded from the effective calendar"
         action={
           <PermissionGate permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}>
             <Button onClick={() => setCreateOpen(true)}>
@@ -181,31 +223,38 @@ function HolidaysContent() {
 
       <CalendarSectionNav />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <Field className="w-full sm:w-48">
-          <FieldLabel>From</FieldLabel>
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
+        <div className="sm:w-44">
+          <label htmlFor="holiday-from" className="sr-only">
+            From date
+          </label>
           <DatePicker
+            id="holiday-from"
             value={from}
             onValueChange={(value) => {
               setFrom(value)
               setPage(0)
             }}
-            placeholder="Any date"
+            hasError={!!dateFilterError}
+            placeholder="From date"
           />
-        </Field>
-        <Field className="w-full sm:w-48">
-          <FieldLabel>To</FieldLabel>
+        </div>
+        <div className="sm:w-44">
+          <label htmlFor="holiday-to" className="sr-only">
+            To date
+          </label>
           <DatePicker
+            id="holiday-to"
             value={to}
             onValueChange={(value) => {
               setTo(value)
               setPage(0)
             }}
-            placeholder="Any date"
+            hasError={!!dateFilterError}
+            placeholder="To date"
           />
-        </Field>
-        <Field className="w-full sm:w-64">
-          <FieldLabel>Geography</FieldLabel>
+        </div>
+        <div className="col-span-2 sm:w-64">
           <GeographyCombobox
             companyUuid={companyUuid}
             value={geographyUuid}
@@ -216,30 +265,37 @@ function HolidaysContent() {
             placeholder="All geographies"
             status="ACTIVE"
           />
-        </Field>
-        <StatusFilterSelect
-          value={statusFilter}
-          onChange={(value) => {
-            setStatusFilter(value as "ALL" | "ACTIVE" | "INACTIVE")
-            setPage(0)
-          }}
-          className="sm:w-44"
-        />
+        </div>
+        <div className="sm:w-40">
+          <StatusFilterSelect
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value as "ALL" | "ACTIVE" | "INACTIVE")
+              setPage(0)
+            }}
+            className="w-full sm:w-40"
+            ariaLabel="Filter holidays by status"
+          />
+        </div>
         {hasFilters ? (
-          <Button variant="ghost" onClick={clearFilters}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="justify-self-start"
+            onClick={clearFilters}
+          >
             <X className="mr-2 size-4" /> Clear filters
           </Button>
         ) : null}
       </div>
 
-      {partialRange ? (
-        <p className="text-sm text-destructive">
-          Select both the From and To dates, or clear both.
-        </p>
-      ) : null}
-      {reversedRange ? (
-        <p className="text-sm text-destructive">
-          From date must be on or before the To date.
+      {dateFilterError ? (
+        <p
+          role="alert"
+          className="flex items-center gap-1.5 text-sm text-destructive"
+        >
+          <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          {dateFilterError} Showing all holidays until the dates are valid.
         </p>
       ) : null}
 
@@ -255,7 +311,9 @@ function HolidaysContent() {
           title: "No holidays found",
           description: hasFilters
             ? "Try a different date range, geography or status."
-            : "Create a holiday to keep it out of the effective calendar.",
+            : canManage
+              ? "Create a holiday to keep it out of the effective calendar."
+              : "No holidays have been configured for this company.",
           action: !hasFilters ? (
             <PermissionGate permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}>
               <Button onClick={() => setCreateOpen(true)}>
@@ -296,25 +354,25 @@ function HolidaysContent() {
       <ConfirmDialog
         open={!!inactivating}
         onOpenChange={(open) => !open && setInactivating(null)}
-        title="Inactivate holiday?"
+        title="Deactivate holiday?"
         description={
           inactivating
-            ? `“${inactivating.name}” will be marked INACTIVE and removed from the effective calendar. The record is retained.`
+            ? `“${inactivating.name}” will be marked INACTIVE and excluded from the effective calendar. The record is retained.`
             : undefined
         }
-        confirmLabel="Inactivate"
+        confirmLabel="Deactivate"
         variant="destructive"
         isLoading={inactivateMutation.isPending}
         onConfirm={() => {
           if (!inactivating) return
           inactivateMutation.mutate(inactivating.uuid, {
             onSuccess: () => {
-              toast.success("Holiday inactivated")
+              toast.success("Holiday deactivated")
               setInactivating(null)
             },
             onError: (err) =>
               toast.error(
-                getCalendarErrorMessage(err, "Failed to inactivate holiday")
+                getCalendarErrorMessage(err, "Failed to deactivate holiday")
               ),
           })
         }}

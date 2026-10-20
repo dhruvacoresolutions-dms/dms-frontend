@@ -41,7 +41,7 @@ function CalendarSettingsContent() {
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Calendar Settings"
-        description="Company visit radius and expense-claim policy."
+        description="Visit radius and expense-claim policy used for field activity"
       />
       <CalendarSectionNav />
 
@@ -56,7 +56,7 @@ function CalendarSettingsContent() {
           onRetry={() => void refetch()}
         />
       ) : settings ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <PermissionGate permission={PERMISSIONS.VISIT_RADIUS.VIEW}>
             <VisitRadiusCard companyUuid={companyUuid} settings={settings} />
           </PermissionGate>

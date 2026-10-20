@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { PERMISSIONS } from "@/lib/permissions"
 import { usePermission } from "@/hooks/use-permission"
+import { useAccessStore } from "@/stores/access-store"
 
 const CALENDAR_SECTIONS = [
   {
@@ -19,7 +20,7 @@ const CALENDAR_SECTIONS = [
     permissions: [PERMISSIONS.COMPANY_CALENDAR.VIEW],
   },
   {
-    title: "Weekly Off",
+    title: "Weekly Off Rule",
     href: "/company-calendar/weekly-off",
     permissions: [PERMISSIONS.COMPANY_CALENDAR.VIEW],
   },
@@ -29,7 +30,7 @@ const CALENDAR_SECTIONS = [
     permissions: [PERMISSIONS.COMPANY_CALENDAR.VIEW],
   },
   {
-    title: "Settings",
+    title: "Calendar Settings",
     href: "/company-calendar/settings",
     permissions: [PERMISSIONS.VISIT_RADIUS.VIEW, PERMISSIONS.CLAIM_POLICY.VIEW],
   },
@@ -42,9 +43,12 @@ const CALENDAR_SECTIONS = [
 export function CalendarSectionNav() {
   const pathname = usePathname()
   const { canAny, isLoaded } = usePermission()
+  const accessStatus = useAccessStore((state) => state.accessStatus)
 
+  // Match the app-wide fail-open policy when the access fetch fails.
+  const failOpen = accessStatus === "error"
   const sections = CALENDAR_SECTIONS.filter(
-    (section) => !isLoaded || canAny(section.permissions)
+    (section) => failOpen || !isLoaded || canAny(section.permissions)
   )
 
   return (
@@ -61,7 +65,7 @@ export function CalendarSectionNav() {
             href={section.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
               active
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"

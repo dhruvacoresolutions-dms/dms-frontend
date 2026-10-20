@@ -23,7 +23,7 @@ function EffectiveCalendarContent() {
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Effective Calendar"
-        description="Resolve working days, holidays, weekly offs and the accounting period for each date."
+        description="Working days, holidays and accounting periods for any date range"
       />
       <CalendarSectionNav />
       <EffectiveCalendarView companyUuid={companyUuid} />

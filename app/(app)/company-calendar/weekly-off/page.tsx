@@ -23,7 +23,7 @@ function WeeklyOffContent() {
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Weekly Off Rule"
-        description="Configure the company's weekly off days and alternate-Saturday policy."
+        description="Weekly offs and alternate Saturdays used to resolve the company calendar"
       />
       <CalendarSectionNav />
       <div className="max-w-3xl">

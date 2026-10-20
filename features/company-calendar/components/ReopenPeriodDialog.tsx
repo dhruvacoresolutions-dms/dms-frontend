@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -134,7 +135,14 @@ export function ReopenPeriodDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={reopenMutation.isPending}>
-              {reopenMutation.isPending ? "Reopening..." : "Reopen period"}
+              {reopenMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Reopening...
+                </>
+              ) : (
+                "Reopen period"
+              )}
             </Button>
           </div>
         </form>

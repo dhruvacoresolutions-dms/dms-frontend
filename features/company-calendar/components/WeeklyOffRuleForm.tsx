@@ -144,10 +144,10 @@ export function WeeklyOffRuleForm({ companyUuid }: { companyUuid: string }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Weekly off rule</CardTitle>
+          <CardTitle>Working week</CardTitle>
           <CardDescription>
-            Weekly offs and alternate Saturdays are used when resolving the
-            effective company calendar.
+            Choose the days that are off every week and how alternate Saturdays
+            are handled when resolving the effective company calendar.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -223,7 +223,14 @@ export function WeeklyOffRuleForm({ companyUuid }: { companyUuid: string }) {
       {canManage ? (
         <div className="flex justify-end">
           <Button type="submit" disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? "Saving..." : "Save weekly off rule"}
+            {updateMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save weekly off rule"
+            )}
           </Button>
         </div>
       ) : (

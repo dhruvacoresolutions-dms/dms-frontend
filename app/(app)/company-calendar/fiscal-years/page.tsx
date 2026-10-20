@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   CalendarRange,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { usePermission } from "@/hooks/use-permission"
 import { PERMISSIONS } from "@/lib/permissions"
 import {
   formatCalendarDate,
@@ -54,6 +56,8 @@ function FiscalYearsContent() {
 
   const { data, isLoading, error, refetch } = useFiscalYears(companyUuid)
   const statusMutation = useUpdateFiscalYearStatus(companyUuid)
+  const { can } = usePermission()
+  const canManage = can("COMPANY_CALENDAR", "MANAGE")
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<FiscalYear | null>(null)
@@ -67,7 +71,12 @@ function FiscalYearsContent() {
         id: "name",
         header: "Fiscal year",
         cell: ({ row }) => (
-          <span className="font-medium">{row.original.name}</span>
+          <Link
+            href={`/company-calendar/fiscal-years/${row.original.uuid}`}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {row.original.name}
+          </Link>
         ),
       },
       {
@@ -92,7 +101,15 @@ function FiscalYearsContent() {
           const year = row.original
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger className="cursor-pointer">
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Actions for ${year.name}`}
+                  />
+                }
+              >
                 <MoreHorizontal className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto min-w-48">
@@ -110,7 +127,7 @@ function FiscalYearsContent() {
                     <Pencil className="mr-2 size-4" /> Edit
                   </DropdownMenuItem>
                 </PermissionGate>
-                <DropdownMenuSeparator />
+                {canManage ? <DropdownMenuSeparator /> : null}
                 <PermissionGate
                   permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}
                 >
@@ -137,14 +154,14 @@ function FiscalYearsContent() {
         },
       },
     ],
-    [router]
+    [router, canManage]
   )
 
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
-        title="Company Calendar"
-        description="Fiscal years and accounting periods used across the platform."
+        title="Fiscal Years"
+        description="Fiscal years and accounting periods; years are inclusive and cannot overlap"
         action={
           <PermissionGate permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}>
             <Button onClick={() => setCreateOpen(true)}>
@@ -156,11 +173,6 @@ function FiscalYearsContent() {
 
       <CalendarSectionNav />
 
-      <p className="text-sm text-muted-foreground">
-        Fiscal years are inclusive and cannot overlap. There is no hard delete —
-        deactivate a year with INACTIVE status instead.
-      </p>
-
       <DataTable
         columns={columns}
         data={years}
@@ -171,8 +183,9 @@ function FiscalYearsContent() {
         empty={{
           icon: CalendarRange,
           title: "No fiscal years found",
-          description:
-            "Create a fiscal year before adding accounting periods, holidays or effective calendar checks.",
+          description: canManage
+            ? "Create a fiscal year before adding accounting periods, holidays or effective calendar checks."
+            : "No fiscal years have been configured for this company.",
           action: (
             <PermissionGate permission={PERMISSIONS.COMPANY_CALENDAR.MANAGE}>
               <Button onClick={() => setCreateOpen(true)}>
@@ -224,7 +237,11 @@ function FiscalYearsContent() {
             },
             {
               onSuccess: () => {
-                toast.success("Fiscal year status updated")
+                toast.success(
+                  statusTarget.status === "ACTIVE"
+                    ? "Fiscal year deactivated"
+                    : "Fiscal year activated"
+                )
                 setStatusTarget(null)
               },
               onError: (err) =>
