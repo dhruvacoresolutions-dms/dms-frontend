@@ -141,8 +141,11 @@ export function ClaimPolicyCard({
               name="companyTimezone"
               render={({ field, fieldState }) => (
                 <Field>
-                  <FieldLabel>{requiredLabel("Company timezone")}</FieldLabel>
+                  <FieldLabel htmlFor="calendar-company-timezone">
+                    {requiredLabel("Company timezone")}
+                  </FieldLabel>
                   <TimezoneCombobox
+                    id="calendar-company-timezone"
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={!canManage || updateMutation.isPending}
