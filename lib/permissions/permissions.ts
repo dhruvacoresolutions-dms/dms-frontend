@@ -150,6 +150,21 @@ export const PERMISSIONS = {
     SUPPORTING_MASTER_IMPORT: "PRODUCT_SUPPORTING_MASTER_IMPORT",
     SUPPORTING_MASTER_STATUS: "PRODUCT_SUPPORTING_MASTER_STATUS",
   },
+  /**
+   * Customer module (`CUSTOMER_MASTER`). The backend exposes exactly two
+   * codes — read and manage — so every mutating action below resolves to
+   * `CUSTOMER_MASTER_MANAGE` while export resolves to the read code.
+   */
+  CUSTOMER: {
+    VIEW: "CUSTOMER_MASTER_VIEW",
+    MANAGE: "CUSTOMER_MASTER_MANAGE",
+    CREATE: "CUSTOMER_MASTER_MANAGE",
+    UPDATE: "CUSTOMER_MASTER_MANAGE",
+    STATUS: "CUSTOMER_MASTER_MANAGE",
+    IMPORT: "CUSTOMER_MASTER_MANAGE",
+    BOOTSTRAP: "CUSTOMER_MASTER_MANAGE",
+    EXPORT: "CUSTOMER_MASTER_VIEW",
+  },
   SUPPLIER: {
     VIEW: "SUPPLIER_VIEW",
     CREATE: "SUPPLIER_CREATE",

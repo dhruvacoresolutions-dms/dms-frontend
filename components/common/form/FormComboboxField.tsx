@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Controller, type FieldValues } from "react-hook-form"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import type { BaseFieldProps, BackendComboboxProps } from "./types"
+import type { BaseFieldProps } from "./types"
 
 export function FormComboboxField<T extends FieldValues>({
   control,
@@ -17,7 +17,7 @@ export function FormComboboxField<T extends FieldValues>({
   comboboxProps,
 }: BaseFieldProps<T> & {
   companyUuid: string
-  Combobox: React.ComponentType<BackendComboboxProps>
+  Combobox: React.ElementType
   comboboxProps?: Record<string, unknown>
 }) {
   return (
@@ -31,7 +31,7 @@ export function FormComboboxField<T extends FieldValues>({
             companyUuid={companyUuid}
             value={field.value ? String(field.value) : null}
             disabled={disabled}
-            onValueChange={(v) => field.onChange(v ?? "")}
+            onValueChange={(v: string | null) => field.onChange(v ?? "")}
             {...(placeholder ? { placeholder } : {})}
             {...comboboxProps}
           />

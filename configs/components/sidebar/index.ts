@@ -46,6 +46,7 @@ import {
   MapPinned,
   Map as MapIcon,
   MapPinCheck,
+  UsersRound,
   // Financial Management
   CalendarDays,
   CalendarRange,
@@ -136,6 +137,31 @@ export const organizationNav: MainNav = [
         url: "/distributor-references",
         icon: ListTree,
         permission: PERMISSIONS.DISTRIBUTOR.MASTER_VIEW,
+      },
+    ],
+  },
+  {
+    title: "Customers",
+    url: "#",
+    icon: UsersRound,
+    items: [
+      {
+        title: "Customer List",
+        url: "/customers",
+        icon: UsersRound,
+        permission: PERMISSIONS.CUSTOMER.VIEW,
+      },
+      {
+        title: "Pincode Mappings",
+        url: "/customers/pincode-mappings",
+        icon: MapPinned,
+        permission: PERMISSIONS.CUSTOMER.VIEW,
+      },
+      {
+        title: "Classification Masters",
+        url: "/customers/classification-masters",
+        icon: ListTree,
+        permission: PERMISSIONS.CUSTOMER.VIEW,
       },
     ],
   },

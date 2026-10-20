@@ -254,9 +254,20 @@ export function BulkImportDialog({
     async (
       uploadResult: unknown
     ): Promise<{ jobUuid: string; status: ImportJobStatus } | undefined> => {
-      if (!getJobStatus) return undefined
       const jobUuid = extractJobUuid(uploadResult)
-      if (!jobUuid) return undefined
+      if (!jobUuid) {
+        // Synchronous imports (e.g. customer pincode mappings) return the
+        // result itself instead of a job reference — surface it directly.
+        if (
+          uploadResult != null &&
+          typeof uploadResult === "object" &&
+          "totalRows" in (uploadResult as Record<string, unknown>)
+        ) {
+          return { jobUuid: "", status: uploadResult as ImportJobStatus }
+        }
+        return undefined
+      }
+      if (!getJobStatus) return undefined
       try {
         let status = await getJobStatus(jobUuid)
         // status without row details but with failures -> pull failed rows separately
