@@ -38,7 +38,10 @@ export type PermissionAction = keyof typeof ACTION_ALIASES
  * `USER.VIEW`, `user-view`, `USER:VIEW` → `USER_VIEW`.
  */
 export function normalizePermissionCode(code: string): string {
-  return code.trim().toUpperCase().replace(/[\s.:/\-]+/g, "_")
+  return code
+    .trim()
+    .toUpperCase()
+    .replace(/[\s.:/\-]+/g, "_")
 }
 
 /** Resolve a developer-facing action to the backend verb (`EDIT` → `UPDATE`). */
@@ -55,9 +58,7 @@ export function buildPermissionCode(module: string, action: string): string {
 export type ModuleActionRef = { module: string; action: string }
 
 /** Accept a raw code string or a module/action ref; return the canonical code. */
-export function resolveRequiredCode(
-  input: string | ModuleActionRef
-): string {
+export function resolveRequiredCode(input: string | ModuleActionRef): string {
   if (typeof input === "string") return normalizePermissionCode(input)
   return buildPermissionCode(input.module, input.action)
 }
@@ -171,6 +172,23 @@ export const PERMISSIONS = {
     BANK_VIEW: "DISTRIBUTOR_BANK_VIEW",
     BANK_UPDATE: "DISTRIBUTOR_BANK_UPDATE",
     LOGIN_MANAGE: "DISTRIBUTOR_LOGIN_MANAGE",
+  },
+  COMPANY_CALENDAR: {
+    VIEW: "COMPANY_CALENDAR_VIEW",
+    MANAGE: "COMPANY_CALENDAR_MANAGE",
+    IMPORT: "COMPANY_CALENDAR_IMPORT",
+  },
+  ACCOUNTING_PERIOD: {
+    CLOSE: "ACCOUNTING_PERIOD_CLOSE",
+    REOPEN: "ACCOUNTING_PERIOD_REOPEN",
+  },
+  VISIT_RADIUS: {
+    VIEW: "VISIT_RADIUS_VIEW",
+    MANAGE: "VISIT_RADIUS_MANAGE",
+  },
+  CLAIM_POLICY: {
+    VIEW: "CLAIM_POLICY_VIEW",
+    MANAGE: "CLAIM_POLICY_MANAGE",
   },
   INTEGRATION: {
     VIEW: "INTEGRATION_VIEW",
