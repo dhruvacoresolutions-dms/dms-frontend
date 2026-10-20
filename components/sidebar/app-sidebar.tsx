@@ -7,6 +7,7 @@ import { NavOrganization } from "@/components/sidebar/nav-organization"
 import { NavAccessControl } from "@/components/sidebar/nav-access-control"
 import { NavProductPricing } from "@/components/sidebar/nav-product-pricing"
 import { NavCompanyCalendar } from "@/components/sidebar/nav-company-calendar"
+import { NavSfa } from "@/components/sidebar/nav-sfa"
 import { CompaniesNav } from "@/components/sidebar/companies-nav"
 import { Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar"
 import {
@@ -15,6 +16,7 @@ import {
   mainNav,
   organizationNav,
   productPricingNav,
+  sfaNav,
 } from "@/configs/components/sidebar"
 import { useFilteredMainNav } from "@/hooks/use-filtered-nav"
 import { useAuthStore } from "@/stores/auth-store"
@@ -28,6 +30,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const accessControlItems = useFilteredMainNav(accessControlNav)
   const productPricingItems = useFilteredMainNav(productPricingNav)
   const companyCalendarItems = useFilteredMainNav(companyCalendarNav)
+  const sfaItems = useFilteredMainNav(sfaNav)
   const { state, isMobile, setOpen } = useSidebar()
 
   // Hover-to-expand when collapsed to icon mode (desktop only).
@@ -89,6 +92,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <NavMain items={filteredNav} />
             <NavOrganization items={organizationItems} />
             <NavProductPricing items={productPricingItems} />
+            <NavSfa items={sfaItems} />
             <NavCompanyCalendar items={companyCalendarItems} />
             <NavAccessControl items={accessControlItems} />
             {/* <NavGroups groups={filteredGroups} /> */}

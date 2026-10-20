@@ -14,7 +14,8 @@ export function FormTextareaField<T extends FieldValues>({
   disabled,
   className,
   rows = 3,
-}: BaseFieldProps<T> & { rows?: number }) {
+  maxLength,
+}: BaseFieldProps<T> & { rows?: number; maxLength?: number }) {
   return (
     <Controller
       control={control}
@@ -28,6 +29,7 @@ export function FormTextareaField<T extends FieldValues>({
             onChange={field.onChange}
             onBlur={field.onBlur}
             disabled={disabled}
+            maxLength={maxLength}
             placeholder={placeholder ?? getGenericTextPlaceholder(label)}
             aria-invalid={!!fieldState.error}
           />

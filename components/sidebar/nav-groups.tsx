@@ -10,8 +10,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,7 +18,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { CollapsedNavPopup } from "@/components/sidebar/collapsed-nav-popup"
+import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
 import { cn } from "@/lib/utils"
 import type { NavGroup, SidebarNavItem } from "@/types/components/sidebar"
 
@@ -29,7 +27,9 @@ function normalizePath(pathname: string) {
 }
 
 function collectUrlsRecursive(items: SidebarNavItem[]): string[] {
-  return items.flatMap((i) => [i.url, ...collectUrlsRecursive(i.items ?? [])]).filter((u) => u !== "#")
+  return items
+    .flatMap((i) => [i.url, ...collectUrlsRecursive(i.items ?? [])])
+    .filter((u) => u !== "#")
 }
 
 function getActiveUrl(pathname: string, groups: NavGroup[]): string | null {
@@ -46,16 +46,17 @@ function getActiveUrl(pathname: string, groups: NavGroup[]): string | null {
 
 function isItemActive(item: SidebarNavItem, activeUrl: string | null): boolean {
   if (!activeUrl) return false
-  if (item.url !== "#" && (activeUrl === item.url || activeUrl.startsWith(item.url + "/"))) return true
+  if (
+    item.url !== "#" &&
+    (activeUrl === item.url || activeUrl.startsWith(item.url + "/"))
+  )
+    return true
   return item.items?.some((sub) => isItemActive(sub, activeUrl)) ?? false
 }
 
 export function NavGroups({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname()
-  const { state, isMobile, setOpenMobile } = useSidebar()
-  // Icon-collapsed (desktop) mode hides inline submenus, so parents with
-  // children render a hover popup instead.
-  const iconMode = !isMobile && state === "collapsed"
+  const { isMobile, setOpenMobile } = useSidebar()
   const activeUrl = getActiveUrl(pathname, groups)
   // Mobile: close the sheet immediately when a navigation link is tapped.
   // Parent items with children only expand — they never close.
@@ -75,11 +76,12 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
   return (
     <>
       {groups.map((group) => (
-        <SidebarGroup key={group.label} className="pt-3">
-          <SidebarGroupLabel className="border-b border-sidebar-border/60 pb-2 mb-2 font-extrabold tracking-widest uppercase text-sidebar-foreground/70 [&>svg]:text-sidebar-foreground/70">
-            {group.icon && <group.icon className="size-3.5" />}
-            {group.label}
-          </SidebarGroupLabel>
+        <CollapsibleNavGroup
+          key={group.label}
+          label={group.label}
+          icon={group.icon}
+          className="pt-3"
+        >
           <SidebarMenu>
             {group.items.map((item) => {
               const hasChildren = !!item.items?.length
@@ -88,22 +90,6 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
                 ? (openMap[key] ?? isItemActive(item, activeUrl))
                 : false
               const active = activeUrl === item.url
-
-              if (hasChildren && iconMode) {
-                return (
-                  <CollapsedNavPopup
-                    key={item.title}
-                    title={item.title}
-                    icon={item.icon && <item.icon />}
-                    triggerActive={isItemActive(item, activeUrl)}
-                    links={item.items!.map((sub) => ({
-                      title: sub.title,
-                      url: sub.url,
-                      active: activeUrl === sub.url,
-                    }))}
-                  />
-                )
-              }
 
               return (
                 <Collapsible
@@ -159,7 +145,7 @@ export function NavGroups({ groups }: { groups: NavGroup[] }) {
               )
             })}
           </SidebarMenu>
-        </SidebarGroup>
+        </CollapsibleNavGroup>
       ))}
     </>
   )

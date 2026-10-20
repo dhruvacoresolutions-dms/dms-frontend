@@ -193,6 +193,19 @@ export const PERMISSIONS = {
     MANAGE: "COMPANY_CALENDAR_MANAGE",
     IMPORT: "COMPANY_CALENDAR_IMPORT",
   },
+  /**
+   * Sales Force Automation visit planning (`VISIT_PLAN` module).
+   * - VIEW    read own/team plans and unplanned customer lookups
+   * - CREATE  create, edit and withdraw/resubmit own plans
+   * - MANAGE  create on an employee's behalf and edit APPROVED plans
+   * - APPROVE approve or reject a pending plan (direct manager/super admin)
+   */
+  VISIT_PLAN: {
+    VIEW: "VISIT_PLAN_VIEW",
+    CREATE: "VISIT_PLAN_CREATE",
+    MANAGE: "VISIT_PLAN_MANAGE",
+    APPROVE: "VISIT_PLAN_APPROVE",
+  },
   ACCOUNTING_PERIOD: {
     CLOSE: "ACCOUNTING_PERIOD_CLOSE",
     REOPEN: "ACCOUNTING_PERIOD_REOPEN",

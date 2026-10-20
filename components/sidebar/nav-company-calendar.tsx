@@ -11,8 +11,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,10 +19,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  CollapsedNavPopup,
-  type CollapsedNavLink,
-} from "@/components/sidebar/collapsed-nav-popup"
+import { CollapsibleNavGroup } from "@/components/sidebar/collapsible-nav-group"
 import { cn } from "@/lib/utils"
 import type { MainNav, SidebarNavItem } from "@/types/components/sidebar"
 
@@ -36,14 +31,6 @@ function collectUrls(items: MainNav): string[] {
   return items
     .flatMap((item) => [item.url, ...collectUrls(item.items ?? [])])
     .filter((url) => url !== "#")
-}
-
-function collectLeafLinks(items: MainNav): CollapsedNavLink[] {
-  return items.flatMap((item) => {
-    if (item.items?.length) return collectLeafLinks(item.items)
-    if (item.url === "#") return []
-    return [{ title: item.title, url: item.url }]
-  })
 }
 
 function getActiveUrl(pathname: string, items: MainNav): string | null {
@@ -73,7 +60,6 @@ function isBranchActive(
 
 type RenderContext = {
   activeUrl: string | null
-  iconMode: boolean
   openMap: Record<string, boolean>
   setOpen: (key: string, next: boolean) => void
   closeMobileSidebar: () => void
@@ -91,20 +77,6 @@ function renderNavItems(
     const isOpen = hasChildren
       ? (ctx.openMap[key] ?? isBranchActive(item, ctx.activeUrl))
       : false
-
-    // Icon-collapsed desktop mode hides inline submenus, so top-level
-    // parents with children render a hover flyout instead.
-    if (hasChildren && ctx.iconMode && depth === 0) {
-      return (
-        <CollapsedNavPopup
-          key={key}
-          title={item.title}
-          icon={item.icon && <item.icon />}
-          triggerActive={isBranchActive(item, ctx.activeUrl)}
-          links={collectLeafLinks([item])}
-        />
-      )
-    }
 
     const chevron = (
       <ChevronRightIcon
@@ -179,25 +151,19 @@ function renderNavItems(
 
 export function NavCompanyCalendar({ items }: { items: MainNav }) {
   const pathname = usePathname()
-  const { state, isMobile, setOpenMobile } = useSidebar()
-  const iconMode = !isMobile && state === "collapsed"
+  const { isMobile, setOpenMobile } = useSidebar()
   const activeUrl = getActiveUrl(pathname, items)
   const [openMap, setOpenMap] = React.useState<Record<string, boolean>>({})
 
   if (items.length === 0) return null
 
   return (
-    <SidebarGroup className="pt-2">
-      <SidebarGroupLabel className="mb-2 border-b border-sidebar-border/60 pb-2 font-extrabold tracking-widest text-sidebar-foreground/70 uppercase [&>svg]:text-sidebar-foreground/70">
-        <CalendarDays className="size-3.5" />
-        Company Calendar
-      </SidebarGroupLabel>
+    <CollapsibleNavGroup label="Company Calendar" icon={CalendarDays}>
       <SidebarMenu>
         {renderNavItems(
           items,
           {
             activeUrl,
-            iconMode,
             openMap,
             setOpen: (key, next) =>
               setOpenMap((prev) => ({ ...prev, [key]: next })),
@@ -209,6 +175,6 @@ export function NavCompanyCalendar({ items }: { items: MainNav }) {
           0
         )}
       </SidebarMenu>
-    </SidebarGroup>
+    </CollapsibleNavGroup>
   )
 }

@@ -46,6 +46,7 @@ import {
   MapPinned,
   Map as MapIcon,
   MapPinCheck,
+  Route,
   UsersRound,
   // Financial Management
   CalendarDays,
@@ -318,6 +319,16 @@ export const mainNav: MainNav = [
   },
 ]
 
+/** Sales Force Automation — visit planning and field-sales execution. */
+export const sfaNav: MainNav = [
+  {
+    title: "Visit Plans",
+    url: "/visit-plans",
+    icon: MapPinCheck,
+    permission: PERMISSIONS.VISIT_PLAN.VIEW,
+  },
+]
+
 /** Flatten nested branches to leaf items (the top navbar has no depth). */
 function flattenNav(items: MainNav): MainNav {
   return items.flatMap((item) => {
@@ -330,6 +341,12 @@ function flattenNav(items: MainNav): MainNav {
 /** Leaves + the three groups, consumed by the top navigation bar. */
 export const primaryNav: MainNav = [
   ...mainNav,
+  {
+    title: "SFA",
+    url: "#",
+    icon: Route,
+    items: flattenNav(sfaNav),
+  },
   {
     title: "Organization",
     url: "#",
@@ -622,6 +639,7 @@ const allNav = [
   ...accessControlNav,
   ...productPricingNav,
   ...companyCalendarNav,
+  ...sfaNav,
   ...flatGroupItems,
 ]
 
