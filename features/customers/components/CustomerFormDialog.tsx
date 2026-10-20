@@ -25,11 +25,12 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { optionalText, requiredName } from "@/lib/validations/master-data"
 import {
-  optionalText,
-  requiredName,
-} from "@/lib/validations/master-data"
-import { optionalEmail, optionalGstin, optionalPan } from "@/lib/validations/party"
+  optionalEmail,
+  optionalGstin,
+  optionalPan,
+} from "@/lib/validations/party"
 import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
 import { CustomerTypeCombobox } from "./CustomerTypeCombobox"
 import {
@@ -119,9 +120,7 @@ const customerSchema = z
     if (values.gstRegistrationType === "UNREGISTERED" && values.gstin?.trim()) {
       add("gstin", "GSTIN must be empty for unregistered customers")
     }
-    if (
-      (values.latitude === undefined) !== (values.longitude === undefined)
-    ) {
+    if ((values.latitude === undefined) !== (values.longitude === undefined)) {
       add("longitude", "Latitude and longitude must be supplied together")
     }
     if (
@@ -291,8 +290,7 @@ export function CustomerFormDialog({
     }
     // A MANUAL geography row keeps the territory the user picked at creation
     // time — re-resolving from the pincode must not silently replace it.
-    manualTerritory.current =
-      isEdit && customer?.geographyStatus === "MANUAL"
+    manualTerritory.current = isEdit && customer?.geographyStatus === "MANUAL"
   }, [open, isEdit, customer, reset])
 
   useEffect(() => {
@@ -354,8 +352,7 @@ export function CustomerFormDialog({
         ? resolution.data.territoryUuid
         : undefined
     const territoryToSend =
-      values.territoryUuid &&
-      values.territoryUuid !== autoResolvedTerritory
+      values.territoryUuid && values.territoryUuid !== autoResolvedTerritory
         ? values.territoryUuid
         : undefined
 
@@ -478,8 +475,8 @@ export function CustomerFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
+        <DialogHeader className="shrink-0 gap-1 border-b px-5 py-4 pr-12">
           <DialogTitle>
             {isEdit ? "Edit Customer" : "Create Customer"}
           </DialogTitle>
@@ -490,136 +487,136 @@ export function CustomerFormDialog({
           </DialogDescription>
         </DialogHeader>
         {isEdit && isDetailLoading ? (
-          <div className="flex items-center justify-center py-10">
+          <div className="flex flex-1 items-center justify-center py-16">
             <Spinner className="size-6" />
           </div>
         ) : (
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6"
+            className="flex min-h-0 flex-1 flex-col"
             noValidate
           >
-            <FieldGroup>
-              <FieldSet>
-                <FieldLegend>Shop identity</FieldLegend>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <FormComboboxField
-                    control={control}
-                    name="customerType"
-                    label={requiredLabel("Customer Type")}
-                    companyUuid={companyUuid}
-                    Combobox={CustomerTypeCombobox}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="shopName"
-                    label={requiredLabel("Shop Name")}
-                    maxLength={150}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="contactPerson"
-                    label={requiredLabel("Contact Person")}
-                    maxLength={150}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="mobile"
-                    label={requiredLabel("Mobile")}
-                    maxLength={10}
-                    placeholder="10-digit mobile number"
-                  />
-                  <FormTextField
-                    control={control}
-                    name="alternateMobile"
-                    label="Alternate Mobile"
-                    maxLength={10}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="email"
-                    label="Email"
-                    type="email"
-                    maxLength={200}
-                  />
-                  <FormSelectField
-                    control={control}
-                    name="source"
-                    label={requiredLabel("Source")}
-                    options={SOURCE_OPTIONS}
-                  />
-                </div>
-              </FieldSet>
-            </FieldGroup>
-
-            <FieldGroup>
-              <FieldSet>
-                <FieldLegend>Address &amp; territory</FieldLegend>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <FormTextField
-                    control={control}
-                    name="pincode"
-                    label={requiredLabel("Pincode")}
-                    maxLength={6}
-                    placeholder="6-digit pincode"
-                  />
-                  <div className="md:col-span-1 lg:col-span-2">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
+              <FieldGroup>
+                <FieldSet>
+                  <FieldLegend>Shop identity</FieldLegend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <FormComboboxField
                       control={control}
-                      name="territoryUuid"
-                      label={requiredLabel("Territory", territoryRequired)}
+                      name="customerType"
+                      label={requiredLabel("Customer Type")}
                       companyUuid={companyUuid}
-                      Combobox={GeographyCombobox}
-                      comboboxProps={{
-                        types: ["TERRITORY"],
-                        status: "ACTIVE",
-                        placeholder: "Select territory...",
-                      }}
+                      Combobox={CustomerTypeCombobox}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="shopName"
+                      label={requiredLabel("Shop Name")}
+                      maxLength={150}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="contactPerson"
+                      label={requiredLabel("Contact Person")}
+                      maxLength={150}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="mobile"
+                      label={requiredLabel("Mobile")}
+                      maxLength={10}
+                      placeholder="10-digit mobile number"
+                    />
+                    <FormTextField
+                      control={control}
+                      name="alternateMobile"
+                      label="Alternate Mobile"
+                      maxLength={10}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="email"
+                      label="Email"
+                      type="email"
+                      maxLength={200}
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="source"
+                      label={requiredLabel("Source")}
+                      options={SOURCE_OPTIONS}
                     />
                   </div>
-                  <div className="md:col-span-2 lg:col-span-3">
-                    <TerritoryHint
-                      pincode={pincode}
-                      isResolving={resolution.isFetching}
-                      status={resolution.data?.status}
-                      pathCodes={path.map((p) => p.code)}
-                      autoAssigned={showAutoMapped}
-                      onUseManual={() => {
-                        manualTerritory.current = true
-                      }}
+                </FieldSet>
+              </FieldGroup>
+
+              <FieldGroup>
+                <FieldSet>
+                  <FieldLegend>Address &amp; territory</FieldLegend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <FormTextField
+                      control={control}
+                      name="pincode"
+                      label={requiredLabel("Pincode")}
+                      maxLength={6}
+                      placeholder="6-digit pincode"
                     />
-                  </div>
-                  <FormTextField
-                    control={control}
-                    name="addressLine1"
-                    label="Address Line 1"
-                    maxLength={200}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="addressLine2"
-                    label="Address Line 2"
-                    maxLength={200}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="landmark"
-                    label="Landmark"
-                    maxLength={200}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="city"
-                    label="City"
-                    maxLength={200}
-                  />
-                  <FormTextField
-                    control={control}
-                    name="state"
-                    label="State"
-                    maxLength={200}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
+                    <div className="md:col-span-1 lg:col-span-2">
+                      <FormComboboxField
+                        control={control}
+                        name="territoryUuid"
+                        label={requiredLabel("Territory", territoryRequired)}
+                        companyUuid={companyUuid}
+                        Combobox={GeographyCombobox}
+                        comboboxProps={{
+                          types: ["TERRITORY"],
+                          status: "ACTIVE",
+                          placeholder: "Select territory...",
+                        }}
+                      />
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <TerritoryHint
+                        pincode={pincode}
+                        isResolving={resolution.isFetching}
+                        status={resolution.data?.status}
+                        pathCodes={path.map((p) => p.code)}
+                        autoAssigned={showAutoMapped}
+                        onUseManual={() => {
+                          manualTerritory.current = true
+                        }}
+                      />
+                    </div>
+                    <FormTextField
+                      control={control}
+                      name="addressLine1"
+                      label="Address Line 1"
+                      maxLength={200}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="addressLine2"
+                      label="Address Line 2"
+                      maxLength={200}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="landmark"
+                      label="Landmark"
+                      maxLength={200}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="city"
+                      label="City"
+                      maxLength={200}
+                    />
+                    <FormTextField
+                      control={control}
+                      name="state"
+                      label="State"
+                      maxLength={200}
+                    />
                     <FormNumberField
                       control={control}
                       name="latitude"
@@ -631,156 +628,156 @@ export function CustomerFormDialog({
                       label="Longitude"
                     />
                   </div>
-                </div>
-              </FieldSet>
-            </FieldGroup>
+                </FieldSet>
+              </FieldGroup>
 
-            <FieldGroup>
-              <FieldSet>
-                <FieldLegend>Tax</FieldLegend>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <FormSelectField
-                    control={control}
-                    name="gstRegistrationType"
-                    label={requiredLabel("GST Registration")}
-                    options={GST_REGISTRATION_OPTIONS}
-                  />
-                  {gstRegistrationType === "REGISTERED" && (
+              <FieldGroup>
+                <FieldSet>
+                  <FieldLegend>Tax</FieldLegend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <FormSelectField
+                      control={control}
+                      name="gstRegistrationType"
+                      label={requiredLabel("GST Registration")}
+                      options={GST_REGISTRATION_OPTIONS}
+                    />
+                    {gstRegistrationType === "REGISTERED" && (
+                      <FormTextField
+                        control={control}
+                        name="gstin"
+                        label={requiredLabel("GSTIN")}
+                        maxLength={15}
+                      />
+                    )}
                     <FormTextField
                       control={control}
-                      name="gstin"
-                      label={requiredLabel("GSTIN")}
-                      maxLength={15}
+                      name="pan"
+                      label="PAN"
+                      maxLength={10}
                     />
-                  )}
-                  <FormTextField
-                    control={control}
-                    name="pan"
-                    label="PAN"
-                    maxLength={10}
-                  />
-                </div>
-              </FieldSet>
-            </FieldGroup>
+                  </div>
+                </FieldSet>
+              </FieldGroup>
 
-            <FieldGroup>
-              <FieldSet>
-                <FieldLegend>Classification</FieldLegend>
-                <p className="-mt-1 text-sm text-muted-foreground">
-                  Classify the outlet to drive segmentation, pricing and
-                  coverage rules. Only active values are offered.
-                </p>
-                {isClassificationLoading && customerTypeUuid ? (
-                  <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Loading classification options...
+              <FieldGroup>
+                <FieldSet>
+                  <FieldLegend>Classification</FieldLegend>
+                  <p className="-mt-1 text-sm text-muted-foreground">
+                    Classify the outlet to drive segmentation, pricing and
+                    coverage rules. Only active values are offered.
                   </p>
-                ) : null}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <FormComboboxField
-                    control={control}
-                    name="subTypeUuid"
-                    label="Sub Type"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerSubTypeCombobox}
-                    comboboxProps={{
-                      customerTypeUuid: customerTypeUuid || null,
-                      optionsOverride: classification?.subTypes,
-                    }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="channelUuid"
-                    label="Channel"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerChannelCombobox}
-                    comboboxProps={{
-                      optionsOverride: classification?.channels,
-                    }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="segmentUuid"
-                    label="Segment"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerSegmentCombobox}
-                    comboboxProps={{
-                      optionsOverride: classification?.segments,
-                    }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="categoryUuid"
-                    label="Category"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerCategoryCombobox}
-                    comboboxProps={{
-                      optionsOverride: classification?.categories,
-                    }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="classUuid"
-                    label="Class"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerClassCombobox}
-                    comboboxProps={{ optionsOverride: classification?.classes }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="groupUuid"
-                    label="Group"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerGroupCombobox}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="businessTypeCode"
-                    label="Business Type"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerLookupCombobox}
-                    comboboxProps={{ lookupType: "BUSINESS_TYPE" }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="shopSizeCode"
-                    label="Shop Size"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerLookupCombobox}
-                    comboboxProps={{ lookupType: "SHOP_SIZE" }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="monthlyPotentialCode"
-                    label="Monthly Potential"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerLookupCombobox}
-                    comboboxProps={{ lookupType: "MONTHLY_POTENTIAL" }}
-                  />
-                  <FormComboboxField
-                    control={control}
-                    name="preferredLanguageCode"
-                    label="Preferred Language"
-                    companyUuid={companyUuid}
-                    Combobox={CustomerLookupCombobox}
-                    comboboxProps={{ lookupType: "PREFERRED_LANGUAGE" }}
-                  />
-                </div>
-              </FieldSet>
-            </FieldGroup>
+                  {isClassificationLoading && customerTypeUuid ? (
+                    <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="size-3.5 animate-spin" />
+                      Loading classification options...
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <FormComboboxField
+                      control={control}
+                      name="subTypeUuid"
+                      label="Sub Type"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerSubTypeCombobox}
+                      comboboxProps={{
+                        customerTypeUuid: customerTypeUuid || null,
+                        optionsOverride: classification?.subTypes,
+                      }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="channelUuid"
+                      label="Channel"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerChannelCombobox}
+                      comboboxProps={{
+                        optionsOverride: classification?.channels,
+                      }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="segmentUuid"
+                      label="Segment"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerSegmentCombobox}
+                      comboboxProps={{
+                        optionsOverride: classification?.segments,
+                      }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="categoryUuid"
+                      label="Category"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerCategoryCombobox}
+                      comboboxProps={{
+                        optionsOverride: classification?.categories,
+                      }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="classUuid"
+                      label="Class"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerClassCombobox}
+                      comboboxProps={{
+                        optionsOverride: classification?.classes,
+                      }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="groupUuid"
+                      label="Group"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerGroupCombobox}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="businessTypeCode"
+                      label="Business Type"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerLookupCombobox}
+                      comboboxProps={{ lookupType: "BUSINESS_TYPE" }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="shopSizeCode"
+                      label="Shop Size"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerLookupCombobox}
+                      comboboxProps={{ lookupType: "SHOP_SIZE" }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="monthlyPotentialCode"
+                      label="Monthly Potential"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerLookupCombobox}
+                      comboboxProps={{ lookupType: "MONTHLY_POTENTIAL" }}
+                    />
+                    <FormComboboxField
+                      control={control}
+                      name="preferredLanguageCode"
+                      label="Preferred Language"
+                      companyUuid={companyUuid}
+                      Combobox={CustomerLookupCombobox}
+                      comboboxProps={{ lookupType: "PREFERRED_LANGUAGE" }}
+                    />
+                  </div>
+                </FieldSet>
+              </FieldGroup>
+            </div>
 
-            <div className="sticky bottom-0 -mx-6 flex justify-end gap-2 border-t bg-background px-6 py-3">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-muted/40 px-5 py-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
+                disabled={isPending || isCheckingDuplicate}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isPending || isCheckingDuplicate}
-              >
+              <Button type="submit" disabled={isPending || isCheckingDuplicate}>
                 {isCheckingDuplicate
                   ? "Checking duplicates..."
                   : isPending

@@ -9,7 +9,6 @@ import {
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
 import type { CustomerLifecycleStatus } from "../api/customer.types"
 import type { CustomerLifecycleCounts } from "../hooks/use-customer-lifecycle-counts"
 
@@ -25,16 +24,9 @@ type Kpi = {
 type Props = {
   counts: CustomerLifecycleCounts
   isLoading?: boolean
-  activeKey: "ALL" | CustomerLifecycleStatus
-  onSelect: (key: "ALL" | CustomerLifecycleStatus) => void
 }
 
-export function CustomerKpiCards({
-  counts,
-  isLoading,
-  activeKey,
-  onSelect,
-}: Props) {
+export function CustomerKpiCards({ counts, isLoading }: Props) {
   const kpis: Kpi[] = [
     {
       key: "ALL",
@@ -75,52 +67,36 @@ export function CustomerKpiCards({
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {kpis.map((kpi) => {
-        const isActive = activeKey === kpi.key
-        return (
-          <button
-            key={kpi.key}
-            type="button"
-            onClick={() => onSelect(kpi.key)}
-            className="cursor-pointer text-left"
-            aria-pressed={isActive}
-          >
-            <Card
-              className={cn(
-                "h-full transition-colors hover:border-foreground/25",
-                isActive && "border-primary/60 ring-1 ring-primary/30"
-              )}
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+      {kpis.map((kpi) => (
+        <Card
+          key={kpi.key}
+          size="sm"
+          title={kpi.hint}
+          className="h-full"
+          aria-label={`${kpi.label}: ${kpi.value}`}
+        >
+          <CardContent className="flex items-center gap-2.5">
+            <span
+              className={`flex size-8 shrink-0 items-center justify-center rounded-md ${kpi.iconClass}`}
             >
-              <CardContent className="flex items-center gap-3 py-4">
-                <span
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-lg",
-                    kpi.iconClass
-                  )}
-                >
-                  <kpi.icon className="size-5" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  {isLoading ? (
-                    <Skeleton className="h-7 w-12" />
-                  ) : (
-                    <p className="text-2xl font-semibold leading-none tabular-nums">
-                      {kpi.value.toLocaleString()}
-                    </p>
-                  )}
-                  <p className="mt-1 truncate text-sm font-medium">
-                    {kpi.label}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {kpi.hint}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </button>
-        )
-      })}
+              <kpi.icon className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              {isLoading ? (
+                <Skeleton className="h-5 w-10" />
+              ) : (
+                <p className="text-lg font-semibold leading-none tabular-nums">
+                  {kpi.value.toLocaleString()}
+                </p>
+              )}
+              <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
+                {kpi.label}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }

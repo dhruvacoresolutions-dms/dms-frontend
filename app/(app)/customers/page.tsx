@@ -348,15 +348,7 @@ function CustomersContent() {
         }
       />
 
-      <CustomerKpiCards
-        counts={counts}
-        isLoading={countsLoading}
-        activeKey={lifecycle}
-        onSelect={(key) => {
-          setLifecycle(key)
-          setPage(0)
-        }}
-      />
+      <CustomerKpiCards counts={counts} isLoading={countsLoading} />
 
       <div className="flex flex-wrap items-center gap-2">
         <SearchInput
