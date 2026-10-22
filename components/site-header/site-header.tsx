@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -17,12 +18,27 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 flex w-full items-center border-b border-topbar-border bg-topbar text-topbar-foreground">
       <div className="flex h-(--header-height) w-full items-center gap-2 px-4">
+        <Link
+          href="/"
+          className="mr-1 flex shrink-0 items-center text-base font-bold tracking-wide text-topbar-foreground transition-opacity hover:opacity-80"
+          aria-label="DMS home"
+        >
+          DMS
+        </Link>
         {!isTopNav && (
           <>
-            <Button className="h-8 w-8 text-topbar-foreground hover:bg-topbar-foreground/10 hover:text-topbar-foreground" variant="ghost" size="icon" onClick={toggleSidebar}>
+            <Button
+              className="h-8 w-8 text-topbar-foreground hover:bg-topbar-foreground/10 hover:text-topbar-foreground"
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+            >
               {isMobile ? <Menu /> : <PanelLeftIcon />}
             </Button>
-            <Separator orientation="vertical" className="mr-2 bg-topbar-border data-vertical:h-4 data-vertical:self-auto" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 bg-topbar-border data-vertical:h-4 data-vertical:self-auto"
+            />
           </>
         )}
         <SidebarBreadcrumbs />
