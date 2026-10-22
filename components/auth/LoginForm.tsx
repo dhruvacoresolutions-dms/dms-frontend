@@ -123,7 +123,7 @@ export function LoginForm() {
         )}
       >
         <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
           <h6 className="text-[15px] text-balance text-muted-foreground">
             Enter your credentials to access your account
           </h6>
