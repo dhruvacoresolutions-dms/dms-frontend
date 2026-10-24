@@ -171,6 +171,7 @@ export function DistributorBranchDialog({
   })
 
   const warehouseEnabled = useWatch({ control, name: "warehouseEnabled" })
+  const isDefaultBranch = !!branch?.isDefault
 
   useEffect(() => {
     if (!open) return
@@ -275,6 +276,12 @@ export function DistributorBranchDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Branch" : "Create Branch"}</DialogTitle>
+          {isDefaultBranch ? (
+            <p className="text-sm text-muted-foreground">
+              Default branch code and name follow the distributor. Edit them on
+              the distributor record.
+            </p>
+          ) : null}
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -286,12 +293,14 @@ export function DistributorBranchDialog({
               <FormTextField
                 control={control}
                 name="branchCode"
+                disabled={isDefaultBranch}
                 label={requiredLabel("Code")}
                 maxLength={30}
               />
               <FormTextField
                 control={control}
                 name="branchName"
+                disabled={isDefaultBranch}
                 label={requiredLabel("Name")}
                 maxLength={120}
               />

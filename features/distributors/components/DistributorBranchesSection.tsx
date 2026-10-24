@@ -38,7 +38,10 @@ type Props = {
   distributorUuid: string
 }
 
-export function DistributorBranchesSection({ companyUuid, distributorUuid }: Props) {
+export function DistributorBranchesSection({
+  companyUuid,
+  distributorUuid,
+}: Props) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [page, setPage] = useState(0)
@@ -91,6 +94,9 @@ export function DistributorBranchesSection({ companyUuid, distributorUuid }: Pro
         cell: ({ row }) => (
           <span className="flex items-center gap-2 font-medium">
             {row.original.branchName}
+            {row.original.isDefault ? (
+              <Badge variant="outline">Default</Badge>
+            ) : null}
             {row.original.isPrimary ? (
               <Badge variant="secondary">Primary</Badge>
             ) : null}
@@ -138,6 +144,12 @@ export function DistributorBranchesSection({ companyUuid, distributorUuid }: Pro
                 <DropdownMenuSeparator />
                 <PermissionGate permission={PERMISSIONS.DISTRIBUTOR.STATUS}>
                   <DropdownMenuItem
+                    disabled={b.isDefault}
+                    title={
+                      b.isDefault
+                        ? "Default branch status follows distributor status."
+                        : undefined
+                    }
                     variant={b.status === "ACTIVE" ? "destructive" : "default"}
                     onClick={() => setStatusToggle(b)}
                   >
@@ -270,7 +282,10 @@ export function DistributorBranchesSection({ companyUuid, distributorUuid }: Pro
         onConfirm={() => {
           if (!primaryTarget) return
           primaryMutation.mutate(
-            { branchUuid: primaryTarget.branchUuid, version: primaryTarget.version },
+            {
+              branchUuid: primaryTarget.branchUuid,
+              version: primaryTarget.version,
+            },
             {
               onSuccess: () => {
                 toast.success("Primary branch updated")

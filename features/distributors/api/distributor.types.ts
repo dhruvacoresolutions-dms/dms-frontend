@@ -1,4 +1,5 @@
 export type DistributorStatus = "ACTIVE" | "INACTIVE"
+export type DistributorLoginStatus = "NONE" | "ACTIVE" | "DISABLED"
 export type TaxRegistrationStatus = "REGISTERED" | "UNREGISTERED"
 export type BranchType =
   | "HEAD_OFFICE"
@@ -97,10 +98,15 @@ export type DistributorResponse = {
   updatedAt?: string
 }
 
+export type DistributorListResponse = DistributorResponse & {
+  loginStatus: DistributorLoginStatus
+}
+
 export type DistributorListParams = {
   search?: string
   status?: DistributorStatus
   distributorTypeUuid?: string
+  loginStatus?: DistributorLoginStatus
   page?: number
   size?: number
 }
@@ -165,6 +171,7 @@ export type DistributorBranchResponse = {
   effectiveFrom?: string | null
   effectiveTo?: string | null
   status: DistributorStatus
+  isDefault?: boolean
   version?: number
   createdAt?: string
   updatedAt?: string
@@ -332,4 +339,26 @@ export type ExportDistributorsFilters = {
   search?: string
   status?: string
   distributorTypeUuid?: string
+}
+
+export type BulkDistributorRequest = { distributorUuids: string[] }
+export type BulkDistributorResultRow = {
+  distributorUuid: string
+  distributorCode?: string
+  result: "DEACTIVATED" | "SKIPPED" | "FAILED"
+  message?: string | null
+}
+export type BulkDistributorDeactivateResponse = {
+  total: number
+  successful: number
+  skipped: number
+  failed: number
+  results: BulkDistributorResultRow[]
+}
+export type BulkDistributorLoginSummary = {
+  total?: number
+  created?: number
+  enabled?: number
+  skipped?: number
+  failed?: number
 }

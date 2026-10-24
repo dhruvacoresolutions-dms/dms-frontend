@@ -88,6 +88,8 @@ export function CustomerOverviewTab({
             <Field label="Shop Name" value={customer.shopName} />
             <Field label="Contact Person" value={customer.contactPerson} />
             <Field label="Customer Type" value={names.customerType} />
+            <Field label="Date of Birth" value={customer.dateOfBirth} />
+            <Field label="Anniversary Date" value={customer.anniversaryDate} />
             <Field
               label="Source"
               value={SOURCE_LABELS[customer.source] ?? customer.source}

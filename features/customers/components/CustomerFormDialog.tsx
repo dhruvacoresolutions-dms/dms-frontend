@@ -17,6 +17,7 @@ import {
 import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   FormComboboxField,
+  FormDateField,
   FormNumberField,
   FormSelectField,
   FormTextField,
@@ -53,6 +54,11 @@ import {
   customerPincode,
   optionalCustomerMobile,
 } from "../lib/customer-validation"
+import {
+  apiDateToPicker,
+  pickerDateToApi,
+  validatePersonalDates,
+} from "../lib/personal-dates"
 import type {
   CustomerRequest,
   CustomerResponse,
@@ -109,11 +115,21 @@ const customerSchema = z
     preferredLanguageCode: z.string().optional(),
     source: z.enum(["ADMIN", "EMPLOYEE", "DISTRIBUTOR", "SELF_REGISTRATION"]),
     territoryUuid: z.string().optional(),
+    dateOfBirth: z.string().optional(),
+    anniversaryDate: z.string().optional(),
   })
   .superRefine((values, ctx) => {
     const add = (path: string, message: string) =>
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message })
 
+    const dateErrors = validatePersonalDates(
+      values.dateOfBirth,
+      values.anniversaryDate
+    )
+    for (const field of ["dateOfBirth", "anniversaryDate"] as const) {
+      const message = dateErrors[field]
+      if (message) add(field, message)
+    }
     if (values.gstRegistrationType === "REGISTERED" && !values.gstin?.trim()) {
       add("gstin", "GSTIN is required for registered customers")
     }
@@ -167,6 +183,8 @@ function toFormDefaults(): CustomerFormValues {
     preferredLanguageCode: "",
     source: "ADMIN",
     territoryUuid: "",
+    dateOfBirth: "",
+    anniversaryDate: "",
   }
 }
 
@@ -201,6 +219,8 @@ function toFormValues(customer: CustomerResponse): CustomerFormValues {
     preferredLanguageCode: customer.preferredLanguageCode ?? "",
     source: customer.source ?? "ADMIN",
     territoryUuid: customer.territoryUuid ?? "",
+    dateOfBirth: apiDateToPicker(customer.dateOfBirth),
+    anniversaryDate: apiDateToPicker(customer.anniversaryDate),
   }
 }
 
@@ -389,6 +409,8 @@ export function CustomerFormDialog({
       preferredLanguageCode: orUndefined(values.preferredLanguageCode),
       source: values.source,
       territoryUuid: territoryToSend,
+      dateOfBirth: pickerDateToApi(values.dateOfBirth),
+      anniversaryDate: pickerDateToApi(values.anniversaryDate),
     }
 
     const onError = (error: unknown) => {
@@ -539,6 +561,24 @@ export function CustomerFormDialog({
                       label="Email"
                       type="email"
                       maxLength={200}
+                    />
+                    <FormDateField
+                      control={control}
+                      name="dateOfBirth"
+                      label="Date of birth"
+                      disableFuture
+                      allowClear
+                      clearLabel="Clear date of birth"
+                      startMonth={new Date(1900, 0, 1)}
+                    />
+                    <FormDateField
+                      control={control}
+                      name="anniversaryDate"
+                      label="Anniversary date"
+                      disableFuture
+                      allowClear
+                      clearLabel="Clear anniversary date"
+                      startMonth={new Date(1900, 0, 1)}
                     />
                     <FormSelectField
                       control={control}
