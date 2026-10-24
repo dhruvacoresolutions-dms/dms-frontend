@@ -106,7 +106,7 @@ export function ChangePasswordForm() {
 
             toast.success("Password changed successfully.")
 
-            if (pathname === "/auth/change-password") {
+            if (pathname === "/change-password") {
               router.replace("/dashboard")
             }
           },

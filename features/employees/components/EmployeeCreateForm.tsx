@@ -18,6 +18,7 @@ import {
 import { useCreateEmployee } from "../hooks/use-create-employee"
 import { useDesignations } from "@/features/designations/hooks/use-designations"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { getHistoricalMonthRange } from "@/lib/date-picker-range"
 import { DesignationCombobox } from "@/features/designations/components/DesignationCombobox"
 import { DepartmentCombobox } from "@/features/departments/components/DepartmentCombobox"
 import { EmployeeCombobox } from "./EmployeeCombobox"
@@ -85,6 +86,7 @@ type Props = {
 export function EmployeeCreateForm({ companyUuid, redirectTo }: Props) {
   const router = useRouter()
   const createMutation = useCreateEmployee(companyUuid)
+  const historicalDateRange = React.useMemo(() => getHistoricalMonthRange(), [])
 
   const { handleSubmit, control, setValue } =
     useForm<EmployeeCreateFormValues>({
@@ -301,6 +303,8 @@ export function EmployeeCreateForm({ companyUuid, redirectTo }: Props) {
               label="Date of Birth"
               placeholder="Pick a date"
               disableFuture
+              startMonth={historicalDateRange.startMonth}
+              endMonth={historicalDateRange.endMonth}
             />
           </div>
 
@@ -327,6 +331,8 @@ export function EmployeeCreateForm({ companyUuid, redirectTo }: Props) {
             label="Anniversary Date"
             placeholder="Pick a date"
             disableFuture
+            startMonth={historicalDateRange.startMonth}
+            endMonth={historicalDateRange.endMonth}
           />
         </FieldGroup>
       </div>

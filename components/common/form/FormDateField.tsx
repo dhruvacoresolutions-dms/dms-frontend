@@ -14,7 +14,14 @@ export function FormDateField<T extends FieldValues>({
   className,
   disableFuture,
   disablePast,
-}: BaseFieldProps<T> & { disableFuture?: boolean; disablePast?: boolean }) {
+  startMonth,
+  endMonth,
+}: BaseFieldProps<T> & {
+  disableFuture?: boolean
+  disablePast?: boolean
+  startMonth?: Date
+  endMonth?: Date
+}) {
   return (
     <Controller
       control={control}
@@ -30,6 +37,8 @@ export function FormDateField<T extends FieldValues>({
             hasError={!!fieldState.error}
             disableFuture={disableFuture}
             disablePast={disablePast}
+            startMonth={startMonth}
+            endMonth={endMonth}
           />
           <FieldError errors={[fieldState.error]} />
         </Field>

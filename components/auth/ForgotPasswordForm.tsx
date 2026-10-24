@@ -84,7 +84,7 @@ export function ForgotPasswordForm() {
 
         <p className="text-center text-sm text-muted-foreground">
           <a
-            href="/auth/login"
+            href="/login"
             className="underline underline-offset-4 hover:text-foreground"
           >
             Back to login

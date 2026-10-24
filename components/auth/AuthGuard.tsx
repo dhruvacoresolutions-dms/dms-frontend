@@ -21,7 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return
     }
 
-    router.replace("/auth/login")
+    router.replace("/login")
   }, [session, router])
 
   if (!session) {

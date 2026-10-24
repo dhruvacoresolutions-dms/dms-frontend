@@ -62,7 +62,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
               password.
             </p>
             <Button className="w-full">
-              <a href="/auth/login">Back to login</a>
+              <a href="/login">Back to login</a>
             </Button>
           </div>
         ) : (

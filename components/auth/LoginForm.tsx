@@ -59,7 +59,7 @@ export function LoginForm() {
 
               if (session.mustChangePassword) {
                 toast.info("You must change your password before continuing")
-                router.push("/auth/change-password")
+                router.push("/change-password")
                 return
               }
 
@@ -156,7 +156,7 @@ export function LoginForm() {
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <a
-                href="/auth/forgot-password"
+                href="/forgot-password"
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 Forgot your password?

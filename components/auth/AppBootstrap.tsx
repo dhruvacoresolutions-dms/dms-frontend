@@ -44,8 +44,7 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
     const isAllowedForAdmin =
       isCompaniesRoute ||
       pathname.startsWith("/profile") ||
-      pathname.startsWith("/forbidden") ||
-      pathname.startsWith("/auth")
+      pathname.startsWith("/forbidden")
     if (isPlatformAdmin && !isAllowedForAdmin) {
       // Allow dashboard? Spec says only Companies visible for admin, so redirect even dashboard to companies
       router.replace("/companies")

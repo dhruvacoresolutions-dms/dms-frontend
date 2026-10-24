@@ -86,7 +86,7 @@ export function useSessionLifecycle() {
     // restart at login.
     if (hasSessionCookie()) {
       clearSessionCookie()
-      requestRedirect({ target: "/auth/login", variant: "loading" })
+      requestRedirect({ target: "/login", variant: "loading" })
     }
   }, [hasToken])
 }
