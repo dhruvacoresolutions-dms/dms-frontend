@@ -1,23 +1,28 @@
 "use client"
 
 import { useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 import { useAuthStore } from "@/stores/auth-store"
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const session = useAuthStore((state) => state.session)
-  const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    if (session) {
+    // The first client render uses the SSR snapshot (`session: null`) until
+    // `persist` rehydrates from localStorage. Waiting avoids redirecting a
+    // valid session to login on every hard reload.
+    if (!useAuthStore.persist.hasHydrated()) {
       return
     }
 
-    const redirect = encodeURIComponent(pathname)
-    router.replace(`/auth/login?redirect=${redirect}`)
-  }, [session, pathname, router])
+    if (useAuthStore.getState().session) {
+      return
+    }
+
+    router.replace("/auth/login")
+  }, [session, router])
 
   if (!session) {
     return null

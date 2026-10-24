@@ -19,5 +19,7 @@ export function useCurrentUser(options?: { enabled?: boolean }) {
     queryFn: getCurrentUser,
     enabled: !!session?.accessToken && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 }

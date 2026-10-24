@@ -7,6 +7,7 @@ import { useSidebar } from "@/components/ui/sidebar"
 import { Menu, PanelLeftIcon } from "lucide-react"
 import { HeaderUserMenu } from "./user-menu"
 import { ThemeToggle } from "@/components/theme/theme-toggle"
+import { SessionCountdown } from "@/components/auth/SessionCountdown"
 import { useNavigationStore } from "@/stores/navigation-store"
 import { SidebarBreadcrumbs } from "@/components/sidebar/breadcrumbs"
 
@@ -43,6 +44,7 @@ export function SiteHeader() {
         )}
         <SidebarBreadcrumbs />
         <div className="ml-auto flex items-center gap-2">
+          <SessionCountdown />
           <ThemeToggle />
           <HeaderUserMenu />
         </div>

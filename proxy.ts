@@ -50,7 +50,7 @@ export function proxy(request: NextRequest) {
   const isAuthenticated = request.cookies.has(SESSION_COOKIE)
 
   if (isProtectedRoute && !isAuthenticated) {
-    // Fresh login every time: never resume the page the user left off
+    // Fresh login every time: never resume the page the user left off.
     return NextResponse.redirect(new URL("/auth/login", request.nextUrl))
   }
 

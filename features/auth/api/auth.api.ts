@@ -1,23 +1,58 @@
 import { apiClient } from "@/lib/api-client"
 import type { ApiSuccessResponse } from "@/lib/api-client"
-import { useAuthStore } from "@/stores/auth-store"
+import { getJwtExpiryMs } from "@/lib/jwt"
+import { serverNow, syncServerClock } from "@/lib/server-clock"
+import { useAuthStore, type AuthSession, type SessionTokenUpdate } from "@/stores/auth-store"
 import { useAccessStore } from "@/stores/access-store"
 import { getGlobalQueryClient } from "@/lib/unauthorized-handler"
 import { authKeys } from "./auth-keys"
 import type {
-  AuthSession,
   ChangePasswordResponse,
+  LoginResponse,
   MyAccessResponse,
   LoginValues,
   ChangePasswordValues,
   ForgotPasswordValues,
   ResetPasswordValues,
+  SessionActivityResponse,
+  User,
 } from "./auth.types"
 import type { EffectiveAccess } from "@/stores/access-store"
 import { normalizeMyAccess } from "@/stores/access-store"
 
+/**
+ * Resolve an absolute expiry from the API.
+ *
+ * Preference order:
+ * 1. `expiresAt` from the response (server-authoritative, includes session
+ *    extension for renewals).
+ * 2. The JWT `exp` claim (server-issued) when the endpoint omits `expiresAt`.
+ * 3. `expiresIn` only as a last-resort compatibility fallback.
+ */
+function resolveExpiryMs(
+  expiresAt: string | undefined,
+  accessToken: string,
+  expiresIn?: number
+): number {
+  if (expiresAt) {
+    const parsed = Date.parse(expiresAt)
+
+    if (!Number.isNaN(parsed)) {
+      return parsed
+    }
+  }
+
+  const jwtExpiry = getJwtExpiryMs(accessToken)
+
+  if (jwtExpiry) {
+    return jwtExpiry
+  }
+
+  return serverNow() + (expiresIn ?? 0) * 1000
+}
+
 export async function loginUser(values: LoginValues): Promise<AuthSession> {
-  const { data } = await apiClient.post<ApiSuccessResponse<AuthSession>>(
+  const { data } = await apiClient.post<ApiSuccessResponse<LoginResponse>>(
     "/api/v1/auth/login",
     {
       username: values.username,
@@ -25,14 +60,80 @@ export async function loginUser(values: LoginValues): Promise<AuthSession> {
       channel: "ADMIN_WEB",
     }
   )
+
+  syncServerClock(data.timestamp)
+
+  const payload = data.data
+
+  return {
+    accessToken: payload.accessToken,
+    tokenType: payload.tokenType,
+    expiresIn: payload.expiresIn,
+    expiresAt: resolveExpiryMs(
+      payload.expiresAt,
+      payload.accessToken,
+      payload.expiresIn
+    ),
+    renewedAt: serverNow(),
+    sessionMode: payload.sessionMode,
+    mustChangePassword: payload.mustChangePassword,
+    user: payload.user,
+  }
+}
+
+export async function getCurrentUser(): Promise<User> {
+  const { data } = await apiClient.get<ApiSuccessResponse<User>>(
+    "/api/v1/auth/me"
+  )
+
+  syncServerClock(data.timestamp)
+
   return data.data
 }
 
-export async function getCurrentUser() {
-  const { data } = await apiClient.get<ApiSuccessResponse<AuthSession["user"]>>(
-    "/api/v1/auth/me"
-  )
-  return data.data
+/**
+ * Renew the current ADMIN_WEB session after explicit human interaction.
+ *
+ * The server slides the session by its idle timeout and returns a replacement
+ * token. Callers must use the returned `accessToken`/`expiresAt` — never
+ * derive expiry locally.
+ */
+export async function renewSessionActivity(): Promise<SessionTokenUpdate> {
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<SessionActivityResponse>
+  >("/api/v1/auth/session/activity")
+
+  syncServerClock(data.timestamp)
+
+  const payload = data.data
+
+  return {
+    accessToken: payload.accessToken,
+    expiresIn: payload.expiresIn,
+    expiresAt: resolveExpiryMs(
+      payload.expiresAt,
+      payload.accessToken,
+      payload.expiresIn
+    ),
+    renewedAt: serverNow(),
+  }
+}
+
+/**
+ * Revoke the session server-side. Best-effort: local state is cleared before
+ * this runs, so it receives the token explicitly.
+ */
+export async function logoutSession(accessToken?: string): Promise<void> {
+  try {
+    await apiClient.post("/api/v1/auth/logout", undefined, {
+      timeout: 3_000,
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
+    })
+  } catch {
+    // Ignore — the local session is already gone.
+  }
 }
 
 /**
@@ -51,6 +152,9 @@ export async function getCurrentAccess(): Promise<EffectiveAccess> {
     "/api/v1/me/access",
     companyUuid ? { headers: { "X-Company-Context": companyUuid } } : undefined
   )
+
+  syncServerClock(data.timestamp)
+
   return normalizeMyAccess(data.data)
 }
 
@@ -94,6 +198,9 @@ export async function changePassword(values: ChangePasswordValues) {
   const { data } = await apiClient.post<
     ApiSuccessResponse<ChangePasswordResponse>
   >("/api/v1/auth/change-password", values)
+
+  syncServerClock(data.timestamp)
+
   return data.data
 }
 

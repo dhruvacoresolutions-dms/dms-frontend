@@ -4,9 +4,10 @@ import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAccessStore } from "@/stores/access-store"
 import { useCurrentAccess } from "@/features/auth/hooks/use-current-access"
-import { useSessionExpiry } from "@/features/auth/hooks/use-session-expiry"
+import { useSessionLifecycle } from "@/features/auth/hooks/use-session-lifecycle"
 import { useAuthStore } from "@/stores/auth-store"
 import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
+import { SessionExpiryBanner } from "@/components/auth/SessionExpiryBanner"
 
 export function AppBootstrap({ children }: { children: React.ReactNode }) {
   const setAccess = useAccessStore((state) => state.setAccess)
@@ -18,13 +19,9 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
 
-  // User details are already persisted in AuthSession (stores/auth-store.ts:15)
-  // from login response — no need to call GET /v1/auth/me on every load.
-  // Use `useCurrentUser()` manually only when a fresh profile sync is needed.
-
-  // BE timeout (401 or expiresAt) -> purge zustand + cookie + query cache + redirect.
-  // This also handles idle timeout with no API calls (timer + visibility check).
-  useSessionExpiry()
+  // Validates the persisted token once per app load (GET /auth/me), starts the
+  // interaction-driven renewal tracker, and enforces server expiresAt locally.
+  useSessionLifecycle()
 
   const currentAccessQuery = useCurrentAccess()
 
@@ -75,5 +72,10 @@ export function AppBootstrap({ children }: { children: React.ReactNode }) {
     return <AuthLoadingScreen variant="loading" />
   }
 
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <SessionExpiryBanner />
+    </>
+  )
 }

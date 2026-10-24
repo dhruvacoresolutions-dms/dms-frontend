@@ -1,4 +1,9 @@
-import type { LoginValues, ChangePasswordValues, ForgotPasswordValues, ResetPasswordValues } from "@/lib/validations/auth"
+import type {
+  LoginValues,
+  ChangePasswordValues,
+  ForgotPasswordValues,
+  ResetPasswordValues,
+} from "@/lib/validations/auth"
 
 export type { LoginValues, ChangePasswordValues, ForgotPasswordValues, ResetPasswordValues }
 
@@ -15,17 +20,48 @@ export type User = {
   employeeUuid?: string | null
 }
 
-export type AuthSession = {
+export type UserContext = "PLATFORM" | "COMPANY"
+
+export type SessionMode = "PLATFORM_STATELESS" | "TENANT_MANAGED"
+
+/**
+ * Raw payload of `POST /api/v1/auth/login`.
+ * `expiresAt` is server-authoritative and must be persisted as-is.
+ */
+export type LoginResponse = {
   accessToken: string
   tokenType: string
   expiresIn: number
+  expiresAt?: string
+  channel?: string
+  sessionMode?: SessionMode
   mustChangePassword: boolean
   user: User
+}
+
+/**
+ * Raw payload of `POST /api/v1/auth/session/activity`.
+ * ADMIN_WEB only; the returned token replaces the stored one.
+ */
+export type SessionActivityResponse = {
+  accessToken: string
+  tokenType: string
+  expiresIn: number
+  expiresAt?: string
 }
 
 export type ChangePasswordResponse = {
   passwordChanged: boolean
   loginAgainRequired: boolean
+  /**
+   * Present for tenant (COMPANY) sessions: the backend keeps the session and
+   * issues a replacement token. `expiresAt` is not returned here, so the JWT
+   * `exp` claim is used as the server-issued expiry.
+   */
+  accessToken?: string
+  tokenType?: string
+  expiresIn?: number
+  mustChangePassword?: boolean
 }
 
 /**
