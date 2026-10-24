@@ -465,6 +465,11 @@ export function CoveragePlanForm({
   ) => {
     const overlap = isCoveragePlanOverlapError(error)
     let applied = false
+    // Some server fields are hidden for the selected repeat mode (the end date
+    // for N_WEEKS/N_PERIODS, the numeric value for TILL_DATE). Keep their field
+    // error for when the mode changes, but also surface it in the form banner
+    // because the user cannot see the inline message right now.
+    let appliedToHiddenField = false
     if (!overlap) {
       for (const detail of getCoveragePlanFieldErrors(error)) {
         if (!detail?.field || !detail.message) continue
@@ -472,11 +477,17 @@ export function CoveragePlanForm({
         if (!path) continue
         setError(path, { type: "server", message: detail.message })
         applied = true
+        if (
+          (detail.field === "endDate" && repeatType !== "TILL_DATE") ||
+          (detail.field === "repeatRule.value" && repeatType === "TILL_DATE")
+        ) {
+          appliedToHiddenField = true
+        }
       }
     }
 
     const message = getCoveragePlanErrorMessage(error, fallback)
-    if (!applied || overlap) {
+    if (!applied || appliedToHiddenField || overlap) {
       setFormError(message)
     }
     toast.error(message)
