@@ -746,6 +746,7 @@ export function CoveragePlanForm({
                         Employee cannot be changed
                       </span>
                     </div>
+                    <FieldError errors={[errors.employeeUuid]} />
                   </Field>
                 ) : canManage ? (
                   <Field data-invalid={!!errors.employeeUuid}>
@@ -785,6 +786,7 @@ export function CoveragePlanForm({
                         Self submission
                       </span>
                     </div>
+                    <FieldError errors={[errors.employeeUuid]} />
                   </Field>
                 )}
 
