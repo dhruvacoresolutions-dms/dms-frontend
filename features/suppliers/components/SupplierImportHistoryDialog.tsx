@@ -44,7 +44,7 @@ function jobUuidOf(item: SupplierImportHistoryItem): string {
 function formatDateTime(iso?: string): string {
   if (!iso) return "—"
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
+  if (Number.isNaN(d.getTime())) return "—"
   return format(d, "dd MMM yyyy, hh:mm a")
 }
 
@@ -55,9 +55,8 @@ export function SupplierImportHistoryDialog({
 }: Props) {
   const [page, setPage] = React.useState(0)
   const [size, setSize] = React.useState(10)
-  const [selected, setSelected] = React.useState<SupplierImportHistoryItem | null>(
-    null
-  )
+  const [selected, setSelected] =
+    React.useState<SupplierImportHistoryItem | null>(null)
 
   const { data, isLoading, error, refetch } = useSupplierImportHistory(
     companyUuid,
@@ -189,10 +188,12 @@ function SupplierImportJobDetail({
   onBack: () => void
 }) {
   const jobUuid = jobUuidOf(item)
-  const { data: job, isLoading, error, refetch } = useSupplierImportJob(
-    companyUuid,
-    jobUuid || null
-  )
+  const {
+    data: job,
+    isLoading,
+    error,
+    refetch,
+  } = useSupplierImportJob(companyUuid, jobUuid || null)
   const [downloading, setDownloading] = React.useState<
     "csv" | "xlsx" | "original" | null
   >(null)
@@ -229,7 +230,12 @@ function SupplierImportJobDetail({
     <>
       <DialogHeader>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            aria-label="Back"
+          >
             <ArrowLeft className="size-4" />
           </Button>
           <div className="min-w-0">
@@ -283,7 +289,8 @@ function SupplierImportJobDetail({
           {diagnostics.length > 0 && (
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-destructive">
-                {diagnostics.length} row{diagnostics.length > 1 ? "s" : ""} failed
+                {diagnostics.length} row{diagnostics.length > 1 ? "s" : ""}{" "}
+                failed
               </p>
               <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-md bg-destructive/5 p-2 text-xs text-destructive/90">
                 {diagnostics.map((d, i) => (
@@ -291,7 +298,7 @@ function SupplierImportJobDetail({
                     Row {d.rowNumber ?? "?"}
                     {d.entityKey ? ` · ${d.entityKey}` : ""}
                     {d.field ? ` · ${d.field}` : ""}
-                    {d.reason ?? d.message
+                    {(d.reason ?? d.message)
                       ? ` — ${d.reason ?? d.message}`
                       : d.errorCode
                         ? ` — ${d.errorCode}`
@@ -306,7 +313,11 @@ function SupplierImportJobDetail({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="outline" size="sm" disabled={downloading !== null}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={downloading !== null}
+                  >
                     {downloading ? (
                       <Loader2 className="mr-2 size-3.5 animate-spin" />
                     ) : (

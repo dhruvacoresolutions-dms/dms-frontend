@@ -89,7 +89,7 @@ export function VisitPlanDaysCard({
                             title={customer.otherPlans
                               .map(
                                 (other) =>
-                                  `${VISIT_PLAN_STATUS_LABELS[other.status]} · employee ${other.employeeUuid.slice(0, 8)}`
+                                  VISIT_PLAN_STATUS_LABELS[other.status]
                               )
                               .join("\n")}
                           >

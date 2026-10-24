@@ -1,20 +1,13 @@
 "use client"
 
-import { format } from "date-fns"
 import { ArrowRight, History } from "lucide-react"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { EmptyState } from "@/components/common/EmptyState"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { EMPTY_VALUE, formatDateTime, formatReference } from "@/lib/format"
 import { useCustomerHistory } from "../hooks/use-customer-history"
-
-function formatDateTime(iso?: string | null): string {
-  if (!iso) return "—"
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return format(d, "dd MMM yyyy, hh:mm a")
-}
 
 type Props = {
   companyUuid: string
@@ -68,7 +61,7 @@ export function CustomerHistoryTab({ companyUuid, customerUuid }: Props) {
       {entries.map((entry, index) => (
         <li key={entry.uuid} className="relative pb-6 last:pb-0">
           <span
-            className="absolute -left-[1.9rem] top-1 flex size-3 items-center justify-center rounded-full border-2 border-background bg-primary"
+            className="absolute top-1 -left-[1.9rem] flex size-3 items-center justify-center rounded-full border-2 border-background bg-primary"
             aria-hidden="true"
           />
           <div className="flex flex-wrap items-center gap-2">
@@ -83,10 +76,10 @@ export function CustomerHistoryTab({ companyUuid, customerUuid }: Props) {
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {formatDateTime(entry.at)}
-            {entry.actor ? (
+            {formatReference(entry.actor) !== EMPTY_VALUE ? (
               <>
                 {" · "}
-                <span className="font-mono">{entry.actor.slice(0, 8)}</span>
+                <span>{formatReference(entry.actor)}</span>
               </>
             ) : null}
           </p>

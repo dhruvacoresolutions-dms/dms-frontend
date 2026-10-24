@@ -1,9 +1,9 @@
 "use client"
 
-import { format } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { formatDateTime, formatReference } from "@/lib/format"
 import type { CustomerResponse } from "../api/customer.types"
 
 function Field({
@@ -48,13 +48,6 @@ function BadgeField({
   )
 }
 
-function formatDateTime(iso?: string | null): string {
-  if (!iso) return "—"
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return format(d, "dd MMM yyyy, hh:mm a")
-}
-
 const SOURCE_LABELS: Record<string, string> = {
   ADMIN: "Admin (back office)",
   EMPLOYEE: "Field employee",
@@ -69,7 +62,10 @@ export function CustomerOverviewTab({
 }) {
   const names = customer.displayNames ?? {}
   const path = customer.territoryPath ?? []
-  const pathLabel = [...path].reverse().map((p) => p.code).join(" / ")
+  const pathLabel = [...path]
+    .reverse()
+    .map((p) => p.code)
+    .join(" / ")
   const latLong =
     customer.latitude != null && customer.longitude != null
       ? `${customer.latitude}, ${customer.longitude}`
@@ -197,10 +193,22 @@ export function CustomerOverviewTab({
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <Field label="Created By" value={customer.createdBy} mono />
-            <Field label="Created At" value={formatDateTime(customer.createdAt)} />
-            <Field label="Updated By" value={customer.updatedBy} mono />
-            <Field label="Updated At" value={formatDateTime(customer.updatedAt)} />
+            <Field
+              label="Created By"
+              value={formatReference(customer.createdBy)}
+            />
+            <Field
+              label="Created At"
+              value={formatDateTime(customer.createdAt)}
+            />
+            <Field
+              label="Updated By"
+              value={formatReference(customer.updatedBy)}
+            />
+            <Field
+              label="Updated At"
+              value={formatDateTime(customer.updatedAt)}
+            />
           </dl>
         </CardContent>
       </Card>

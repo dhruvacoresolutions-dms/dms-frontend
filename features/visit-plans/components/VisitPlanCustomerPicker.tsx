@@ -233,12 +233,16 @@ export function VisitPlanCustomerPicker({
                 <span className="truncate">
                   {candidate
                     ? `${candidate.shopName} · ${candidate.customerCode}`
-                    : customerUuid.slice(0, 8)}
+                    : "—"}
                 </span>
                 {!disabled ? (
                   <button
                     type="button"
-                    aria-label={`Remove ${candidate?.shopName ?? customerUuid}`}
+                    aria-label={
+                      candidate?.shopName
+                        ? `Remove ${candidate.shopName}`
+                        : "Remove customer"
+                    }
                     className="rounded-sm text-muted-foreground hover:text-foreground"
                     onClick={() => toggle(customerUuid)}
                   >

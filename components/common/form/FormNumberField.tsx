@@ -15,7 +15,15 @@ export function FormNumberField<T extends FieldValues>({
   className,
   step = "any",
   min,
-}: BaseFieldProps<T> & { step?: string; min?: number }) {
+  max,
+  emptyValue,
+}: BaseFieldProps<T> & {
+  step?: string
+  min?: number
+  max?: number
+  /** Value emitted when the input is cleared (default `undefined`). */
+  emptyValue?: string | number
+}) {
   return (
     <Controller
       control={control}
@@ -27,10 +35,11 @@ export function FormNumberField<T extends FieldValues>({
             type="number"
             step={step}
             min={min}
+            max={max}
             value={field.value ?? ""}
             onChange={(e) =>
               field.onChange(
-                e.target.value === "" ? undefined : e.target.value
+                e.target.value === "" ? emptyValue : e.target.value
               )
             }
             onBlur={field.onBlur}

@@ -19,7 +19,10 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <PageHeader title="My Profile" description="View your account information" />
+      <PageHeader
+        title="My Profile"
+        description="View your account information"
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -29,20 +32,18 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <Avatar className="size-16">
-                <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                <AvatarFallback className="bg-primary text-lg text-primary-foreground">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="text-lg font-semibold">{displayName}</p>
-                <p className="text-sm text-muted-foreground">@{user?.username}</p>
+                <p className="text-sm text-muted-foreground">
+                  @{user?.username}
+                </p>
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">User UUID</span>
-                <span className="font-mono">{user?.userUuid}</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Company</span>
                 <span>{user?.companyCode ?? "Platform"}</span>

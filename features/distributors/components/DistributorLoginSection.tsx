@@ -2,7 +2,14 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { Check, Copy, KeyRound, RefreshCw, ShieldCheck, UserPlus } from "lucide-react"
+import {
+  Check,
+  Copy,
+  KeyRound,
+  RefreshCw,
+  ShieldCheck,
+  UserPlus,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,7 +44,7 @@ type PendingAction = "disable" | "enable" | "reset" | null
 function formatDateTime(iso?: string | null): string {
   if (!iso) return "—"
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
+  if (Number.isNaN(d.getTime())) return "—"
   return format(d, "dd MMM yyyy, hh:mm a")
 }
 
@@ -131,7 +138,9 @@ export function DistributorLoginSection({
   }
 
   const isPending =
-    createMutation.isPending || statusMutation.isPending || resetMutation.isPending
+    createMutation.isPending ||
+    statusMutation.isPending ||
+    resetMutation.isPending
 
   return (
     <Card>
@@ -160,11 +169,15 @@ export function DistributorLoginSection({
               {exists ? (
                 <>
                   <div>
-                    <span className="text-xs text-muted-foreground">Username</span>
+                    <span className="text-xs text-muted-foreground">
+                      Username
+                    </span>
                     <p className="font-mono font-medium">{data?.username}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-muted-foreground">Status</span>
+                    <span className="text-xs text-muted-foreground">
+                      Status
+                    </span>
                     <p>
                       <StatusBadge status={data?.status ?? "INACTIVE"} />
                     </p>
@@ -203,7 +216,9 @@ export function DistributorLoginSection({
                   <>
                     <Button
                       variant={isActive ? "destructive" : "default"}
-                      onClick={() => setPending(isActive ? "disable" : "enable")}
+                      onClick={() =>
+                        setPending(isActive ? "disable" : "enable")
+                      }
                       disabled={isPending}
                     >
                       {isActive ? "Disable Login" : "Enable Login"}
@@ -258,14 +273,16 @@ export function DistributorLoginSection({
               <KeyRound className="size-5" /> Temporary credentials
             </DialogTitle>
             <DialogDescription>
-              Share these with the distributor. The password is shown once and is
-              emailed best-effort.
+              Share these with the distributor. The password is shown once and
+              is emailed best-effort.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 text-sm">
             <div>
               <span className="text-xs text-muted-foreground">Username</span>
-              <p className="font-mono font-medium">{credentials?.username ?? "—"}</p>
+              <p className="font-mono font-medium">
+                {credentials?.username ?? "—"}
+              </p>
             </div>
             {credentials?.temporaryPassword ? (
               <div>

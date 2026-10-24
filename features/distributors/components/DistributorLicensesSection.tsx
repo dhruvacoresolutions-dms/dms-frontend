@@ -30,6 +30,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDateRange } from "@/lib/format"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useDistributorLicenses } from "../hooks/use-distributor-licenses"
@@ -45,18 +46,18 @@ type Props = {
   distributorUuid: string
 }
 
-function formatRange(from?: string | null, to?: string | null): string {
-  if (!from && !to) return "—"
-  return `${from ?? "—"} → ${to ?? "—"}`
-}
-
-export function DistributorLicensesSection({ companyUuid, distributorUuid }: Props) {
+export function DistributorLicensesSection({
+  companyUuid,
+  distributorUuid,
+}: Props) {
   const [licenseType, setLicenseType] = useState<string>("ALL")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<DistributorLicenseResponse | null>(null)
+  const [editing, setEditing] = useState<DistributorLicenseResponse | null>(
+    null
+  )
   const [statusToggle, setStatusToggle] =
     useState<DistributorLicenseResponse | null>(null)
 
@@ -64,7 +65,8 @@ export function DistributorLicensesSection({ companyUuid, distributorUuid }: Pro
     companyUuid,
     distributorUuid,
     {
-      licenseType: licenseType === "ALL" ? undefined : (licenseType as LicenseType),
+      licenseType:
+        licenseType === "ALL" ? undefined : (licenseType as LicenseType),
       status:
         statusFilter === "ALL"
           ? undefined
@@ -110,7 +112,7 @@ export function DistributorLicensesSection({ companyUuid, distributorUuid }: Pro
         header: "Validity",
         cell: ({ row }) => (
           <span className="flex items-center gap-2 text-sm">
-            {formatRange(row.original.validFrom, row.original.validTo)}
+            {formatDateRange(row.original.validFrom, row.original.validTo)}
             {row.original.expired ? (
               <Badge variant="destructive">Expired</Badge>
             ) : null}

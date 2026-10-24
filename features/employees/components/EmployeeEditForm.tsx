@@ -21,6 +21,7 @@ import { useEmployee } from "../hooks/use-employee"
 import { useUpdateEmployee } from "../hooks/use-update-employee"
 import { useDesignations } from "@/features/designations/hooks/use-designations"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { getHistoricalMonthRange } from "@/lib/date-picker-range"
 import { DesignationCombobox } from "@/features/designations/components/DesignationCombobox"
 import { DepartmentCombobox } from "@/features/departments/components/DepartmentCombobox"
 import { EmployeeCombobox } from "./EmployeeCombobox"
@@ -78,6 +79,7 @@ export function EmployeeEditForm({
     employeeUuid
   )
   const updateMutation = useUpdateEmployee(companyUuid, employeeUuid)
+  const historicalDateRange = React.useMemo(() => getHistoricalMonthRange(), [])
 
   const { handleSubmit, control, setValue, reset } =
     useForm<EmployeeEditFormValues>({
@@ -308,6 +310,8 @@ export function EmployeeEditForm({
               label="Date of Birth"
               placeholder="Pick a date"
               disableFuture
+              startMonth={historicalDateRange.startMonth}
+              endMonth={historicalDateRange.endMonth}
             />
           </div>
 
@@ -334,6 +338,8 @@ export function EmployeeEditForm({
             label="Anniversary Date"
             placeholder="Pick a date"
             disableFuture
+            startMonth={historicalDateRange.startMonth}
+            endMonth={historicalDateRange.endMonth}
           />
         </FieldGroup>
       </div>

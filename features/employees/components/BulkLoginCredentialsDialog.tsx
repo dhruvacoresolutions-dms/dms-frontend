@@ -50,7 +50,7 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
       .filter((r) => r.username || r.temporaryPassword)
       .map(
         (r) =>
-          `${r.employeeName ?? r.employeeCode ?? r.employeeUuid} - username: ${r.username ?? "—"}, temporary password:${r.temporaryPassword ?? "—"}`
+          `${r.employeeName ?? r.employeeCode ?? "Employee"} - username: ${r.username ?? "—"}, temporary password:${r.temporaryPassword ?? "—"}`
       )
     if (lines.length === 0) {
       toast.error("Nothing to copy")
@@ -84,7 +84,7 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
             <span className="flex flex-col">
               <span className="font-medium">{r.employeeName ?? "—"}</span>
               <span className="font-mono text-xs text-muted-foreground">
-                {r.employeeCode ?? r.employeeUuid}
+                {r.employeeCode ?? "—"}
               </span>
             </span>
           )
@@ -129,7 +129,7 @@ export function BulkLoginCredentialsDialog({ data, onClose }: Props) {
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={`Copy temporary password for ${r.employeeName ?? r.employeeCode ?? r.employeeUuid}`}
+                aria-label={`Copy temporary password for ${r.employeeName ?? r.employeeCode ?? "employee"}`}
                 onClick={() =>
                   void copyText(
                     r.temporaryPassword as string,

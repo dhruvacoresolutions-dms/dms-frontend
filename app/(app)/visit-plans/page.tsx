@@ -20,7 +20,7 @@ import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
-import { DatePicker } from "@/components/common/DatePicker"
+import { DateRangePicker } from "@/components/common/DateRangePicker"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
@@ -412,26 +412,20 @@ function VisitPlansContent() {
           </Select>
         </div>
 
-        <div className="sm:w-44">
-          <DatePicker
-            value={from}
-            onValueChange={(value) => {
-              setFrom(value)
+        <div className="col-span-2 sm:w-72">
+          <label htmlFor="visit-plan-date-range" className="sr-only">
+            Filter by date range
+          </label>
+          <DateRangePicker
+            id="visit-plan-date-range"
+            value={{ from, to }}
+            onValueChange={(range) => {
+              setFrom(range.from)
+              setTo(range.to)
               setPage(0)
             }}
             hasError={!!dateFilterError}
-            placeholder="From date"
-          />
-        </div>
-        <div className="sm:w-44">
-          <DatePicker
-            value={to}
-            onValueChange={(value) => {
-              setTo(value)
-              setPage(0)
-            }}
-            hasError={!!dateFilterError}
-            placeholder="To date"
+            placeholder="Filter by date range"
           />
         </div>
 

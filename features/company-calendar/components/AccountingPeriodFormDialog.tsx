@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import {
-  FormDateField,
+  FormDateRangeField,
   FormTextField,
   requiredLabel,
 } from "@/components/common/form-fields"
@@ -25,7 +25,10 @@ import { applyApiFieldErrors } from "@/lib/api/form-errors"
 import { NAME_MAX_LENGTH } from "../configs/calendar.constants"
 import { useCreateAccountingPeriod } from "../hooks/use-create-accounting-period"
 import { useUpdateAccountingPeriod } from "../hooks/use-update-accounting-period"
-import { getCalendarErrorMessage } from "../utils/calendar.utils"
+import {
+  formatCalendarDate,
+  getCalendarErrorMessage,
+} from "../utils/calendar.utils"
 import type {
   AccountingPeriod,
   FiscalYear,
@@ -67,14 +70,14 @@ function buildSchema(fiscalYear: FiscalYear) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["startDate"],
-          message: `Start date must be on or after the fiscal year start (${fiscalYear.startDate})`,
+          message: `Start date must be on or after the fiscal year start (${formatCalendarDate(fiscalYear.startDate)})`,
         })
       }
       if (values.endDate && values.endDate > fiscalYear.endDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["endDate"],
-          message: `End date must be on or before the fiscal year end (${fiscalYear.endDate})`,
+          message: `End date must be on or before the fiscal year end (${formatCalendarDate(fiscalYear.endDate)})`,
         })
       }
       if (
@@ -207,18 +210,15 @@ export function AccountingPeriodFormDialog({
               label={requiredLabel("Name")}
               maxLength={NAME_MAX_LENGTH}
             />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormDateField
-                control={control}
-                name="startDate"
-                label={requiredLabel("Start date")}
-              />
-              <FormDateField
-                control={control}
-                name="endDate"
-                label={requiredLabel("End date")}
-              />
-            </div>
+            <FormDateRangeField
+              control={control}
+              fromName="startDate"
+              toName="endDate"
+              label={requiredLabel("Start and end dates")}
+              placeholder="Select period dates"
+              minDate={fiscalYear.startDate}
+              maxDate={fiscalYear.endDate}
+            />
           </FieldGroup>
 
           <div className="flex justify-end gap-2">

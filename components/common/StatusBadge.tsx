@@ -52,6 +52,8 @@ const statusVariants: Record<string, string> = {
     "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300",
   WITHDRAWN:
     "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  CANCELLED:
+    "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
 }
 
 export function StatusBadge({

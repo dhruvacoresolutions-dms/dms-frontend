@@ -32,10 +32,10 @@ const protectedRoutes = [
   "/forbidden",
 ]
 const authRoutes = [
-  "/auth/login",
-  "/auth/forgot-password",
-  "/auth/reset-password",
-  "/auth/change-password",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/change-password",
 ]
 
 export function proxy(request: NextRequest) {
@@ -51,10 +51,10 @@ export function proxy(request: NextRequest) {
 
   if (isProtectedRoute && !isAuthenticated) {
     // Fresh login every time: never resume the page the user left off.
-    return NextResponse.redirect(new URL("/auth/login", request.nextUrl))
+    return NextResponse.redirect(new URL("/login", request.nextUrl))
   }
 
-  if (isAuthRoute && isAuthenticated && pathname === "/auth/login") {
+  if (isAuthRoute && isAuthenticated && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.nextUrl))
   }
 

@@ -57,7 +57,7 @@ export function clearRedirectRequest(): void {
 function alreadyOnLogin(): boolean {
   return (
     typeof window !== "undefined" &&
-    window.location.pathname.startsWith("/auth/login")
+    window.location.pathname.startsWith("/login")
   )
 }
 
@@ -90,7 +90,7 @@ export function handleUnauthorized(options?: { broadcast?: boolean }): void {
 
   if (!alreadyOnLogin()) {
     requestRedirect({
-      target: "/auth/login",
+      target: "/login",
       variant: "logout",
     })
   }
@@ -105,8 +105,8 @@ export function handlePasswordChangeRequired(): void {
 
   if (
     typeof window !== "undefined" &&
-    window.location.pathname !== "/auth/change-password"
+    window.location.pathname !== "/change-password"
   ) {
-    requestRedirect({ target: "/auth/change-password", variant: "loading" })
+    requestRedirect({ target: "/change-password", variant: "loading" })
   }
 }

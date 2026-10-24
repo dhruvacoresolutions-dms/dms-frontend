@@ -16,7 +16,7 @@ import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { PageHeader } from "@/components/common/PageHeader"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
-import { DatePicker } from "@/components/common/DatePicker"
+import { DateRangePicker } from "@/components/common/DateRangePicker"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { StatusFilterSelect } from "@/components/common/StatusFilterSelect"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
@@ -221,34 +221,20 @@ function HolidaysContent() {
       />
 
       <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
-        <div className="sm:w-44">
-          <label htmlFor="holiday-from" className="sr-only">
-            From date
+        <div className="col-span-2 sm:w-72">
+          <label htmlFor="holiday-date-range" className="sr-only">
+            Filter by date range
           </label>
-          <DatePicker
-            id="holiday-from"
-            value={from}
-            onValueChange={(value) => {
-              setFrom(value)
+          <DateRangePicker
+            id="holiday-date-range"
+            value={{ from, to }}
+            onValueChange={(range) => {
+              setFrom(range.from)
+              setTo(range.to)
               setPage(0)
             }}
             hasError={!!dateFilterError}
-            placeholder="From date"
-          />
-        </div>
-        <div className="sm:w-44">
-          <label htmlFor="holiday-to" className="sr-only">
-            To date
-          </label>
-          <DatePicker
-            id="holiday-to"
-            value={to}
-            onValueChange={(value) => {
-              setTo(value)
-              setPage(0)
-            }}
-            hasError={!!dateFilterError}
-            placeholder="To date"
+            placeholder="Filter by date range"
           />
         </div>
         <div className="col-span-2 sm:w-64">

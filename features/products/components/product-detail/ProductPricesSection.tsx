@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RowActionsMenu } from "@/components/common/RowActionsMenu"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDateRange } from "@/lib/format"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import {
   useProductPrices,
@@ -70,8 +71,10 @@ export function ProductPricesSection({
         header: "Effective",
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.effectiveFrom ?? "—"} →{" "}
-            {row.original.effectiveTo ?? "—"}
+            {formatDateRange(
+              row.original.effectiveFrom,
+              row.original.effectiveTo
+            )}
           </span>
         ),
       },

@@ -41,7 +41,7 @@ export function useLogout() {
     // Let the "Logging you out…" overlay paint before navigating.
     await new Promise((resolve) => setTimeout(resolve, 450))
 
-    router.replace("/auth/login")
+    router.replace("/login")
   }, [clearSession, clearAccess, queryClient, router])
 
   return { logout, isLoggingOut }

@@ -21,10 +21,10 @@ function formatDate(iso: string | null | undefined): string {
       Number(dateOnly[2]) - 1,
       Number(dateOnly[3])
     )
-    return isValid(local) ? format(local, "dd MMM yyyy") : iso
+    return isValid(local) ? format(local, "dd MMM yyyy") : "—"
   }
   const parsed = new Date(iso)
-  return isValid(parsed) ? format(parsed, "dd MMM yyyy") : iso
+  return isValid(parsed) ? format(parsed, "dd MMM yyyy") : "—"
 }
 
 function labelFor(
@@ -50,11 +50,7 @@ function Row({
   )
 }
 
-export function EmployeeOverview({
-  employee,
-}: {
-  employee: EmployeeResponse
-}) {
+export function EmployeeOverview({ employee }: { employee: EmployeeResponse }) {
   const fullName =
     employee.fullName ?? `${employee.firstName} ${employee.lastName}`.trim()
   const mobile = employee.mobile ?? employee.phone
@@ -76,7 +72,7 @@ export function EmployeeOverview({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border p-6 space-y-3">
+      <div className="space-y-3 rounded-lg border p-6">
         <h3 className="text-lg font-semibold">Personal Information</h3>
         <div className="space-y-2 text-sm">
           <Row label="Employee Code">
@@ -98,7 +94,7 @@ export function EmployeeOverview({
         </div>
       </div>
 
-      <div className="rounded-lg border p-6 space-y-3">
+      <div className="space-y-3 rounded-lg border p-6">
         <h3 className="text-lg font-semibold">Employment Details</h3>
         <div className="space-y-2 text-sm">
           <Row label="Designation">{designation}</Row>

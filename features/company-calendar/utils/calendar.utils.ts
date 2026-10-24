@@ -7,14 +7,14 @@ import type { FiscalYear } from "../api/company-calendar.types"
 export function formatCalendarDate(value?: string | null): string {
   if (!value) return "—"
   const parsed = parseISO(value)
-  return isValid(parsed) ? format(parsed, "dd MMM yyyy") : value
+  return isValid(parsed) ? format(parsed, "dd MMM yyyy") : "—"
 }
 
 /** ISO date-time → `dd MMM yyyy, HH:mm`. */
 export function formatCalendarDateTime(value?: string | null): string {
   if (!value) return "—"
   const parsed = parseISO(value)
-  return isValid(parsed) ? format(parsed, "dd MMM yyyy, HH:mm") : value
+  return isValid(parsed) ? format(parsed, "dd MMM yyyy, HH:mm") : "—"
 }
 
 /** Inclusive number of days between two ISO dates. */

@@ -28,7 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { FormDateField, requiredLabel } from "@/components/common/form-fields"
+import {
+  FormDateField,
+  FormDateRangeField,
+  requiredLabel,
+} from "@/components/common/form-fields"
 import { EntityCombobox } from "@/components/common/EntityCombobox"
 import { EmployeeCombobox } from "@/features/employees/components/EmployeeCombobox"
 import { useEmployeeGeographies } from "@/features/employees/hooks/use-employee-geographies"
@@ -179,7 +183,7 @@ function buildSchema({
         } else if (!expectedDates.includes(day.date)) {
           issue(
             ["days", index, "date"],
-            `Date must be inside ${values.fromDate} to ${values.toDate}`
+            `Date must be inside ${formatVisitPlanDate(values.fromDate)} to ${formatVisitPlanDate(values.toDate)}`
           )
         }
         if (
@@ -582,22 +586,14 @@ export function VisitPlanForm({
           </>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormDateField
-                control={control}
-                name="fromDate"
-                label={requiredLabel("From date")}
-                placeholder="Select start date"
-                disablePast
-              />
-              <FormDateField
-                control={control}
-                name="toDate"
-                label={requiredLabel("To date")}
-                placeholder="Select end date"
-                disablePast
-              />
-            </div>
+            <FormDateRangeField
+              control={control}
+              fromName="fromDate"
+              toName="toDate"
+              label={requiredLabel("Travel dates")}
+              placeholder="Select travel dates"
+              disablePast
+            />
 
             <Controller
               control={control}

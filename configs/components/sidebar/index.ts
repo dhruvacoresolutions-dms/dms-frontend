@@ -327,6 +327,12 @@ export const sfaNav: MainNav = [
     icon: MapPinCheck,
     permission: PERMISSIONS.VISIT_PLAN.VIEW,
   },
+  {
+    title: "Coverage Plans",
+    url: "/coverage-plans",
+    icon: CalendarRange,
+    permission: PERMISSIONS.COVERAGE_PLAN.VIEW,
+  },
 ]
 
 /** Flatten nested branches to leaf items (the top navbar has no depth). */
