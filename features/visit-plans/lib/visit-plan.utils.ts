@@ -36,14 +36,14 @@ export const VISIT_PLAN_STATUS_LABELS: Record<VisitPlanStatus, string> = {
 export function formatVisitPlanDate(value?: string | null): string {
   if (!value) return "—"
   const parsed = parseISO(value)
-  return isValid(parsed) ? format(parsed, "dd MMM yyyy") : value
+  return isValid(parsed) ? format(parsed, "dd MMM yyyy") : "—"
 }
 
 /** ISO date-time → `dd MMM yyyy, HH:mm`. */
 export function formatVisitPlanDateTime(value?: string | null): string {
   if (!value) return "—"
   const parsed = parseISO(value)
-  return isValid(parsed) ? format(parsed, "dd MMM yyyy, HH:mm") : value
+  return isValid(parsed) ? format(parsed, "dd MMM yyyy, HH:mm") : "—"
 }
 
 /** `2026-10-21` or `21 Oct 2026` when the plan spans more than one day. */

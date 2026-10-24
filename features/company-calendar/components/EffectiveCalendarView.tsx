@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { DatePicker } from "@/components/common/DatePicker"
+import { DateRangePicker } from "@/components/common/DateRangePicker"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { GeographyCombobox } from "@/features/geographies/components/GeographyCombobox"
@@ -122,7 +122,7 @@ export function EffectiveCalendarView({
         header: "Date",
         cell: ({ row }) => (
           <span className="font-medium">
-            {format(parseISO(row.original.date), "EEE, dd MMM yyyy")}
+            {format(parseISO(row.original.date), "dd MMM yyyy")}
           </span>
         ),
       },
@@ -190,28 +190,19 @@ export function EffectiveCalendarView({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
-        <div className="sm:w-44">
-          <label htmlFor="effective-from" className="sr-only">
-            From date
+        <div className="col-span-2 sm:w-72">
+          <label htmlFor="effective-date-range" className="sr-only">
+            Date range
           </label>
-          <DatePicker
-            id="effective-from"
-            value={from}
-            onValueChange={(value) => setFrom(value ?? "")}
+          <DateRangePicker
+            id="effective-date-range"
+            value={{ from, to }}
+            onValueChange={(range) => {
+              setFrom(range.from ?? "")
+              setTo(range.to ?? "")
+            }}
             hasError={!!validationError}
-            placeholder="From date"
-          />
-        </div>
-        <div className="sm:w-44">
-          <label htmlFor="effective-to" className="sr-only">
-            To date
-          </label>
-          <DatePicker
-            id="effective-to"
-            value={to}
-            onValueChange={(value) => setTo(value ?? "")}
-            hasError={!!validationError}
-            placeholder="To date"
+            placeholder="Select date range"
           />
         </div>
         <div className="col-span-2 sm:w-64">

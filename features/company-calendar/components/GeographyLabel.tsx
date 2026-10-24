@@ -38,11 +38,7 @@ export function GeographyLabel({
     )
   }
   if (!data) {
-    return (
-      <span className="text-muted-foreground" title={geographyUuid}>
-        Specific geography
-      </span>
-    )
+    return <span className="text-muted-foreground">—</span>
   }
-  return <span title={data.code}>{data.name}</span>
+  return <span title={data.code}>{data.name || data.code || "—"}</span>
 }

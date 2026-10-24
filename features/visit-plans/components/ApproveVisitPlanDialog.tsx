@@ -208,7 +208,7 @@ export function ApproveVisitPlanDialog({
                             customer.removedByApprover
                           )
                         }
-                        aria-label={`Remove customer ${customer.customerUuid} on ${day.date}`}
+                        aria-label="Remove customer from this day"
                       />
                       <span className="min-w-0 flex-1">
                         <CustomerNameLabel

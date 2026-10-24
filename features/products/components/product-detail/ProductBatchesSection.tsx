@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RowActionsMenu } from "@/components/common/RowActionsMenu"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDate } from "@/lib/format"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import {
   useProductBatches,
@@ -53,12 +54,12 @@ export function ProductBatchesSection({
       {
         id: "manufacturing",
         header: "Manufacturing",
-        cell: ({ row }) => row.original.manufacturingDate ?? "—",
+        cell: ({ row }) => formatDate(row.original.manufacturingDate),
       },
       {
         id: "expiry",
         header: "Expiry",
-        cell: ({ row }) => row.original.expiryDate ?? "—",
+        cell: ({ row }) => formatDate(row.original.expiryDate),
       },
       {
         id: "status",

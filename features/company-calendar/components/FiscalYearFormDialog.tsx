@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import {
-  FormDateField,
+  FormDateRangeField,
   FormSelectField,
   FormTextField,
   requiredLabel,
@@ -172,18 +172,13 @@ export function FiscalYearFormDialog({
               label={requiredLabel("Name")}
               maxLength={NAME_MAX_LENGTH}
             />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormDateField
-                control={control}
-                name="startDate"
-                label={requiredLabel("Start date")}
-              />
-              <FormDateField
-                control={control}
-                name="endDate"
-                label={requiredLabel("End date")}
-              />
-            </div>
+            <FormDateRangeField
+              control={control}
+              fromName="startDate"
+              toName="endDate"
+              label={requiredLabel("Start and end dates")}
+              placeholder="Select fiscal year dates"
+            />
             <FormSelectField
               control={control}
               name="status"

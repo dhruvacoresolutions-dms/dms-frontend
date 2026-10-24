@@ -112,8 +112,7 @@ function CustomerPincodeMappingsContent() {
 
   const { data: territories } = useCustomerTerritoryOptions(companyUuid)
 
-  const statusMutation =
-    useUpdateCustomerPincodeMappingStatus(companyUuid)
+  const statusMutation = useUpdateCustomerPincodeMappingStatus(companyUuid)
 
   const territoryNames = useMemo(() => {
     const map = new Map<string, string>()
@@ -147,9 +146,9 @@ function CustomerPincodeMappingsContent() {
           if (!territoryUuid)
             return <span className="text-muted-foreground">Unassigned</span>
           return (
-            <span title={territoryUuid}>
+            <span>
               {territoryNames.get(territoryUuid) ?? (
-                <span className="font-mono text-xs">{territoryUuid}</span>
+                <span className="text-muted-foreground">—</span>
               )}
             </span>
           )
@@ -281,8 +280,7 @@ function CustomerPincodeMappingsContent() {
               exportCustomerPincodeMappings(companyUuid, format, {
                 search: search || undefined,
                 status: status === "ALL" ? undefined : status,
-                recordStatus:
-                  recordStatus === "ALL" ? undefined : recordStatus,
+                recordStatus: recordStatus === "ALL" ? undefined : recordStatus,
               })
             }
           />

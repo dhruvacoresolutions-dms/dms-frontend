@@ -30,11 +30,7 @@ export function EmployeeLabel({
     )
   }
   if (!data) {
-    return (
-      <span className="text-muted-foreground" title={employeeUuid}>
-        Unknown employee
-      </span>
-    )
+    return <span className="text-muted-foreground">—</span>
   }
 
   const name =

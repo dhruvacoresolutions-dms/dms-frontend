@@ -4,6 +4,7 @@ import { History } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatReference } from "@/lib/format"
 import { formatVisitPlanDateTime } from "../lib/visit-plan.utils"
 import type { VisitPlanAuditEvent } from "../api/visit-plan.types"
 
@@ -56,8 +57,7 @@ export function VisitPlanAuditTrail({ events }: VisitPlanAuditTrailProps) {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Actor:{" "}
-                    <span className="font-mono">{event.actor.slice(0, 8)}</span>
+                    Actor: <span>{formatReference(event.actor)}</span>
                   </p>
                   {event.reason ? (
                     <p className="mt-1 text-sm">

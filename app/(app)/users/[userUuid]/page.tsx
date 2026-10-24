@@ -13,6 +13,7 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDate } from "@/lib/format"
 import { useUser } from "@/features/users/hooks/use-user"
 import { UserAssignmentsSection } from "@/features/users/components/UserAssignmentsSection"
 import { UserEffectiveAccessSection } from "@/features/users/components/UserEffectiveAccessSection"
@@ -27,10 +28,16 @@ export default function UserDetailPage() {
 
 function UserDetailContent() {
   const params = useParams<{ userUuid: string }>()
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const userUuid = params.userUuid
 
-  const { data: user, isLoading, error, refetch } = useUser(companyUuid, userUuid)
+  const {
+    data: user,
+    isLoading,
+    error,
+    refetch,
+  } = useUser(companyUuid, userUuid)
 
   if (isLoading) return <LoadingState />
   if (error) return <ErrorState onRetry={refetch} />
@@ -43,12 +50,19 @@ function UserDetailContent() {
         description={`@${user.username}`}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" nativeButton={false} render={<Link href={`/users`} />}>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/users`} />}
+            >
               <ArrowLeft className="mr-2 size-4" />
               Back
             </Button>
             <PermissionGate permission={PERMISSIONS.USER.UPDATE}>
-              <Button nativeButton={false} render={<Link href={`/users/${userUuid}/edit`} />}>
+              <Button
+                nativeButton={false}
+                render={<Link href={`/users/${userUuid}/edit`} />}
+              >
                 <Edit className="mr-2 size-4" />
                 Edit
               </Button>
@@ -65,13 +79,9 @@ function UserDetailContent() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="rounded-lg border p-6 space-y-3">
+          <div className="space-y-3 rounded-lg border p-6">
             <h3 className="text-lg font-semibold">User Information</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">UUID</span>
-                <span className="font-mono">{user.publicId ?? user.userUuid}</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Username</span>
                 <span className="font-mono">{user.username}</span>
@@ -90,18 +100,24 @@ function UserDetailContent() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Created</span>
-                <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</span>
+                <span>{formatDate(user.createdAt)}</span>
               </div>
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="assignments">
-          <UserAssignmentsSection companyUuid={companyUuid} userUuid={userUuid} />
+          <UserAssignmentsSection
+            companyUuid={companyUuid}
+            userUuid={userUuid}
+          />
         </TabsContent>
 
         <TabsContent value="access">
-          <UserEffectiveAccessSection companyUuid={companyUuid} userUuid={userUuid} />
+          <UserEffectiveAccessSection
+            companyUuid={companyUuid}
+            userUuid={userUuid}
+          />
         </TabsContent>
       </Tabs>
     </div>

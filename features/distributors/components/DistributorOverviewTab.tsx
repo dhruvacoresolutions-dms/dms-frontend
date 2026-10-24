@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { formatDate } from "@/lib/format"
 import type { DistributorResponse } from "@/features/distributors/api/distributor.types"
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -57,7 +58,10 @@ export function DistributorOverviewTab({
                 distributor.businessConstitutionCode
               }
             />
-            <Field label="Effective From" value={distributor.effectiveFrom} />
+            <Field
+              label="Effective From"
+              value={formatDate(distributor.effectiveFrom)}
+            />
             <div>
               <dt className="text-xs text-muted-foreground">Status</dt>
               <dd>
@@ -103,14 +107,14 @@ export function DistributorOverviewTab({
             />
             <Field
               label="Payment Terms"
-              value={
-                distributor.paymentTermName ?? distributor.paymentTermCode
-              }
+              value={distributor.paymentTermName ?? distributor.paymentTermCode}
             />
             <div>
               <dt className="text-xs text-muted-foreground">Credit Allowed</dt>
               <dd>
-                <Badge variant={distributor.creditAllowed ? "default" : "secondary"}>
+                <Badge
+                  variant={distributor.creditAllowed ? "default" : "secondary"}
+                >
                   {distributor.creditAllowed ? "Yes" : "No"}
                 </Badge>
               </dd>

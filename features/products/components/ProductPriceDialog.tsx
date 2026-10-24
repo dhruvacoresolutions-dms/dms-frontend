@@ -21,6 +21,7 @@ import {
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { formatDate } from "@/lib/format"
 import {
   useCreateProductPrice,
   useReviseProductPrice,
@@ -110,7 +111,7 @@ function buildPriceSchema(current: ProductPriceResponse | null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["effectiveFrom"],
-          message: `Revision must start before ${current.effectiveTo}`,
+          message: `Revision must start before ${formatDate(current.effectiveTo)}`,
         })
       }
     }
@@ -281,9 +282,9 @@ export function ProductPriceDialog({
             {isRevise && price ? (
               <p className="text-xs text-muted-foreground">
                 {price.effectiveFrom
-                  ? `The revision must start after ${price.effectiveFrom}${
+                  ? `The revision must start after ${formatDate(price.effectiveFrom)}${
                       price.effectiveTo
-                        ? ` and before ${price.effectiveTo}`
+                        ? ` and before ${formatDate(price.effectiveTo)}`
                         : ""
                     }. `
                   : ""}

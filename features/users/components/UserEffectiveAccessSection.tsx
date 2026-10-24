@@ -2,10 +2,7 @@
 
 import { LoadingState } from "@/components/common/LoadingState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/common/DataTable"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import type { EffectiveAccessResponse } from "@/features/users/api/user.types"
 import { useEffectiveAccess } from "@/features/users/hooks/use-effective-access"
 
@@ -17,13 +14,6 @@ const scopeColumns: DataTableColumn<AccessScope>[] = [
     header: "Type",
     cell: ({ row }) => row.original.type,
   },
-  {
-    id: "publicId",
-    header: "Public ID",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs">{row.original.publicId}</span>
-    ),
-  },
 ]
 
 type Props = {
@@ -32,10 +22,12 @@ type Props = {
 }
 
 export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
-  const { data: access, isLoading, error, refetch } = useEffectiveAccess(
-    companyUuid,
-    userUuid
-  )
+  const {
+    data: access,
+    isLoading,
+    error,
+    refetch,
+  } = useEffectiveAccess(companyUuid, userUuid)
 
   if (isLoading) return <LoadingState />
   if (error) return <ErrorState onRetry={refetch} />
@@ -54,7 +46,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border p-4 space-y-2">
+        <div className="space-y-2 rounded-lg border p-4">
           <h4 className="text-sm font-medium text-muted-foreground">Roles</h4>
           {access.roles.length === 0 ? (
             <p className="text-sm">No roles assigned</p>
@@ -71,7 +63,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
             </div>
           )}
         </div>
-        <div className="rounded-lg border p-4 space-y-2">
+        <div className="space-y-2 rounded-lg border p-4">
           <h4 className="text-sm font-medium text-muted-foreground">
             Permission Sets
           </h4>
@@ -90,7 +82,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
             </div>
           )}
         </div>
-        <div className="rounded-lg border p-4 space-y-2">
+        <div className="space-y-2 rounded-lg border p-4">
           <h4 className="text-sm font-medium text-muted-foreground">
             Total Permissions
           </h4>
@@ -98,7 +90,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
         </div>
       </div>
 
-      <div className="rounded-lg border p-6 space-y-4">
+      <div className="space-y-4 rounded-lg border p-6">
         <h3 className="text-lg font-semibold">Permissions by Module</h3>
         {Object.keys(groupedPermissions).length === 0 ? (
           <p className="text-sm text-muted-foreground">No permissions</p>
@@ -111,7 +103,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
                   {perms.map((perm) => (
                     <span
                       key={perm}
-                      className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs font-mono"
+                      className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 font-mono text-xs"
                     >
                       {perm}
                     </span>
@@ -124,7 +116,7 @@ export function UserEffectiveAccessSection({ companyUuid, userUuid }: Props) {
       </div>
 
       {access.scopes.length > 0 && (
-        <div className="rounded-lg border p-6 space-y-4">
+        <div className="space-y-4 rounded-lg border p-6">
           <h3 className="text-lg font-semibold">Scopes</h3>
           <DataTable
             columns={scopeColumns}

@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RowActionsMenu } from "@/components/common/RowActionsMenu"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDateRange, formatReferenceOr } from "@/lib/format"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import {
   useProductGstMappings,
@@ -34,11 +35,6 @@ import type {
   ProductGstMappingResponse,
   ProductRelationshipResponse,
 } from "@/features/products/api/product.types"
-
-function shortUuid(uuid?: string | null) {
-  if (!uuid) return undefined
-  return uuid.length > 8 ? `${uuid.slice(0, 8)}…` : uuid
-}
 
 export function ProductMappingsSection({
   companyUuid,
@@ -137,11 +133,8 @@ function GstMappingsCard({
         id: "hsn",
         header: "HSN",
         cell: ({ row }) => (
-          <span
-            className="font-mono text-sm"
-            title={row.original.hsnUuid ?? undefined}
-          >
-            {row.original.hsnCode ?? shortUuid(row.original.hsnUuid) ?? "—"}
+          <span className="font-mono text-sm">
+            {row.original.hsnCode ?? "—"}
           </span>
         ),
       },
@@ -162,8 +155,10 @@ function GstMappingsCard({
         header: "Effective",
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.effectiveFrom ?? "—"} →{" "}
-            {row.original.effectiveTo ?? "—"}
+            {formatDateRange(
+              row.original.effectiveFrom,
+              row.original.effectiveTo
+            )}
           </span>
         ),
       },
@@ -486,7 +481,7 @@ function FitmentsCard({
         header: "Years",
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.yearFrom ?? "—"} → {row.original.yearTo ?? "—"}
+            {formatDateRange(row.original.yearFrom, row.original.yearTo)}
           </span>
         ),
       },
@@ -634,14 +629,11 @@ function GeographyMappingsCard({
         id: "geography",
         header: "Geography",
         cell: ({ row }) => (
-          <span
-            className="font-medium"
-            title={row.original.geographyUuid ?? undefined}
-          >
-            {row.original.geographyName ??
-              row.original.geographyCode ??
-              shortUuid(row.original.geographyUuid) ??
-              "—"}
+          <span className="font-medium">
+            {formatReferenceOr(
+              row.original.geographyName,
+              row.original.geographyCode
+            )}
           </span>
         ),
       },

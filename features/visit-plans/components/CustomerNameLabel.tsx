@@ -24,22 +24,17 @@ export function CustomerNameLabel({
     )
   }
   if (!data) {
-    return (
-      <span
-        className="font-mono text-xs text-muted-foreground"
-        title={customerUuid}
-      >
-        {customerUuid.slice(0, 8)}
-      </span>
-    )
+    return <span className="text-xs text-muted-foreground">—</span>
   }
 
   return (
     <span className="flex min-w-0 flex-col">
-      <span className="truncate font-medium">{data.shopName}</span>
-      <span className="truncate font-mono text-xs text-muted-foreground">
-        {data.customerCode}
-      </span>
+      <span className="truncate font-medium">{data.shopName || "—"}</span>
+      {data.customerCode ? (
+        <span className="truncate font-mono text-xs text-muted-foreground">
+          {data.customerCode}
+        </span>
+      ) : null}
     </span>
   )
 }

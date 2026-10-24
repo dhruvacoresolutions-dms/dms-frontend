@@ -1,7 +1,15 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, ReceiptText, Upload } from "lucide-react"
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  ToggleLeft,
+  ToggleRight,
+  ReceiptText,
+  Upload,
+} from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { SearchInput } from "@/components/common/SearchInput"
@@ -26,6 +34,7 @@ import { GstHsnBulkUploadDialog } from "@/features/gst-hsn/components/GstHsnBulk
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDate } from "@/lib/format"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
@@ -38,7 +47,8 @@ export default function GstHsnPage() {
 }
 
 function GstHsnContent() {
-  const companyUuid = useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const companyUuid =
+    useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [page, setPage] = useState(0)
@@ -46,11 +56,18 @@ function GstHsnContent() {
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
-  const [statusToggle, setStatusToggle] = useState<{ uuid: string; currentStatus: string; version?: number } | null>(null)
+  const [statusToggle, setStatusToggle] = useState<{
+    uuid: string
+    currentStatus: string
+    version?: number
+  } | null>(null)
 
   const { data, isLoading, error, refetch } = useGstHsns(companyUuid, {
     search: search || undefined,
-    status: statusFilter === "ALL" ? undefined : (statusFilter as "ACTIVE" | "INACTIVE"),
+    status:
+      statusFilter === "ALL"
+        ? undefined
+        : (statusFilter as "ACTIVE" | "INACTIVE"),
     page,
     size,
   })
@@ -80,17 +97,21 @@ function GstHsnContent() {
         id: "gstProductType",
         header: "Product Type",
         cell: ({ row }) =>
-          row.original.gstProductType ? <Badge variant="secondary">{row.original.gstProductType}</Badge> : "-",
+          row.original.gstProductType ? (
+            <Badge variant="secondary">{row.original.gstProductType}</Badge>
+          ) : (
+            "-"
+          ),
       },
       {
         id: "effectiveFrom",
         header: "Effective From",
-        cell: ({ row }) => row.original.effectiveFrom ?? "-",
+        cell: ({ row }) => formatDate(row.original.effectiveFrom),
       },
       {
         id: "effectiveTo",
         header: "Effective To",
-        cell: ({ row }) => row.original.effectiveTo ?? "-",
+        cell: ({ row }) => formatDate(row.original.effectiveTo),
       },
       {
         id: "status",
@@ -104,25 +125,40 @@ function GstHsnContent() {
           const h = row.original
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger className="cursor-pointer"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-auto min-w-40"
-              >
-                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}>
+              <DropdownMenuTrigger className="cursor-pointer">
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-40">
+                <PermissionGate
+                  permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_UPDATE}
+                >
                   <DropdownMenuItem onClick={() => setEditingUuid(h.hsnUuid)}>
                     <Pencil className="mr-2 size-4" /> Edit
                   </DropdownMenuItem>
                 </PermissionGate>
                 <DropdownMenuSeparator />
-                <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}>
+                <PermissionGate
+                  permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_STATUS}
+                >
                   <DropdownMenuItem
-                    variant={
-                      h.status === "ACTIVE" ? "destructive" : "default"
+                    variant={h.status === "ACTIVE" ? "destructive" : "default"}
+                    onClick={() =>
+                      setStatusToggle({
+                        uuid: h.hsnUuid,
+                        currentStatus: h.status,
+                        version: h.version,
+                      })
                     }
-                    onClick={() => setStatusToggle({ uuid: h.hsnUuid, currentStatus: h.status, version: h.version })}
                   >
-                    {h.status === "ACTIVE" ? <><ToggleLeft className="mr-2 size-4" />{" "} Deactivate</> : <><ToggleRight className="mr-2 size-4" /> Activate</>}
+                    {h.status === "ACTIVE" ? (
+                      <>
+                        <ToggleLeft className="mr-2 size-4" /> Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <ToggleRight className="mr-2 size-4" /> Activate
+                      </>
+                    )}
                   </DropdownMenuItem>
                 </PermissionGate>
               </DropdownMenuContent>
@@ -141,13 +177,17 @@ function GstHsnContent() {
         description="Manage GST HSN codes"
         action={
           <div className="flex items-center gap-2">
-            <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_IMPORT}>
+            <PermissionGate
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_IMPORT}
+            >
               <Button variant="outline" onClick={() => setBulkOpen(true)}>
                 <Upload className="mr-2 size-4" />
                 Bulk Upload
               </Button>
             </PermissionGate>
-            <PermissionGate permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_CREATE}>
+            <PermissionGate
+              permission={PERMISSIONS.PRODUCT.SUPPORTING_MASTER_CREATE}
+            >
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 size-4" /> Create HSN
               </Button>
@@ -160,11 +200,17 @@ function GstHsnContent() {
         <SearchInput
           placeholder="Search GST HSN..."
           defaultValue={search}
-          onChange={(v) => { setSearch(v); setPage(0) }}
+          onChange={(v) => {
+            setSearch(v)
+            setPage(0)
+          }}
         />
         <StatusFilterSelect
           value={statusFilter}
-          onChange={(v) => { setStatusFilter(v); setPage(0) }}
+          onChange={(v) => {
+            setStatusFilter(v)
+            setPage(0)
+          }}
         />
       </div>
 
@@ -178,9 +224,21 @@ function GstHsnContent() {
         empty={{
           icon: ReceiptText,
           title: "No GST HSN found",
-          description: search || statusFilter !== "ALL" ? "Try a different search or clear filters." : "Create an HSN entry to get started.",
+          description:
+            search || statusFilter !== "ALL"
+              ? "Try a different search or clear filters."
+              : "Create an HSN entry to get started.",
         }}
-        pagination={{ page, totalPages, onPageChange: setPage, pageSize: size, onPageSizeChange: (s) => { setSize(s); setPage(0) } }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: setPage,
+          pageSize: size,
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
+        }}
       />
 
       <GstHsnFormDialog
@@ -209,13 +267,23 @@ function GstHsnContent() {
             {
               hsnUuid: statusToggle.uuid,
               input: {
-                status: statusToggle.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                ...(typeof statusToggle.version === "number" ? { version: statusToggle.version } : {}),
+                status:
+                  statusToggle.currentStatus === "ACTIVE"
+                    ? "INACTIVE"
+                    : "ACTIVE",
+                ...(typeof statusToggle.version === "number"
+                  ? { version: statusToggle.version }
+                  : {}),
               },
             },
             {
-              onSuccess: () => { toast.success("Status updated"); setStatusToggle(null) },
-              onError: (error) => { toast.error(getApiErrorMessage(error, "Failed")) },
+              onSuccess: () => {
+                toast.success("Status updated")
+                setStatusToggle(null)
+              },
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed"))
+              },
             }
           )
         }}

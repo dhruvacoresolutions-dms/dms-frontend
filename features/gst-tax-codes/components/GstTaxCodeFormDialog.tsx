@@ -25,6 +25,7 @@ import {
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { formatDate } from "@/lib/format"
 import { requiredCode } from "@/lib/validations/master-data"
 import { useCreateGstTaxCode } from "../hooks/use-create-gst-tax-code"
 import { useCreateGstTaxCodeVersion } from "../hooks/use-create-gst-tax-code-version"
@@ -163,9 +164,15 @@ function buildTaxCodeSchema(
       if (values.effectiveFrom < todayISO())
         add("effectiveFrom", "Effective from must be today or later")
       if (source.effectiveFrom && values.effectiveFrom <= source.effectiveFrom)
-        add("effectiveFrom", `Must start after ${source.effectiveFrom}`)
+        add(
+          "effectiveFrom",
+          `Must start after ${formatDate(source.effectiveFrom)}`
+        )
       if (source.effectiveTo && values.effectiveFrom <= source.effectiveTo)
-        add("effectiveFrom", `Must start after ${source.effectiveTo}`)
+        add(
+          "effectiveFrom",
+          `Must start after ${formatDate(source.effectiveTo)}`
+        )
     }
   })
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
 import { Download, Loader2 } from "lucide-react"
 import {
   Dialog,
@@ -21,6 +20,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { formatDateTime, formatReference } from "@/lib/format"
 import { downloadBlob } from "@/lib/file-download"
 import { useImportJob } from "../hooks/use-import-job"
 import {
@@ -41,13 +41,6 @@ type Props = {
   item: UnifiedImportHistoryItem | null
 }
 
-function formatDateTime(iso: string): string {
-  if (!iso) return "—"
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return format(d, "dd MMM yyyy, hh:mm a")
-}
-
 export function ImportJobDetailsDialog({
   open,
   onOpenChange,
@@ -56,12 +49,12 @@ export function ImportJobDetailsDialog({
   item,
 }: Props) {
   const config = getMasterTypeConfig(type)
-  const { data: job, isLoading, error, refetch } = useImportJob(
-    companyUuid,
-    type,
-    item?.jobUuid ?? null,
-    open
-  )
+  const {
+    data: job,
+    isLoading,
+    error,
+    refetch,
+  } = useImportJob(companyUuid, type, item?.jobUuid ?? null, open)
   const [downloading, setDownloading] = React.useState<
     "csv" | "xlsx" | "original" | null
   >(null)
@@ -85,7 +78,10 @@ export function ImportJobDetailsDialog({
             ? await getImportResultsXlsx(type, companyUuid, item.jobUuid)
             : await getOriginalImportFile(type, companyUuid, item.jobUuid)
       const ext = kind === "original" ? "" : `.${kind}`
-      downloadBlob(blob, kind === "original" ? item.fileName : `${fileBase}${ext}`)
+      downloadBlob(
+        blob,
+        kind === "original" ? item.fileName : `${fileBase}${ext}`
+      )
       toast.success("Download started")
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Download failed"))
@@ -121,7 +117,9 @@ export function ImportJobDetailsDialog({
           <div className="flex flex-col gap-4">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <div>
-                <dt className="text-xs text-muted-foreground">Master data type</dt>
+                <dt className="text-xs text-muted-foreground">
+                  Master data type
+                </dt>
                 <dd className="font-medium">{config.label}</dd>
               </div>
               <div>
@@ -132,15 +130,14 @@ export function ImportJobDetailsDialog({
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Uploaded on</dt>
-                <dd className="font-medium">{formatDateTime(item.uploadedAt)}</dd>
+                <dd className="font-medium">
+                  {formatDateTime(item.uploadedAt)}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Uploaded by</dt>
-                <dd
-                  className="truncate font-mono text-xs font-medium"
-                  title={item.uploadedBy}
-                >
-                  {item.uploadedBy}
+                <dd className="truncate text-sm font-medium">
+                  {formatReference(item.uploadedBy)}
                 </dd>
               </div>
             </dl>
@@ -167,7 +164,8 @@ export function ImportJobDetailsDialog({
             {diagnostics.length > 0 && (
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium text-destructive">
-                  {diagnostics.length} row{diagnostics.length > 1 ? "s" : ""} failed
+                  {diagnostics.length} row{diagnostics.length > 1 ? "s" : ""}{" "}
+                  failed
                 </p>
                 <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-md bg-destructive/5 p-2 text-xs text-destructive/90">
                   {diagnostics.map((d, i) => (
@@ -175,7 +173,11 @@ export function ImportJobDetailsDialog({
                       Row {d.rowNumber}
                       {d.entityKey ? ` · ${d.entityKey}` : ""}
                       {d.field ? ` · ${d.field}` : ""}
-                      {d.reason ? ` — ${d.reason}` : d.errorCode ? ` — ${d.errorCode}` : ""}
+                      {d.reason
+                        ? ` — ${d.reason}`
+                        : d.errorCode
+                          ? ` — ${d.errorCode}`
+                          : ""}
                     </li>
                   ))}
                 </ul>

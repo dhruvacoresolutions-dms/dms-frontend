@@ -31,6 +31,7 @@ import { ExportDropdown } from "@/components/common/ExportDropdown"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDate } from "@/lib/format"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import type { GstTaxCodeResponse } from "@/features/gst-tax-codes/api/gst-tax-code.types"
@@ -121,7 +122,7 @@ function GstTaxCodesContent() {
       {
         id: "effectiveFrom",
         header: "Effective From",
-        cell: ({ row }) => row.original.effectiveFrom ?? "-",
+        cell: ({ row }) => formatDate(row.original.effectiveFrom),
       },
       {
         id: "status",

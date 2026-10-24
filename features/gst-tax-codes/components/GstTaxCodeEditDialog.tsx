@@ -20,6 +20,7 @@ import {
 } from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { applyApiFieldErrors } from "@/lib/api/form-errors"
+import { formatDate } from "@/lib/format"
 import { usePatchGstTaxCodeVersion } from "../hooks/use-patch-gst-tax-code-version"
 import type { GstTaxCodeResponse } from "../api/gst-tax-code.types"
 
@@ -46,14 +47,14 @@ function buildSchema(source: GstTaxCodeResponse | null) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["effectiveTo"],
-        message: `Must be on or after ${source.effectiveFrom}`,
+        message: `Must be on or after ${formatDate(source.effectiveFrom)}`,
       })
     }
     if (source?.effectiveTo && values.effectiveTo > source.effectiveTo) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["effectiveTo"],
-        message: `May only be shortened; the current end date is ${source.effectiveTo}`,
+        message: `May only be shortened; the current end date is ${formatDate(source.effectiveTo)}`,
       })
     }
   })
@@ -154,7 +155,7 @@ export function GstTaxCodeEditDialog({
             />
             <p className="text-xs text-muted-foreground">
               {source?.effectiveTo
-                ? `The end date may only be shortened (currently ${source.effectiveTo}).`
+                ? `The end date may only be shortened (currently ${formatDate(source.effectiveTo)}).`
                 : "Setting an end date closes this version from that date."}
             </p>
           </FieldGroup>

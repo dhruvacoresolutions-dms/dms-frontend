@@ -15,6 +15,7 @@ import { RowActionsMenu } from "@/components/common/RowActionsMenu"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { PERMISSIONS } from "@/lib/permissions"
+import { formatDateRange } from "@/lib/format"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { useGstTaxCodeVersions } from "../hooks/use-gst-tax-code-versions"
 import { usePatchGstTaxCodeVersion } from "../hooks/use-patch-gst-tax-code-version"
@@ -60,15 +61,30 @@ export function GstTaxCodeVersionsDialog({
         header: "Total",
         cell: ({ row }) => fmt(row.original.totalRate),
       },
-      { id: "cgst", header: "CGST", cell: ({ row }) => fmt(row.original.cgstRate) },
-      { id: "sgst", header: "SGST", cell: ({ row }) => fmt(row.original.sgstRate) },
-      { id: "igst", header: "IGST", cell: ({ row }) => fmt(row.original.igstRate) },
+      {
+        id: "cgst",
+        header: "CGST",
+        cell: ({ row }) => fmt(row.original.cgstRate),
+      },
+      {
+        id: "sgst",
+        header: "SGST",
+        cell: ({ row }) => fmt(row.original.sgstRate),
+      },
+      {
+        id: "igst",
+        header: "IGST",
+        cell: ({ row }) => fmt(row.original.igstRate),
+      },
       {
         id: "effective",
         header: "Effective",
         cell: ({ row }) => (
           <span className="text-sm">
-            {row.original.effectiveFrom ?? "—"} → {row.original.effectiveTo ?? "—"}
+            {formatDateRange(
+              row.original.effectiveFrom,
+              row.original.effectiveTo
+            )}
           </span>
         ),
       },

@@ -1,14 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
-import {
-  Download,
-  Eye,
-  FileUp,
-  Loader2,
-  MoreHorizontal,
-} from "lucide-react"
+import { Download, Eye, FileUp, Loader2, MoreHorizontal } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
 import {
   DropdownMenu,
@@ -23,6 +16,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { SearchInput } from "@/components/common/SearchInput"
 import { toast } from "sonner"
 import { getApiErrorMessage } from "@/lib/api/api-error"
+import { formatDateTime, formatReference } from "@/lib/format"
 import { downloadBlob } from "@/lib/file-download"
 import { useImportHistory } from "../hooks/use-import-history"
 import { ImportJobDetailsDialog } from "./ImportJobDetailsDialog"
@@ -41,13 +35,6 @@ type Props = {
   type: MasterDataType
 }
 
-function formatDateTime(iso: string): string {
-  if (!iso) return "—"
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return format(d, "dd MMM yyyy, hh:mm a")
-}
-
 export function UploadHistory({ companyUuid, type }: Props) {
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(0)
@@ -60,18 +47,25 @@ export function UploadHistory({ companyUuid, type }: Props) {
   // master type changes, so search + pagination reset naturally.
 
   const config = getMasterTypeConfig(type)
-  const { data, isLoading, error, refetch } = useImportHistory(companyUuid, type, {
-    search: search || undefined,
-    page,
-    size,
-  })
+  const { data, isLoading, error, refetch } = useImportHistory(
+    companyUuid,
+    type,
+    {
+      search: search || undefined,
+      page,
+      size,
+    }
+  )
 
   const items = data?.content ?? []
   const totalElements = data?.totalElements ?? 0
   const totalPages = data?.totalPages ?? 0
 
   const handleDownload = React.useCallback(
-    async (item: UnifiedImportHistoryItem, kind: "csv" | "xlsx" | "original") => {
+    async (
+      item: UnifiedImportHistoryItem,
+      kind: "csv" | "xlsx" | "original"
+    ) => {
       const key = `${item.jobUuid}:${kind}`
       if (downloading) return
       try {
@@ -125,7 +119,7 @@ export function UploadHistory({ companyUuid, type }: Props) {
         id: "uploadedOn",
         header: "Uploaded On",
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-sm">
+          <span className="text-sm whitespace-nowrap">
             {formatDateTime(row.original.uploadedAt)}
           </span>
         ),
@@ -134,11 +128,8 @@ export function UploadHistory({ companyUuid, type }: Props) {
         id: "uploadedBy",
         header: "Uploaded By",
         cell: ({ row }) => (
-          <span
-            className="block max-w-40 truncate font-mono text-xs"
-            title={row.original.uploadedBy}
-          >
-            {row.original.uploadedBy}
+          <span className="block max-w-40 truncate text-sm">
+            {formatReference(row.original.uploadedBy)}
           </span>
         ),
       },
@@ -234,7 +225,9 @@ export function UploadHistory({ companyUuid, type }: Props) {
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">Upload History</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Upload History
+          </h2>
           <p className="text-sm text-muted-foreground">
             View and track all your master data uploads
           </p>
@@ -268,7 +261,10 @@ export function UploadHistory({ companyUuid, type }: Props) {
           totalPages,
           onPageChange: setPage,
           pageSize: size,
-          onPageSizeChange: (s) => { setSize(s); setPage(0) },
+          onPageSizeChange: (s) => {
+            setSize(s)
+            setPage(0)
+          },
           totalElements,
         }}
         wrapperClassName="max-w-full overflow-x-auto"
