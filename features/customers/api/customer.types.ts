@@ -82,6 +82,9 @@ export type CustomerResponse = {
   beatUuid?: string | null
   dateOfBirth?: string | null
   anniversaryDate?: string | null
+  whatsappNumber?: string | null
+  establishedYear?: number | null
+  shopTimings?: { openTime: string; closeTime: string } | null
 }
 
 export type CustomerRequest = {
@@ -90,8 +93,8 @@ export type CustomerRequest = {
   contactPerson: string
   mobile: string
   alternateMobile?: string
-  email?: string
-  addressLine1?: string
+  email: string
+  addressLine1: string
   addressLine2?: string
   landmark?: string
   city?: string
@@ -107,9 +110,12 @@ export type CustomerRequest = {
   categoryUuid?: string
   classUuid?: string
   groupUuid?: string
-  businessTypeCode?: string
-  shopSizeCode?: string
-  monthlyPotentialCode?: string
+  businessTypeCode: string
+  shopSizeCode: string
+  monthlyPotentialCode: string
+  whatsappNumber: string
+  establishedYear: number
+  shopTimings: { openTime: string; closeTime: string }
   preferredLanguageCode?: string
   source?: CustomerSource
   territoryUuid?: string

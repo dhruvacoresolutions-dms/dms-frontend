@@ -1,7 +1,7 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { formatDateTime, formatReference } from "@/lib/format"
 import type { CustomerResponse } from "../api/customer.types"
@@ -10,24 +10,25 @@ function Field({
   label,
   value,
   mono,
+  className = "",
+  multiline = false,
 }: {
   label: string
   value?: string | number | null
   mono?: boolean
+  className?: string
+  multiline?: boolean
 }) {
   const hasValue = value !== undefined && value !== null && value !== ""
+  if (!hasValue) return null
   return (
-    <div className="min-w-0">
+    <div className={`min-w-0 ${className}`}>
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd
-        className={
-          mono
-            ? "truncate font-mono text-sm font-medium"
-            : "truncate font-medium"
-        }
+        className={`mt-1 font-medium ${mono ? "font-mono" : ""} ${multiline ? "break-words" : "truncate"}`}
         title={hasValue ? String(value) : undefined}
       >
-        {hasValue ? value : "—"}
+        {value}
       </dd>
     </div>
   )
@@ -41,7 +42,7 @@ function BadgeField({
   children: React.ReactNode
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-1">{children}</dd>
     </div>
@@ -61,62 +62,59 @@ export function CustomerOverviewTab({
   customer: CustomerResponse
 }) {
   const names = customer.displayNames ?? {}
-  const path = customer.territoryPath ?? []
-  const pathLabel = [...path]
+  const pathLabel = [...(customer.territoryPath ?? [])]
     .reverse()
-    .map((p) => p.code)
+    .map((segment) => segment.code)
     .join(" / ")
-  const latLong =
-    customer.latitude != null && customer.longitude != null
-      ? `${customer.latitude}, ${customer.longitude}`
-      : undefined
-  const addressLines = [
+  const address = [
     customer.addressLine1,
     customer.addressLine2,
     customer.landmark,
-  ].filter(Boolean)
+  ]
+    .filter(Boolean)
+    .join(", ")
+  const coordinates =
+    customer.latitude != null && customer.longitude != null
+      ? `${customer.latitude}, ${customer.longitude}`
+      : undefined
+  const shopHours =
+    customer.shopTimings?.openTime && customer.shopTimings.closeTime
+      ? `${customer.shopTimings.openTime} – ${customer.shopTimings.closeTime}`
+      : undefined
+  const hasClassification = [
+    names.subType,
+    names.channel,
+    names.segment,
+    names.category,
+    names.class,
+    names.group,
+  ].some(Boolean)
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>Customer &amp; contact</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             <Field label="Customer Code" value={customer.customerCode} mono />
-            <Field label="Shop Name" value={customer.shopName} />
-            <Field label="Contact Person" value={customer.contactPerson} />
             <Field label="Customer Type" value={names.customerType} />
-            <Field label="Date of Birth" value={customer.dateOfBirth} />
-            <Field label="Anniversary Date" value={customer.anniversaryDate} />
+            <Field label="Contact Person" value={customer.contactPerson} />
             <Field
               label="Source"
               value={SOURCE_LABELS[customer.source] ?? customer.source}
             />
-            <BadgeField label="Lifecycle">
-              <StatusBadge status={customer.lifecycleStatus} />
-            </BadgeField>
-            <BadgeField label="Record Version">
-              <span className="font-mono text-sm">v{customer.version}</span>
-            </BadgeField>
-          </dl>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
             <Field label="Mobile" value={customer.mobile} mono />
+            <Field label="WhatsApp" value={customer.whatsappNumber} mono />
             <Field
               label="Alternate Mobile"
               value={customer.alternateMobile}
               mono
             />
             <Field label="Email" value={customer.email} />
+            <Field label="Date of Birth" value={customer.dateOfBirth} />
+            <Field label="Anniversary Date" value={customer.anniversaryDate} />
           </dl>
         </CardContent>
       </Card>
@@ -126,94 +124,114 @@ export function CustomerOverviewTab({
           <CardTitle>Address &amp; territory</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <Field label="Pincode" value={customer.pincode} mono />
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             <Field label="City" value={customer.city} />
             <Field label="State" value={customer.state} />
+            <Field label="Pincode" value={customer.pincode} mono />
+            <Field label="Territory" value={names.territory ?? "Unassigned"} />
             <Field
               label="Address"
-              value={addressLines.length ? addressLines.join(", ") : undefined}
+              value={address}
+              className="sm:col-span-2"
+              multiline
             />
-            <Field label="Latitude / Longitude" value={latLong} mono />
+            <Field label="Latitude / Longitude" value={coordinates} mono />
             <BadgeField label="Geography Status">
               <StatusBadge status={customer.geographyStatus} />
             </BadgeField>
-            <Field label="Territory" value={names.territory ?? "Unassigned"} />
-            <Field label="Territory Path" value={pathLabel || undefined} mono />
+            <Field
+              label="Territory Path"
+              value={pathLabel || undefined}
+              mono
+              className="sm:col-span-2"
+            />
           </dl>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Tax &amp; compliance</CardTitle>
+          <CardTitle>Business profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <BadgeField label="GST Registration">
-              <Badge
-                variant={
-                  customer.gstRegistrationType === "REGISTERED"
-                    ? "default"
-                    : "secondary"
-                }
-              >
-                {customer.gstRegistrationType === "REGISTERED"
-                  ? "Registered"
-                  : "Unregistered"}
-              </Badge>
-            </BadgeField>
-            <Field label="GSTIN" value={customer.gstin} mono />
-            <Field label="PAN" value={customer.pan} mono />
-          </dl>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Classification</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <Field label="Sub Type" value={names.subType} />
-            <Field label="Channel" value={names.channel} />
-            <Field label="Segment" value={names.segment} />
-            <Field label="Category" value={names.category} />
-            <Field label="Class" value={names.class} />
-            <Field label="Group" value={names.group} />
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             <Field label="Business Type" value={names.businessType} />
             <Field label="Shop Size" value={names.shopSize} />
             <Field label="Monthly Potential" value={names.monthlyPotential} />
+            <Field label="Established Year" value={customer.establishedYear} />
+            <Field label="Shop Hours" value={shopHours} />
             <Field label="Preferred Language" value={names.preferredLanguage} />
           </dl>
+          {hasClassification ? (
+            <div className="mt-4 border-t pt-4">
+              <p className="mb-3 text-xs font-medium text-muted-foreground">
+                Classification
+              </p>
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                <Field label="Sub Type" value={names.subType} />
+                <Field label="Channel" value={names.channel} />
+                <Field label="Segment" value={names.segment} />
+                <Field label="Category" value={names.category} />
+                <Field label="Class" value={names.class} />
+                <Field label="Group" value={names.group} />
+              </dl>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Audit</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <Field
-              label="Created By"
-              value={formatReference(customer.createdBy)}
-            />
-            <Field
-              label="Created At"
-              value={formatDateTime(customer.createdAt)}
-            />
-            <Field
-              label="Updated By"
-              value={formatReference(customer.updatedBy)}
-            />
-            <Field
-              label="Updated At"
-              value={formatDateTime(customer.updatedAt)}
-            />
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tax &amp; compliance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <BadgeField label="GST Registration">
+                <Badge
+                  variant={
+                    customer.gstRegistrationType === "REGISTERED"
+                      ? "default"
+                      : "secondary"
+                  }
+                >
+                  {customer.gstRegistrationType === "REGISTERED"
+                    ? "Registered"
+                    : "Unregistered"}
+                </Badge>
+              </BadgeField>
+              <Field label="GSTIN" value={customer.gstin} mono />
+              <Field label="PAN" value={customer.pan} mono />
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Record activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+              <Field
+                label="Created"
+                value={formatDateTime(customer.createdAt)}
+              />
+              <Field
+                label="Created By"
+                value={formatReference(customer.createdBy)}
+              />
+              <Field
+                label="Last Updated"
+                value={formatDateTime(customer.updatedAt)}
+              />
+              <Field
+                label="Updated By"
+                value={formatReference(customer.updatedBy)}
+              />
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

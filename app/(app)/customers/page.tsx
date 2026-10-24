@@ -41,7 +41,6 @@ import { PERMISSIONS } from "@/lib/permissions"
 import { useCustomers } from "@/features/customers/hooks/use-customers"
 import { useCustomerLifecycleCounts } from "@/features/customers/hooks/use-customer-lifecycle-counts"
 import { CustomerTypeCombobox } from "@/features/customers/components/CustomerTypeCombobox"
-import { CustomerFormDialog } from "@/features/customers/components/CustomerFormDialog"
 import { CustomerKpiCards } from "@/features/customers/components/CustomerKpiCards"
 import {
   CustomerLifecycleDialog,
@@ -121,8 +120,6 @@ function CustomersContent() {
   const [territory, setTerritory] = useState<TerritoryFilter>("ALL")
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editingUuid, setEditingUuid] = useState<string | null>(null)
   const [lifecycleTarget, setLifecycleTarget] = useState<{
     customer: CustomerResponse
     action: CustomerLifecycleAction
@@ -298,7 +295,7 @@ function CustomersContent() {
                 <PermissionGate permission={PERMISSIONS.CUSTOMER.UPDATE}>
                   <DropdownMenuItem
                     disabled={!editable}
-                    onClick={() => setEditingUuid(c.uuid)}
+                    onClick={() => router.push(`/customers/${c.uuid}/edit`)}
                   >
                     <Pencil className="mr-2 size-4" /> Edit
                   </DropdownMenuItem>
@@ -344,7 +341,7 @@ function CustomersContent() {
         description="Retailers and mechanics with their lifecycle, territory and KYC readiness."
         action={
           <PermissionGate permission={PERMISSIONS.CUSTOMER.CREATE}>
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => router.push("/customers/new")}>
               <Plus className="mr-2 size-4" /> Create Customer
             </Button>
           </PermissionGate>
@@ -431,7 +428,7 @@ function CustomersContent() {
             : "Create your first customer to get started.",
           action: !hasActiveFilters ? (
             <PermissionGate permission={PERMISSIONS.CUSTOMER.CREATE}>
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button onClick={() => router.push("/customers/new")}>
                 <Plus className="mr-2 size-4" /> Create Customer
               </Button>
             </PermissionGate>
@@ -448,18 +445,6 @@ function CustomersContent() {
             setPage(0)
           },
         }}
-      />
-
-      <CustomerFormDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        companyUuid={companyUuid}
-      />
-      <CustomerFormDialog
-        open={!!editingUuid}
-        onOpenChange={(open) => !open && setEditingUuid(null)}
-        companyUuid={companyUuid}
-        customerUuid={editingUuid}
       />
 
       <CustomerLifecycleDialog
