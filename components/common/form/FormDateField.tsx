@@ -2,6 +2,8 @@
 
 import { Controller, type FieldValues } from "react-hook-form"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
 import { DatePicker } from "@/components/common/DatePicker"
 import type { BaseFieldProps } from "./types"
 
@@ -16,11 +18,15 @@ export function FormDateField<T extends FieldValues>({
   disablePast,
   startMonth,
   endMonth,
+  allowClear,
+  clearLabel = "Clear date",
 }: BaseFieldProps<T> & {
   disableFuture?: boolean
   disablePast?: boolean
   startMonth?: Date
   endMonth?: Date
+  allowClear?: boolean
+  clearLabel?: string
 }) {
   return (
     <Controller
@@ -29,17 +35,33 @@ export function FormDateField<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <Field className={className}>
           <FieldLabel>{label}</FieldLabel>
-          <DatePicker
-            value={field.value ? String(field.value) : null}
-            onValueChange={(iso) => field.onChange(iso ?? "")}
-            placeholder={placeholder}
-            disabled={disabled}
-            hasError={!!fieldState.error}
-            disableFuture={disableFuture}
-            disablePast={disablePast}
-            startMonth={startMonth}
-            endMonth={endMonth}
-          />
+          <div className="flex items-center gap-1">
+            <DatePicker
+              value={field.value ? String(field.value) : null}
+              onValueChange={(iso) => field.onChange(iso ?? "")}
+              placeholder={placeholder}
+              disabled={disabled}
+              hasError={!!fieldState.error}
+              disableFuture={disableFuture}
+              disablePast={disablePast}
+              startMonth={startMonth}
+              endMonth={endMonth}
+              className="flex-1"
+            />
+            {allowClear && field.value ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={clearLabel}
+                title={clearLabel}
+                disabled={disabled}
+                onClick={() => field.onChange("")}
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
           <FieldError errors={[fieldState.error]} />
         </Field>
       )}

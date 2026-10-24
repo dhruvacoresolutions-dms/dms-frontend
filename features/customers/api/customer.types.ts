@@ -15,16 +15,10 @@ export type CustomerLifecycleStatus =
   | "INACTIVE"
 
 export type CustomerSource =
-  | "ADMIN"
-  | "EMPLOYEE"
-  | "DISTRIBUTOR"
-  | "SELF_REGISTRATION"
+  "ADMIN" | "EMPLOYEE" | "DISTRIBUTOR" | "SELF_REGISTRATION"
 
 export type CustomerGeographyStatus =
-  | "MAPPED"
-  | "MAPPING_PENDING"
-  | "REVIEW"
-  | "MANUAL"
+  "MAPPED" | "MAPPING_PENDING" | "REVIEW" | "MANUAL"
 
 export type GstRegistrationType = "REGISTERED" | "UNREGISTERED"
 
@@ -86,6 +80,11 @@ export type CustomerResponse = {
   kycCount: number
   gstRegistrationType: GstRegistrationType
   beatUuid?: string | null
+  dateOfBirth?: string | null
+  anniversaryDate?: string | null
+  whatsappNumber?: string | null
+  establishedYear?: number | null
+  shopTimings?: { openTime: string; closeTime: string } | null
 }
 
 export type CustomerRequest = {
@@ -94,8 +93,8 @@ export type CustomerRequest = {
   contactPerson: string
   mobile: string
   alternateMobile?: string
-  email?: string
-  addressLine1?: string
+  email: string
+  addressLine1: string
   addressLine2?: string
   landmark?: string
   city?: string
@@ -111,13 +110,18 @@ export type CustomerRequest = {
   categoryUuid?: string
   classUuid?: string
   groupUuid?: string
-  businessTypeCode?: string
-  shopSizeCode?: string
-  monthlyPotentialCode?: string
+  businessTypeCode: string
+  shopSizeCode: string
+  monthlyPotentialCode: string
+  whatsappNumber: string
+  establishedYear: number
+  shopTimings: { openTime: string; closeTime: string }
   preferredLanguageCode?: string
   source?: CustomerSource
   territoryUuid?: string
   gstRegistrationType?: GstRegistrationType
+  dateOfBirth?: string | null
+  anniversaryDate?: string | null
 }
 
 export type UpdateCustomerRequest = CustomerRequest & {
@@ -347,9 +351,7 @@ export type CustomerClassificationSelection = {
 // ── Pincode → territory mapping ──────────────────────────────────────────────
 
 export type CustomerPincodeMappingStatus =
-  | "MAPPED"
-  | "MAPPING_PENDING"
-  | "REVIEW"
+  "MAPPED" | "MAPPING_PENDING" | "REVIEW"
 
 export type CustomerPincodeRecordStatus = "ACTIVE" | "INACTIVE"
 
@@ -382,10 +384,7 @@ export type CustomerPincodeStatusRequest = {
 }
 
 export type CustomerPincodeResolutionStatus =
-  | "MAPPED"
-  | "NOT_CONFIGURED"
-  | "MAPPING_PENDING"
-  | "REVIEW"
+  "MAPPED" | "NOT_CONFIGURED" | "MAPPING_PENDING" | "REVIEW"
 
 export type CustomerPincodeResolution = {
   pincode: string

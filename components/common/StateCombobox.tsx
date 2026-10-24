@@ -17,6 +17,7 @@ type StateComboboxProps = {
   id?: string
   hasError?: boolean
   disabled?: boolean
+  onBlur?: () => void
 }
 
 export function StateCombobox({
@@ -26,6 +27,7 @@ export function StateCombobox({
   id,
   hasError,
   disabled,
+  onBlur,
 }: StateComboboxProps) {
   return (
     <ComboboxPrimitive.Root
@@ -40,6 +42,7 @@ export function StateCombobox({
         id={id}
         placeholder={placeholder}
         aria-invalid={!!hasError}
+        onBlur={onBlur}
         // Ring removed in favor of border feedback: focus-visible:ring-destructive/20
         className={hasError ? "border-destructive" : ""}
       />
@@ -56,4 +59,3 @@ export function StateCombobox({
     </ComboboxPrimitive.Root>
   )
 }
-

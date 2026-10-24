@@ -1,8 +1,8 @@
 "use client"
 
 import { use, useState } from "react"
-import Link from "next/link"
-import { ArrowLeft, ChevronDown, Pencil, Workflow } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ChevronDown, Pencil, Workflow } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,7 +20,6 @@ import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { PERMISSIONS } from "@/lib/permissions"
 import { useCustomer } from "@/features/customers/hooks/use-customer"
-import { CustomerFormDialog } from "@/features/customers/components/CustomerFormDialog"
 import { CustomerOverviewTab } from "@/features/customers/components/CustomerOverviewTab"
 import { CustomerBankSection } from "@/features/customers/components/CustomerBankSection"
 import { CustomerCreditSection } from "@/features/customers/components/CustomerCreditSection"
@@ -50,16 +49,18 @@ function CustomerDetailContent({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
+  const router = useRouter()
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
-  const [editOpen, setEditOpen] = useState(false)
   const [lifecycleAction, setLifecycleAction] =
     useState<CustomerLifecycleAction | null>(null)
 
-  const { data: customer, isLoading, error, refetch } = useCustomer(
-    companyUuid,
-    id
-  )
+  const {
+    data: customer,
+    isLoading,
+    error,
+    refetch,
+  } = useCustomer(companyUuid, id)
 
   if (isLoading) return <LoadingState message="Loading customer..." />
   if (error || !customer) return <ErrorState onRetry={refetch} />
@@ -73,6 +74,7 @@ function CustomerDetailContent({
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
+        backHref="/customers"
         title={customer.shopName}
         description={
           typeName
@@ -82,14 +84,6 @@ function CustomerDetailContent({
         action={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={customer.lifecycleStatus} />
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href="/customers" />}
-            >
-              <ArrowLeft className="mr-2 size-4" />
-              Back
-            </Button>
             {transitions.length > 0 ? (
               <PermissionGate permission={PERMISSIONS.CUSTOMER.MANAGE}>
                 <DropdownMenu>
@@ -119,7 +113,7 @@ function CustomerDetailContent({
             ) : null}
             <PermissionGate permission={PERMISSIONS.CUSTOMER.UPDATE}>
               <Button
-                onClick={() => setEditOpen(true)}
+                onClick={() => router.push(`/customers/${id}/edit`)}
                 disabled={!editable}
                 title={
                   editable
@@ -136,18 +130,24 @@ function CustomerDetailContent({
       />
 
       {editable ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           This customer is in {customer.lifecycleStatus.toLowerCase()}. Bank,
-          credit and KYC details can be changed until it is submitted.
-        </p>
+          credit, and KYC details can be changed until it is submitted.
+        </div>
       ) : null}
 
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="bank">Bank</TabsTrigger>
-          <TabsTrigger value="credit">Credit</TabsTrigger>
-          <TabsTrigger value="kyc">
+        <TabsList className="max-w-full overflow-x-auto">
+          <TabsTrigger className="shrink-0" value="overview">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger className="shrink-0" value="bank">
+            Bank
+          </TabsTrigger>
+          <TabsTrigger className="shrink-0" value="credit">
+            Credit
+          </TabsTrigger>
+          <TabsTrigger className="shrink-0" value="kyc">
             KYC
             {customer.kycCount > 0 ? (
               <span className="ml-1 rounded-full bg-muted px-1.5 text-xs tabular-nums">
@@ -155,7 +155,9 @@ function CustomerDetailContent({
               </span>
             ) : null}
           </TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="history">
+            History
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-3">
@@ -189,13 +191,6 @@ function CustomerDetailContent({
           <CustomerHistoryTab companyUuid={companyUuid} customerUuid={id} />
         </TabsContent>
       </Tabs>
-
-      <CustomerFormDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        companyUuid={companyUuid}
-        customerUuid={id}
-      />
 
       <CustomerLifecycleDialog
         open={!!lifecycleAction}

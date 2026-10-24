@@ -59,15 +59,17 @@ const statusVariants: Record<string, string> = {
 export function StatusBadge({
   status,
   className,
+  label,
 }: {
   status: string
   className?: string
+  label?: string
 }) {
   const variant = statusVariants[status.toUpperCase()] ?? ""
 
   return (
     <Badge variant="outline" className={cn("capitalize", variant, className)}>
-      {status.toLowerCase().replaceAll("_", " ")}
+      {label ?? status.toLowerCase().replaceAll("_", " ")}
     </Badge>
   )
 }
