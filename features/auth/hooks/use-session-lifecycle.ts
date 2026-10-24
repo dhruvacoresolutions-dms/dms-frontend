@@ -68,9 +68,22 @@ export function useSessionLifecycle() {
       return
     }
 
-    // Stale presence cookie without a stored session (e.g. localStorage was
-    // cleared): let the middleware guard pass would keep the app shell up
-    // forever, so clear it and restart at login.
+    // `persist` hydrates from localStorage after the first client render, and
+    // during that hydration pass the selector still returns the server
+    // snapshot (`null`). Read the live store before treating the cookie as
+    // stale — otherwise a normal reload would wipe a valid session and bounce
+    // the user to login.
+    if (!useAuthStore.persist.hasHydrated()) {
+      return
+    }
+
+    if (useAuthStore.getState().session) {
+      return
+    }
+
+    // Genuinely stale presence cookie (e.g. localStorage was cleared): the
+    // middleware guard would keep the app shell up forever, so clear it and
+    // restart at login.
     if (hasSessionCookie()) {
       clearSessionCookie()
       requestRedirect({ target: "/auth/login", variant: "loading" })

@@ -25,6 +25,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -305,24 +306,26 @@ function CustomersContent() {
                 {transitions.length > 0 ? (
                   <PermissionGate permission={PERMISSIONS.CUSTOMER.MANAGE}>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground">
-                      Lifecycle
-                    </DropdownMenuLabel>
-                    {transitions.map((t) => (
-                      <DropdownMenuItem
-                        key={t.action}
-                        variant={t.destructive ? "destructive" : "default"}
-                        onClick={() =>
-                          setLifecycleTarget({
-                            customer: c,
-                            action: t.action,
-                          })
-                        }
-                      >
-                        <t.icon className="mr-2 size-4" />
-                        {t.label}
-                      </DropdownMenuItem>
-                    ))}
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        Lifecycle
+                      </DropdownMenuLabel>
+                      {transitions.map((t) => (
+                        <DropdownMenuItem
+                          key={t.action}
+                          variant={t.destructive ? "destructive" : "default"}
+                          onClick={() =>
+                            setLifecycleTarget({
+                              customer: c,
+                              action: t.action,
+                            })
+                          }
+                        >
+                          <t.icon className="mr-2 size-4" />
+                          {t.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
                   </PermissionGate>
                 ) : null}
               </DropdownMenuContent>
