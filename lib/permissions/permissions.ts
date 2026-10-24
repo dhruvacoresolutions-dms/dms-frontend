@@ -206,6 +206,21 @@ export const PERMISSIONS = {
     MANAGE: "VISIT_PLAN_MANAGE",
     APPROVE: "VISIT_PLAN_APPROVE",
   },
+  /**
+   * Sales Force Automation recurring coverage planning (`COVERAGE_PLAN`).
+   * - VIEW    read own/team coverage templates and generated visit plans
+   * - CREATE  submit a Monday–Saturday template for yourself, edit and
+   *           resubmit your own rejected/withdrawn template
+   * - MANAGE  create on an employee's behalf, edit approved templates and
+   *           cancel a plan
+   * - APPROVE approve or reject a pending template (direct manager/super admin)
+   */
+  COVERAGE_PLAN: {
+    VIEW: "COVERAGE_PLAN_VIEW",
+    CREATE: "COVERAGE_PLAN_CREATE",
+    MANAGE: "COVERAGE_PLAN_MANAGE",
+    APPROVE: "COVERAGE_PLAN_APPROVE",
+  },
   ACCOUNTING_PERIOD: {
     CLOSE: "ACCOUNTING_PERIOD_CLOSE",
     REOPEN: "ACCOUNTING_PERIOD_REOPEN",

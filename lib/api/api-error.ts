@@ -24,17 +24,45 @@ export type ApiSuccessResponse<T> = {
 }
 
 export function getApiError(error: unknown): ApiErrorResponse | undefined {
-  if (error instanceof AxiosError) {
-    return error.response?.data as ApiErrorResponse | undefined
+  if (!(error instanceof AxiosError)) {
+    return undefined
   }
 
-  return undefined
+  const data: unknown = error.response?.data
+
+  // Only treat the response as an API error envelope when it actually carries
+  // a text message. This prevents raw payloads (for example a geography
+  // object returned through a proxy) from being rendered as an error string.
+  if (
+    !data ||
+    typeof data !== "object" ||
+    Array.isArray(data) ||
+    typeof (data as { message?: unknown }).message !== "string"
+  ) {
+    return undefined
+  }
+
+  const record = data as Record<string, unknown>
+  const rawErrors = Array.isArray(record.errors) ? record.errors : []
+  const errors = rawErrors.filter(
+    (detail): detail is FieldErrorDetail =>
+      !!detail &&
+      typeof detail === "object" &&
+      typeof (detail as { field?: unknown }).field === "string" &&
+      typeof (detail as { message?: unknown }).message === "string"
+  )
+
+  return {
+    ...(data as ApiErrorResponse),
+    message: record.message as string,
+    errors,
+  }
 }
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
   const apiError = getApiError(error)
 
-  if (apiError?.message) {
+  if (apiError?.message.trim()) {
     return apiError.message
   }
 
