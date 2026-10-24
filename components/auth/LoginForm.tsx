@@ -23,7 +23,7 @@ import { getCurrentAccess } from "@/features/auth/api/auth.api"
 import { authKeys } from "@/features/auth/api/auth-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import { useAccessStore } from "@/stores/access-store"
-import { setSessionCookie } from "@/lib/session"
+import { setSessionCookieUntil } from "@/lib/session"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
 
 export function LoginForm() {
@@ -55,7 +55,7 @@ export function LoginForm() {
           loginMutation.mutate(values, {
             onSuccess: async (session) => {
               setSession(session)
-              setSessionCookie(session.accessToken, session.expiresIn)
+              setSessionCookieUntil(session.accessToken, session.expiresAt)
 
               if (session.mustChangePassword) {
                 toast.info("You must change your password before continuing")
@@ -89,6 +89,13 @@ export function LoginForm() {
                 toast.error(
                   "Could not load your permissions. Some features may be unavailable."
                 )
+              }
+
+              // The access call may have 401'd and cleared the session; the
+              // session redirector is already sending us to login.
+              if (!useAuthStore.getState().session) {
+                setIsLoadingPermissions(false)
+                return
               }
 
               toast.success("Logged in successfully")

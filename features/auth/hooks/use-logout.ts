@@ -1,13 +1,17 @@
 "use client"
 
 import { useCallback, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 
-import { useAuthStore } from "@/stores/auth-store"
-import { useAccessStore } from "@/stores/access-store"
+import { logoutSession } from "@/features/auth/api/auth.api"
+import { notifySessionEnded, postSessionMessage } from "@/lib/session-bus"
 import { clearSessionCookie } from "@/lib/session"
+import { useAccessStore } from "@/stores/access-store"
+import { useAuthStore } from "@/stores/auth-store"
 
 export function useLogout() {
+  const router = useRouter()
   const clearSession = useAuthStore((state) => state.clearSession)
   const clearAccess = useAccessStore((state) => state.clearAccess)
   const queryClient = useQueryClient()
@@ -20,19 +24,25 @@ export function useLogout() {
     inFlightRef.current = true
     setIsLoggingOut(true)
 
-    // Give the "Logging you out…" screen a frame to paint before we tear
-    // down session state and trigger the full-page navigation. The logout
-    // overlay renders at z-[60], above the RouteGate "Loading..." fallback
-    // (z-50) that appears once access is cleared, so it stays on top until
-    // the login page loads.
-    await new Promise((resolve) => setTimeout(resolve, 450))
+    // Capture before clearing: the request interceptor reads the token from
+    // the store, and the store is cleared first by design.
+    const accessToken = useAuthStore.getState().session?.accessToken
 
+    notifySessionEnded()
     clearSession()
     clearAccess()
     clearSessionCookie()
     queryClient.clear()
-    window.location.assign("/auth/login")
-  }, [clearSession, clearAccess, queryClient])
+    postSessionMessage({ type: "session-ended" })
+
+    // Fire-and-forget: revoke server-side, but never block the UI on it.
+    void logoutSession(accessToken)
+
+    // Let the "Logging you out…" overlay paint before navigating.
+    await new Promise((resolve) => setTimeout(resolve, 450))
+
+    router.replace("/auth/login")
+  }, [clearSession, clearAccess, queryClient, router])
 
   return { logout, isLoggingOut }
 }

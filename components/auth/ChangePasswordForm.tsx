@@ -2,6 +2,7 @@
 
 import { useForm } from "react-hook-form"
 import { createPortal } from "react-dom"
+import { usePathname, useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
@@ -21,10 +22,17 @@ import { useChangePassword } from "@/features/auth/hooks/use-change-password"
 import { useLogout } from "@/features/auth/hooks/use-logout"
 import { AuthLoadingScreen } from "@/components/auth/AuthLoadingScreen"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
+import { getJwtExpiryMs } from "@/lib/jwt"
+import { serverNow } from "@/lib/server-clock"
+import { postSessionMessage } from "@/lib/session-bus"
+import { setSessionCookieUntil } from "@/lib/session"
+import { useAuthStore } from "@/stores/auth-store"
 
 const PASSWORD_FIELDS = ["currentPassword", "newPassword", "confirmPassword"] as const
 
 export function ChangePasswordForm() {
+  const router = useRouter()
+  const pathname = usePathname()
   const { logout, isLoggingOut } = useLogout()
   const changePasswordMutation = useChangePassword()
 
@@ -53,9 +61,54 @@ export function ChangePasswordForm() {
       className="flex flex-col gap-6"
       onSubmit={handleSubmit((values) =>
         changePasswordMutation.mutate(values, {
-          onSuccess: () => {
-            toast.success("Password changed successfully. Please log in again.")
-            logout()
+          onSuccess: (result) => {
+            const accessToken = result?.accessToken
+
+            // Older backends can still require a fresh login.
+            if (!accessToken || result.loginAgainRequired) {
+              toast.success(
+                "Password changed successfully. Please log in again."
+              )
+              logout()
+              return
+            }
+
+            const renewedAt = serverNow()
+            const expiresAt =
+              getJwtExpiryMs(accessToken) ??
+              (result.expiresIn ? renewedAt + result.expiresIn * 1000 : 0)
+
+            if (!expiresAt) {
+              toast.success(
+                "Password changed successfully. Please log in again."
+              )
+              logout()
+              return
+            }
+
+            // The backend keeps this session alive and issues a replacement
+            // token — store it instead of forcing a new login.
+            useAuthStore.getState().updateSessionToken({
+              accessToken,
+              expiresAt,
+              expiresIn: result.expiresIn,
+              renewedAt,
+              mustChangePassword: false,
+            })
+            setSessionCookieUntil(accessToken, expiresAt)
+            postSessionMessage({
+              type: "session-renewed",
+              accessToken,
+              expiresAt,
+              expiresIn: result.expiresIn ?? 0,
+              renewedAt,
+            })
+
+            toast.success("Password changed successfully.")
+
+            if (pathname === "/auth/change-password") {
+              router.replace("/dashboard")
+            }
           },
           onError: (error) => {
             const apiError = getApiError(error)

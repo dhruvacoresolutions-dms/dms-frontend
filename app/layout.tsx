@@ -7,6 +7,7 @@ import { ThemeInitScript } from "@/components/theme/theme-init-script"
 import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { QueryProvider } from "@/components/providers/query-provider"
+import { SessionRedirector } from "@/components/auth/SessionRedirector"
 import { Toaster } from "sonner"
 import { AutoHideScrollbar } from "@/components/auto-hide-scrollbar"
 
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body>
         <AutoHideScrollbar />
         <QueryProvider>
+          <SessionRedirector />
           <ThemeProvider>
             <DynamicThemeProvider>
               <TooltipProvider>{children}</TooltipProvider>
