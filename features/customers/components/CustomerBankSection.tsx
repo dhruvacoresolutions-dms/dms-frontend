@@ -81,6 +81,7 @@ export function CustomerBankSection({
   const { has } = usePermission()
   const currentUserUuid = useAuthStore((s) => s.session?.user?.userUuid)
   const canReview = has(PERMISSIONS.CUSTOMER.APPROVE)
+  const isAdmin = has(PERMISSIONS.CUSTOMER.MANAGE)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [downloading, setDownloading] = useState<string | null>(null)
@@ -198,7 +199,7 @@ export function CustomerBankSection({
           const entry = row.original
           const actions = REVIEWABLE[entry.status] ?? []
           if (!actions.length) return null
-          const isOwn = !!currentUserUuid && entry.createdBy === currentUserUuid
+          const isOwn = !!currentUserUuid && entry.createdBy === currentUserUuid && !isAdmin
           return (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -249,7 +250,7 @@ export function CustomerBankSection({
     ],
     // `download` only depends on the company + setter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canReview, currentUserUuid, downloading, companyUuid]
+    [canReview, currentUserUuid, isAdmin, downloading, companyUuid]
   )
 
   return (

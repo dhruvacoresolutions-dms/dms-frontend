@@ -82,6 +82,7 @@ export function CustomerKycSection({
   const { has } = usePermission()
   const currentUserUuid = useAuthStore((s) => s.session?.user?.userUuid)
   const canReview = has(PERMISSIONS.CUSTOMER.APPROVE)
+  const isAdmin = has(PERMISSIONS.CUSTOMER.MANAGE)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [review, setReview] = useState<{
@@ -147,7 +148,7 @@ export function CustomerKycSection({
           const entry = row.original
           const actions = REVIEWABLE[entry.status] ?? []
           if (!actions.length && !entry.documentFileUuid) return null
-          const isOwn = !!currentUserUuid && entry.createdBy === currentUserUuid
+          const isOwn = !!currentUserUuid && entry.createdBy === currentUserUuid && !isAdmin
           return (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -196,7 +197,7 @@ export function CustomerKycSection({
         },
       },
     ],
-    [canReview, currentUserUuid]
+    [canReview, currentUserUuid, isAdmin]
   )
 
   return (
