@@ -164,6 +164,8 @@ export const PERMISSIONS = {
     IMPORT: "CUSTOMER_MASTER_MANAGE",
     BOOTSTRAP: "CUSTOMER_MASTER_MANAGE",
     EXPORT: "CUSTOMER_MASTER_VIEW",
+    /** Lifecycle approval + KYC/bank entry review. */
+    APPROVE: "CUSTOMER_APPROVE",
   },
   SUPPLIER: {
     VIEW: "SUPPLIER_VIEW",

@@ -15,12 +15,25 @@ export type CustomerLifecycleStatus =
   | "INACTIVE"
 
 export type CustomerSource =
-  "ADMIN" | "EMPLOYEE" | "DISTRIBUTOR" | "SELF_REGISTRATION"
+  | "ADMIN"
+  | "EMPLOYEE"
+  | "DISTRIBUTOR"
+  | "SELF_REGISTRATION"
+  | "LOYALTY"
 
 export type CustomerGeographyStatus =
   "MAPPED" | "MAPPING_PENDING" | "REVIEW" | "MANUAL"
 
+/** `CustomerModels.GeographyResolution` — read-only server resolution state. */
+export type CustomerGeographyResolution = "RESOLVED" | "PARTIAL" | "UNRESOLVED"
+
+/** `CustomerModels.PincodeMappingStatus` — read-only server resolution state. */
+export type CustomerGeographyPincodeStatus = "CONFIRMED" | "NONE" | "PENDING"
+
 export type GstRegistrationType = "REGISTERED" | "UNREGISTERED"
+
+/** Required for REGISTERED customers, forbidden for UNREGISTERED ones. */
+export type GstCategory = "REGULAR" | "COMPOSITION" | "BOTH"
 
 export type CustomerStatus = "ACTIVE" | "INACTIVE"
 
@@ -43,15 +56,22 @@ export type CustomerResponse = {
   mobile: string
   alternateMobile?: string | null
   email?: string | null
+  whatsappNumber?: string | null
+  whatsappSameAsMobile?: boolean | null
   addressLine1?: string | null
   addressLine2?: string | null
+  addressLine3?: string | null
   landmark?: string | null
   city?: string | null
   state?: string | null
   pincode: string
   latitude?: number | null
   longitude?: number | null
+  gstRegistrationType: GstRegistrationType
+  /** Current column. Clients written before the rename read `gstin`. */
+  gstNumber?: string | null
   gstin?: string | null
+  gstCategory?: GstCategory | null
   pan?: string | null
   subTypeUuid?: string | null
   channelUuid?: string | null
@@ -60,15 +80,23 @@ export type CustomerResponse = {
   classUuid?: string | null
   groupUuid?: string | null
   businessTypeCode?: string | null
-  shopSizeCode?: string | null
-  monthlyPotentialCode?: string | null
+  /** Numeric, required on create. `shopSizeCode` no longer exists. */
+  shopSizeSqFt?: number | null
+  /** Numeric (rupees), required on create. `monthlyPotentialCode` no longer exists. */
+  monthlyPotential?: number | null
   preferredLanguageCode?: string | null
   source: CustomerSource
   territoryUuid?: string | null
+  beatUuid?: string | null
   geographyStatus: CustomerGeographyStatus
+  geographyResolution?: CustomerGeographyResolution | null
+  pincodeMappingStatus?: CustomerGeographyPincodeStatus | null
+  regionUuid?: string | null
+  stateUuid?: string | null
   lifecycleStatus: CustomerLifecycleStatus
   createdBy?: string | null
   createdAt?: string | null
+  createdByManager?: string | null
   updatedBy?: string | null
   updatedAt?: string | null
   version: number
@@ -76,17 +104,39 @@ export type CustomerResponse = {
   displayNames?: Record<string, string> | null
   territoryPath?: CustomerGeographyPathItem[] | null
   hasBank: boolean
+  /** True after create, because `credit` is mandatory on create. */
   hasCredit: boolean
   kycCount: number
-  gstRegistrationType: GstRegistrationType
-  beatUuid?: string | null
+  kycBankComplete?: boolean
+  /** First bank entry (PENDING/VERIFIED first). Read entries for `accountType`. */
+  bank?: CustomerBank | null
+  /** Always present; empty array when the customer has none. */
+  kycEntries: CustomerKycEntry[]
+  /** Always present; empty array when the customer has none. */
+  bankEntries: CustomerBankEntry[]
+  /** UUID array on JSON routes, object array on with-files routes. */
+  attachments?: string[] | CustomerAttachment[]
+  shopImageFileRef?: string | null
+  registrationNumber?: string | null
+  establishedYear?: number | null
+  brandsStocked?: string[] | null
+  shopTimings?: { openTime: string; closeTime: string } | null
   dateOfBirth?: string | null
   anniversaryDate?: string | null
-  whatsappNumber?: string | null
-  establishedYear?: number | null
-  shopTimings?: { openTime: string; closeTime: string } | null
+  workshopType?: string | null
+  experienceYears?: number | null
+  engineSpecialty?: string | null
+  mechanicCount?: number | null
 }
 
+/**
+ * `CustomerModels.Request`.
+ *
+ * Server-owned fields (`customerCode`, `uuid`, `companyUuid`, `lifecycleStatus`,
+ * `geographyStatus`, `geographyResolution`, `pincodeMappingStatus`,
+ * `regionUuid`, `stateUuid`, `preferredLanguage*`, `groupUuid`) are ignored if
+ * sent and are therefore not part of this type.
+ */
 export type CustomerRequest = {
   customerType: string
   shopName: string
@@ -96,35 +146,65 @@ export type CustomerRequest = {
   email: string
   addressLine1: string
   addressLine2?: string
+  addressLine3?: string
   landmark?: string
-  city?: string
-  state?: string
+  /** Required — also used with `state` when the pincode has no mapping. */
+  city: string
+  /** Required — also used with `city` when the pincode has no mapping. */
+  state: string
   pincode: string
   latitude?: number
   longitude?: number
-  gstin?: string
+  gstRegistrationType: GstRegistrationType
+  /** Required + 15-char pattern for REGISTERED; must be absent for UNREGISTERED. */
+  gstNumber?: string
+  /** Required for REGISTERED; must be absent for UNREGISTERED. */
+  gstCategory?: GstCategory
   pan?: string
   subTypeUuid?: string
   channelUuid?: string
   segmentUuid?: string
   categoryUuid?: string
   classUuid?: string
-  groupUuid?: string
   businessTypeCode: string
-  shopSizeCode: string
-  monthlyPotentialCode: string
+  /** Required JSON integer, 0…10,000,000. */
+  shopSizeSqFt: number
+  /** Required JSON integer, 0…9,999,999,999. */
+  monthlyPotential: number
   whatsappNumber: string
+  whatsappSameAsMobile?: boolean
+  registrationNumber?: string
   establishedYear: number
+  brandsStocked?: string[]
   shopTimings: { openTime: string; closeTime: string }
-  preferredLanguageCode?: string
   source?: CustomerSource
   territoryUuid?: string
-  gstRegistrationType?: GstRegistrationType
+  beatUuid?: string
+  shopImageFileRef?: string
+  /** Max 8 document UUIDs; not allowed on with-files routes. */
+  attachments?: string[]
   dateOfBirth?: string | null
   anniversaryDate?: string | null
+  workshopType?: string
+  experienceYears?: number
+  engineSpecialty?: string
+  mechanicCount?: number
+  /** Required on create (`creditLimit` ≥ 0, `creditDays` 0–365). */
+  credit: CustomerCreditInput
+  /** Create only — ignored by update; use the bank-entry routes afterwards. */
+  bank?: CustomerBankInput
+  /** Create only — ignored by update; use the KYC-entry routes afterwards. */
+  kyc?: CustomerKycInput[]
 }
 
-export type UpdateCustomerRequest = CustomerRequest & {
+/**
+ * `PUT …/customers/{uuid}` ignores `credit`, `bank` and `kyc` (they are
+ * stripped server-side), so update payloads must not rely on them.
+ */
+export type UpdateCustomerRequest = Omit<
+  CustomerRequest,
+  "credit" | "bank" | "kyc" | "attachments" | "shopImageFileRef"
+> & {
   version: number
 }
 
@@ -182,25 +262,107 @@ export type CustomerDuplicateCheckParams = {
 
 // ── Bank / credit / KYC ──────────────────────────────────────────────────────
 
-/** `accountNumber` is masked by the API and write-only on save. */
+/** KYC document types accepted by `/kyc-entries` and create's `kyc[]`. */
+export type CustomerKycDocType =
+  | "AADHAAR"
+  | "PAN"
+  | "DRIVING_LICENCE"
+  | "VOTER_ID"
+  | "PASSPORT"
+
+/** Entry review lifecycle (`PENDING → VERIFIED`, `PENDING → REJECTED`, `VERIFIED → REVOKED`). */
+export type CustomerEntryStatus = "PENDING" | "VERIFIED" | "REJECTED" | "REVOKED"
+
+export type CustomerEntryKind = "kyc-entries" | "bank-entries"
+
+export type CustomerEntryAction = "verify" | "reject" | "revoke"
+
+/** Verification columns unwrapped at the top level of every entry response. */
+export type CustomerEntryVerification = {
+  status: CustomerEntryStatus
+  verificationMode: string
+  documentFileUuid?: string | null
+  createdBy?: string | null
+  createdAt?: string | null
+  verifiedBy?: string | null
+  verifiedAt?: string | null
+  rejectedBy?: string | null
+  rejectedAt?: string | null
+  rejectedReason?: string | null
+  revokedBy?: string | null
+  revokedAt?: string | null
+  revokeReason?: string | null
+}
+
+/** `GET …/kyc-entries` item. Numbers are always masked. */
+export type CustomerKycEntry = CustomerEntryVerification & {
+  uuid: string
+  docType: CustomerKycDocType
+  numberMasked: string
+  /** Null on rows created before the holder-name requirement. */
+  holderFirstName?: string | null
+  holderLastName?: string | null
+}
+
+/** `GET …/bank-entries` item. `accountMasked` is `X…X` + last 4 digits. */
+export type CustomerBankEntry = CustomerEntryVerification & {
+  uuid: string
+  holderName: string
+  bankName: string
+  ifsc: string
+  branch?: string | null
+  accountMasked: string
+  accountType?: string | null
+  proofFileUuid?: string | null
+}
+
+/** Serialized form of the first bank entry returned inside `CustomerResponse`. */
 export type CustomerBank = {
   accountHolder: string
   bankName: string
+  /** Masked (`X…X` + last 4). */
   accountNumber: string
   ifsc: string
-  branch: string
+  branch?: string | null
   upiId?: string | null
+  /** Always null on the summary — read `bankEntries[]` for the type. */
+  accountType?: string | null
   version?: number | null
 }
 
-export type UpsertCustomerBankRequest = {
+/** `CustomerEntryModels.KycInput` — holder names are required on every create path. */
+export type CustomerKycInput = {
+  docType: CustomerKycDocType
+  number: string
+  holderFirstName: string
+  holderLastName: string
+  /** with-files only: must reference an uploaded/attached document. */
+  documentClientRef?: string
+}
+
+/** `CustomerLifecycleModels.Bank` / `CustomerEntryModels.BankInput`. */
+export type CustomerBankInput = {
   accountHolder: string
   bankName: string
+  /** 9–18 digits. Write-only; responses always mask it. */
   accountNumber: string
   ifsc: string
-  branch: string
-  upiId?: string
-  version?: number
+  branch?: string
+  /** Optional, ≤30 chars, letters/spaces/underscores only. */
+  accountType?: string
+  /**
+   * Optional. JSON create only: must be an `attachments` fileRef whose stored
+   * document type is `BANK_PROOF`. On with-files it must match the `clientRef`
+   * of a `documents[]` entry with `documentType: "BANK_PROOF"`.
+   */
+  proofClientRef?: string
+}
+
+/** `CustomerLifecycleModels.Credit` — required on create only. */
+export type CustomerCreditInput = {
+  creditLimit: number
+  creditDays: number
+  openingBalance?: number
 }
 
 export type CustomerCredit = {
@@ -217,30 +379,14 @@ export type UpsertCustomerCreditRequest = {
   version?: number
 }
 
-export type KycDocumentStatus = "PENDING" | "VERIFIED" | "REJECTED"
-
-export type CustomerKycDocument = {
-  uuid: string
-  kycDocumentTypeCode: string
-  documentNumber: string
-  remarks?: string | null
-  fileRef?: string | null
-  status: KycDocumentStatus
-}
-
-export type SaveCustomerKycRequest = {
-  kycDocumentTypeCode: string
-  documentNumber: string
-  remarks?: string
-  fileRef?: string
-  /** Customer row version (KYC mutations lock the customer, not the document). */
-  version?: number
-}
-
-export type SaveCustomerKycStatusRequest = {
-  status: "VERIFIED" | "REJECTED"
-  remarks?: string
-  version?: number
+/** With-files response attachment (JSON routes return plain fileRef UUIDs). */
+export type CustomerAttachment = {
+  fileRef: string
+  fileName: string
+  contentType: string
+  size: number
+  documentType: string
+  documentTypeOther?: string | null
 }
 
 // ── Classification masters ───────────────────────────────────────────────────
@@ -264,6 +410,8 @@ export type CustomerLookupType =
   | "SHOP_SIZE"
   | "MONTHLY_POTENTIAL"
   | "PREFERRED_LANGUAGE"
+  | "BANK_NAME"
+  | "ACCOUNT_TYPE"
 
 export type CustomerType = {
   uuid: string

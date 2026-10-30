@@ -41,6 +41,8 @@ type Props<T> = {
   searchPlaceholder?: string
   /** Called as the user types (parent debounces + refetches) */
   onSearchChange?: (query: string) => void
+  /** Custom filter function for client-side filtering. Defaults to null (no filtering). */
+  filter?: ((item: ComboboxOption, inputValue: string, itemToString?: (item: ComboboxOption) => string) => boolean) | null
 }
 
 /**
@@ -59,6 +61,7 @@ export function EntityCombobox<T>({
   placeholder = "Select an option",
   searchPlaceholder = "Search...",
   onSearchChange,
+  filter = null,
 }: Props<T>) {
   const [inputValue, setInputValue] = React.useState("")
 
@@ -96,7 +99,7 @@ export function EntityCombobox<T>({
         onSearchChange?.("")
       }}
       itemToStringLabel={(item: ComboboxOption | null) => item?.label ?? ""}
-      filter={null}
+      filter={filter}
     >
       <ComboboxTrigger
         className={cn(

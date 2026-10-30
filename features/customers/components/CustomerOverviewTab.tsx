@@ -4,7 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { formatDateTime, formatReference } from "@/lib/format"
-import type { CustomerResponse } from "../api/customer.types"
+import type {
+  CustomerEntryStatus,
+  CustomerResponse,
+  GstCategory,
+} from "../api/customer.types"
 
 function Field({
   label,
@@ -54,6 +58,35 @@ const SOURCE_LABELS: Record<string, string> = {
   EMPLOYEE: "Field employee",
   DISTRIBUTOR: "Distributor",
   SELF_REGISTRATION: "Self registration",
+  LOYALTY: "Loyalty signup",
+}
+
+const inr = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+})
+
+const number = new Intl.NumberFormat("en-IN")
+
+const GST_CATEGORY_LABELS: Record<GstCategory, string> = {
+  REGULAR: "Regular",
+  COMPOSITION: "Composition",
+  BOTH: "Regular & composition",
+}
+
+function EntryStatusBadge({ status }: { status: CustomerEntryStatus }) {
+  const variant =
+    status === "VERIFIED"
+      ? "default"
+      : status === "PENDING"
+        ? "secondary"
+        : "destructive"
+  return (
+    <Badge variant={variant}>
+      {status === "REVOKED" ? "Revoked" : status.charAt(0) + status.slice(1).toLowerCase()}
+    </Badge>
+  )
 }
 
 export function CustomerOverviewTab({
@@ -89,6 +122,22 @@ export function CustomerOverviewTab({
     names.class,
     names.group,
   ].some(Boolean)
+
+  const kycEntries = customer.kycEntries ?? []
+  const bankEntries = customer.bankEntries ?? []
+  const verifiedKycCount = kycEntries.filter(
+    (entry) => entry.status === "VERIFIED"
+  ).length
+  const pendingKycCount = kycEntries.filter(
+    (entry) => entry.status === "PENDING"
+  ).length
+  const activeBankEntry =
+    bankEntries.find((entry) => entry.status === "VERIFIED") ??
+    bankEntries.find((entry) => entry.status === "PENDING")
+  const gstNumber = customer.gstNumber ?? customer.gstin
+  const gstCategory = customer.gstCategory
+    ? GST_CATEGORY_LABELS[customer.gstCategory]
+    : undefined
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -156,11 +205,36 @@ export function CustomerOverviewTab({
         <CardContent>
           <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             <Field label="Business Type" value={names.businessType} />
-            <Field label="Shop Size" value={names.shopSize} />
-            <Field label="Monthly Potential" value={names.monthlyPotential} />
+            <Field
+              label="Shop Size"
+              value={
+                customer.shopSizeSqFt != null
+                  ? `${number.format(customer.shopSizeSqFt)} sq ft`
+                  : undefined
+              }
+            />
+            <Field
+              label="Monthly Potential"
+              value={
+                customer.monthlyPotential != null
+                  ? inr.format(customer.monthlyPotential)
+                  : undefined
+              }
+            />
             <Field label="Established Year" value={customer.establishedYear} />
+            <Field
+              label="Registration Number"
+              value={customer.registrationNumber}
+              mono
+            />
             <Field label="Shop Hours" value={shopHours} />
             <Field label="Preferred Language" value={names.preferredLanguage} />
+            <Field
+              label="Brands Stocked"
+              value={customer.brandsStocked?.length ? customer.brandsStocked.join(", ") : undefined}
+              className="sm:col-span-2"
+              multiline
+            />
           </dl>
           {hasClassification ? (
             <div className="mt-4 border-t pt-4">
@@ -200,8 +274,53 @@ export function CustomerOverviewTab({
                     : "Unregistered"}
                 </Badge>
               </BadgeField>
-              <Field label="GSTIN" value={customer.gstin} mono />
+              <Field label="GST Category" value={gstCategory} />
+              <Field label="GSTIN" value={gstNumber} mono />
               <Field label="PAN" value={customer.pan} mono />
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Verification &amp; credit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Field
+                label="KYC entries"
+                value={
+                  kycEntries.length
+                    ? `${verifiedKycCount} verified · ${kycEntries.length} total`
+                    : "None on file"
+                }
+              />
+              <BadgeField label="Pending KYC">
+                {pendingKycCount > 0 ? (
+                  <EntryStatusBadge status="PENDING" />
+                ) : (
+                  <span className="text-sm text-muted-foreground">None</span>
+                )}
+              </BadgeField>
+              <BadgeField label="Bank account">
+                {activeBankEntry ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <EntryStatusBadge status={activeBankEntry.status} />
+                    <span className="truncate text-sm text-muted-foreground">
+                      {activeBankEntry.bankName}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    Not on file
+                  </span>
+                )}
+              </BadgeField>
+              <BadgeField label="Credit terms">
+                <Badge variant={customer.hasCredit ? "default" : "secondary"}>
+                  {customer.hasCredit ? "Configured" : "Not set"}
+                </Badge>
+              </BadgeField>
             </dl>
           </CardContent>
         </Card>

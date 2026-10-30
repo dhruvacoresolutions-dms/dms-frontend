@@ -6,6 +6,17 @@ import { getApiError, type FieldErrorDetail } from "./api-error"
  * Many endpoints return an empty list; in that case the form falls back to the
  * toast message from `getApiErrorMessage`.
  */
+/**
+ * Maps an API field path onto a react-hook-form path.
+ *
+ * The API uses dotted/indexed names (`kyc[0].holderFirstName`) and prefixes
+ * with-files payloads with `data.`; react-hook-form expects `kyc.0.holderFirstName`
+ * and no envelope prefix.
+ */
+function normalizeFieldPath(field: string) {
+  return field.trim().replace(/^data\./, "").replace(/\[(\d+)\]/g, ".$1")
+}
+
 export function getApiFieldErrors(error: unknown): FieldErrorDetail[] {
   return getApiError(error)?.errors ?? []
 }
@@ -25,7 +36,7 @@ export function applyApiFieldErrors<T extends FieldValues>(
   let applied = false
   for (const fieldError of fieldErrors) {
     if (!fieldError?.field || !fieldError.message) continue
-    setError(fieldError.field as Path<T>, {
+    setError(normalizeFieldPath(fieldError.field) as Path<T>, {
       type: "server",
       message: fieldError.message,
     })

@@ -13,10 +13,9 @@ import type {
   CustomerMasterResponse,
 } from "../api/customer.types"
 
-const toOption = (item: CustomerMasterResponse): ComboboxOption => ({
-  id: item.uuid,
-  label: item.name,
-  sub: item.code,
+const toOption = (row: CustomerMasterResponse): ComboboxOption => ({
+  id: row.uuid,
+  label: row.name,
 })
 
 type MasterProps = {
@@ -256,13 +255,12 @@ export function CustomerLookupCombobox({
       visibleRows.map((row) => ({
         id: row.code,
         label: row.name,
-        sub: row.code,
       })),
     [visibleRows]
   )
   const selected = React.useMemo(() => {
     const match = rows.find((row) => row.code === value)
-    return match ? { id: match.code, label: match.name, sub: match.code } : null
+    return match ? { id: match.code, label: match.name } : null
   }, [rows, value])
 
   return (

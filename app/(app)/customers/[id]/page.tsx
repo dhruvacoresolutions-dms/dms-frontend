@@ -131,8 +131,10 @@ function CustomerDetailContent({
 
       {editable ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          This customer is in {customer.lifecycleStatus.toLowerCase()}. Bank,
-          credit, and KYC details can be changed until it is submitted.
+          This customer is in {customer.lifecycleStatus.toLowerCase()}. Profile
+          edits, credit terms, and KYC/bank entries can still be changed until
+          it is submitted. Approval needs one verified KYC entry, no pending KYC
+          entries, and one verified bank account.
         </div>
       ) : null}
 
@@ -167,8 +169,7 @@ function CustomerDetailContent({
           <CustomerBankSection
             companyUuid={companyUuid}
             customerUuid={id}
-            customerVersion={customer.version}
-            editable={editable}
+            canAdd={customer.lifecycleStatus !== "REJECTED"}
           />
         </TabsContent>
         <TabsContent value="credit" className="pt-3">
@@ -183,8 +184,7 @@ function CustomerDetailContent({
           <CustomerKycSection
             companyUuid={companyUuid}
             customerUuid={id}
-            customerVersion={customer.version}
-            editable={editable}
+            canAdd={customer.lifecycleStatus !== "REJECTED"}
           />
         </TabsContent>
         <TabsContent value="history" className="pt-3">

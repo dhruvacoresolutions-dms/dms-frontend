@@ -1,25 +1,30 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { deleteCustomerKycDocument } from "../api/customer.api"
+import { addCustomerBankEntry } from "../api/customer.api"
 import { customerKeys } from "../api/customer-keys"
+import type { CustomerBankInput } from "../api/customer.types"
 
-export function useDeleteCustomerKycDocument(companyUuid: string) {
+/**
+ * Adds a PENDING bank entry. The optional proof becomes the entry's
+ * `proofFileUuid` (PNG/JPEG/PDF, max 5 MB, part name `proof`).
+ */
+export function useAddCustomerBankEntry(companyUuid: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({
       customerUuid,
-      documentUuid,
-      version,
+      input,
+      proof,
     }: {
       customerUuid: string
-      documentUuid: string
-      version?: number
-    }) => deleteCustomerKycDocument(companyUuid, customerUuid, documentUuid, version),
+      input: CustomerBankInput
+      proof?: File | null
+    }) => addCustomerBankEntry(companyUuid, customerUuid, input, proof),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: customerKeys.kyc(companyUuid, variables.customerUuid),
+        queryKey: customerKeys.bankEntries(companyUuid, variables.customerUuid),
       })
       queryClient.invalidateQueries({
         queryKey: customerKeys.detail(companyUuid, variables.customerUuid),

@@ -1,26 +1,32 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { createCustomerKycDocument } from "../api/customer.api"
+import { addCustomerKycEntry } from "../api/customer.api"
 import { customerKeys } from "../api/customer-keys"
-import type { SaveCustomerKycRequest } from "../api/customer.types"
+import type { CustomerKycInput } from "../api/customer.types"
 
-export function useCreateCustomerKycDocument(companyUuid: string) {
+/**
+ * Adds a PENDING KYC entry. The optional file becomes the entry's proof
+ * document (PNG/JPEG/PDF, max 5 MB, part name `document`).
+ */
+export function useAddCustomerKycEntry(companyUuid: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({
       customerUuid,
       input,
+      document,
     }: {
       customerUuid: string
-      input: SaveCustomerKycRequest
-    }) => createCustomerKycDocument(companyUuid, customerUuid, input),
+      input: CustomerKycInput
+      document?: File | null
+    }) => addCustomerKycEntry(companyUuid, customerUuid, input, document),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: customerKeys.kyc(companyUuid, variables.customerUuid),
       })
-      // KYC writes bump the customer version (optimistic lock).
+      // Entry writes bump the customer version and its KYC counters.
       queryClient.invalidateQueries({
         queryKey: customerKeys.detail(companyUuid, variables.customerUuid),
       })
