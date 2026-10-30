@@ -19,7 +19,6 @@ type Props = {
 const toOption = (type: CustomerType): ComboboxOption => ({
   id: type.uuid,
   label: type.name,
-  sub: type.code,
 })
 
 /** Global customer types (`RETAILER`, `MECHANIC`). */

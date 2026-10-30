@@ -4,13 +4,18 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { PageResponse } from "@/features/companies/api/company.types"
 import type {
   CustomerBank,
+  CustomerBankEntry,
+  CustomerBankInput,
   CustomerClassificationOptions,
   CustomerClassificationSelection,
   CustomerCredit,
   CustomerDuplicateCheck,
   CustomerDuplicateCheckParams,
+  CustomerEntryAction,
+  CustomerEntryKind,
   CustomerHistoryEntry,
-  CustomerKycDocument,
+  CustomerKycEntry,
+  CustomerKycInput,
   CustomerLifecycleAction,
   CustomerLifecycleRequest,
   CustomerListParams,
@@ -33,11 +38,8 @@ import type {
   CustomerImportDetail,
   CustomerImportResult,
   CustomerImportSummary,
-  SaveCustomerKycRequest,
-  SaveCustomerKycStatusRequest,
   SaveCustomerPincodeMappingRequest,
   UpdateCustomerRequest,
-  UpsertCustomerBankRequest,
   UpsertCustomerCreditRequest,
 } from "./customer.types"
 
@@ -159,19 +161,6 @@ export async function getCustomerBank(
   return data.data
 }
 
-export async function upsertCustomerBank(
-  companyUuid: string,
-  customerUuid: string,
-  input: UpsertCustomerBankRequest
-) {
-  const { data } = await apiClient.put<ApiSuccessResponse<CustomerBank>>(
-    `${customersUrl(companyUuid)}/${customerUuid}/bank`,
-    input,
-    { headers: headers(companyUuid) }
-  )
-  return data.data
-}
-
 export async function getCustomerCredit(
   companyUuid: string,
   customerUuid: string
@@ -197,71 +186,105 @@ export async function upsertCustomerCredit(
   return data.data
 }
 
-export async function getCustomerKycDocuments(
+// ── KYC / bank entries (reviewable, multipart add) ──────────────────────────
+// `PUT …/bank` and every `…/kyc-documents…` route are retired (410).
+
+const entryUrl = (
+  companyUuid: string,
+  customerUuid: string,
+  kind: CustomerEntryKind
+) => `${customersUrl(companyUuid)}/${customerUuid}/${kind}`
+
+/** `data` part of a multipart entry add; the API expects a JSON object part. */
+function entryForm(input: object, file?: File | null, filePart = "document") {
+  const form = new FormData()
+  form.append(
+    "data",
+    new Blob([JSON.stringify(input)], { type: "application/json" })
+  )
+  if (file) form.append(filePart, file, file.name)
+  return form
+}
+
+export async function getCustomerKycEntries(
   companyUuid: string,
   customerUuid: string
 ) {
-  const { data } = await apiClient.get<
-    ApiSuccessResponse<CustomerKycDocument[]>
-  >(`${customersUrl(companyUuid)}/${customerUuid}/kyc-documents`, {
-    headers: headers(companyUuid),
-  })
+  const { data } = await apiClient.get<ApiSuccessResponse<CustomerKycEntry[]>>(
+    entryUrl(companyUuid, customerUuid, "kyc-entries"),
+    { headers: headers(companyUuid) }
+  )
   return data.data
 }
 
-export async function createCustomerKycDocument(
+export async function addCustomerKycEntry(
   companyUuid: string,
   customerUuid: string,
-  input: SaveCustomerKycRequest
+  input: CustomerKycInput,
+  document?: File | null
+) {
+  const { data } = await apiClient.post<ApiSuccessResponse<CustomerKycEntry>>(
+    entryUrl(companyUuid, customerUuid, "kyc-entries"),
+    entryForm(input, document),
+    { headers: headers(companyUuid) }
+  )
+  return data.data
+}
+
+export async function getCustomerBankEntries(
+  companyUuid: string,
+  customerUuid: string
+) {
+  const { data } = await apiClient.get<ApiSuccessResponse<CustomerBankEntry[]>>(
+    entryUrl(companyUuid, customerUuid, "bank-entries"),
+    { headers: headers(companyUuid) }
+  )
+  return data.data
+}
+
+export async function addCustomerBankEntry(
+  companyUuid: string,
+  customerUuid: string,
+  input: CustomerBankInput,
+  proof?: File | null
+) {
+  const { data } = await apiClient.post<ApiSuccessResponse<CustomerBankEntry>>(
+    entryUrl(companyUuid, customerUuid, "bank-entries"),
+    entryForm(input, proof, "proof"),
+    { headers: headers(companyUuid) }
+  )
+  return data.data
+}
+
+/** `reject`/`revoke` require a reason; `verify` takes no body. */
+export async function reviewCustomerEntry(
+  companyUuid: string,
+  customerUuid: string,
+  kind: CustomerEntryKind,
+  entryUuid: string,
+  action: CustomerEntryAction,
+  reason?: string
 ) {
   const { data } = await apiClient.post<
-    ApiSuccessResponse<CustomerKycDocument>
-  >(`${customersUrl(companyUuid)}/${customerUuid}/kyc-documents`, input, {
-    headers: headers(companyUuid),
-  })
-  return data.data
-}
-
-export async function updateCustomerKycDocument(
-  companyUuid: string,
-  customerUuid: string,
-  documentUuid: string,
-  input: SaveCustomerKycRequest
-) {
-  const { data } = await apiClient.put<ApiSuccessResponse<CustomerKycDocument>>(
-    `${customersUrl(companyUuid)}/${customerUuid}/kyc-documents/${documentUuid}`,
-    input,
-    { headers: headers(companyUuid) }
-  )
-  return data.data
-}
-
-export async function deleteCustomerKycDocument(
-  companyUuid: string,
-  customerUuid: string,
-  documentUuid: string,
-  version?: number
-) {
-  await apiClient.delete(
-    `${customersUrl(companyUuid)}/${customerUuid}/kyc-documents/${documentUuid}`,
-    { params: { version }, headers: headers(companyUuid) }
-  )
-}
-
-export async function updateCustomerKycStatus(
-  companyUuid: string,
-  customerUuid: string,
-  documentUuid: string,
-  input: SaveCustomerKycStatusRequest
-) {
-  const { data } = await apiClient.patch<
-    ApiSuccessResponse<CustomerKycDocument>
+    ApiSuccessResponse<CustomerKycEntry | CustomerBankEntry>
   >(
-    `${customersUrl(companyUuid)}/${customerUuid}/kyc-documents/${documentUuid}/status`,
-    input,
+    `${entryUrl(companyUuid, customerUuid, kind)}/${entryUuid}/${action}`,
+    action === "verify" ? undefined : { reason },
     { headers: headers(companyUuid) }
   )
   return data.data
+}
+
+/** Raw bytes of a previously uploaded customer file (shop image / document). */
+export async function downloadCustomerFile(
+  companyUuid: string,
+  fileRef: string
+) {
+  const { data } = await apiClient.get<Blob>(
+    `${customersUrl(companyUuid)}/files/${fileRef}`,
+    { headers: headers(companyUuid), responseType: "blob" }
+  )
+  return data
 }
 
 // ── Classification masters ───────────────────────────────────────────────────

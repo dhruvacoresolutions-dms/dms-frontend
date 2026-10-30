@@ -19,7 +19,12 @@ export const customerKeys = {
   credit: (companyUuid: string, customerUuid: string) =>
     [...customerKeys.detail(companyUuid, customerUuid), "credit"] as const,
   kyc: (companyUuid: string, customerUuid: string) =>
-    [...customerKeys.detail(companyUuid, customerUuid), "kyc"] as const,
+    [...customerKeys.detail(companyUuid, customerUuid), "kyc-entries"] as const,
+  bankEntries: (companyUuid: string, customerUuid: string) =>
+    [
+      ...customerKeys.detail(companyUuid, customerUuid),
+      "bank-entries",
+    ] as const,
   duplicate: (companyUuid: string, params?: Record<string, unknown>) =>
     [...customerKeys.all(companyUuid), "duplicate", params] as const,
 } as const

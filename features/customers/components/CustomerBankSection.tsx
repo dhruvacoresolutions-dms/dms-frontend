@@ -1,268 +1,331 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Landmark, Pencil, Plus } from "lucide-react"
+import {
+  CheckCircle2,
+  FileText,
+  Landmark,
+  MoreHorizontal,
+  Plus,
+  Undo2,
+  XCircle,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FieldGroup } from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
+import { Badge } from "@/components/ui/badge"
+import { DataTable, type DataTableColumn } from "@/components/common/DataTable"
+import { StatusBadge } from "@/components/common/StatusBadge"
 import {
-  FormTextField,
-  requiredLabel,
-} from "@/components/common/form-fields"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { PermissionGate } from "@/components/auth/PermissionGate"
+import { usePermission } from "@/hooks/use-permission"
 import { getApiErrorMessage } from "@/lib/api/api-error"
-import { applyApiFieldErrors } from "@/lib/api/form-errors"
-import { optionalText, requiredText } from "@/lib/validations/master-data"
+import { downloadBlob } from "@/lib/file-download"
+import { formatDateTime } from "@/lib/format"
 import { PERMISSIONS } from "@/lib/permissions"
-import { useCustomerBank } from "../hooks/use-customer-bank"
-import { useUpsertCustomerBank } from "../hooks/use-upsert-customer-bank"
-import {
-  customerBankAccount,
-  customerIfsc,
-} from "../lib/customer-validation"
+import { useAuthStore } from "@/stores/auth-store"
+import { downloadCustomerFile } from "../api/customer.api"
+import { useCustomerBankEntries } from "../hooks/use-customer-bank-entries"
+import { CustomerBankEntryDialog } from "./CustomerBankEntryDialog"
+import { CustomerEntryReviewDialog } from "./CustomerEntryReviewDialog"
+import type {
+  CustomerBankEntry,
+  CustomerEntryAction,
+} from "../api/customer.types"
 
-const bankSchema = z.object({
-  // `CustomerLifecycleModels.Bank` uses `@NotBlank @Size(max=150)` only — bank
-  // and branch names legitimately contain punctuation ("HDFC Bank Ltd.").
-  accountHolder: requiredText("Account holder", 150),
-  bankName: requiredText("Bank name", 150),
-  accountNumber: customerBankAccount(),
-  ifsc: customerIfsc(),
-  branch: requiredText("Branch", 150),
-  upiId: optionalText("UPI ID", 200),
-})
-
-type BankFormValues = z.infer<typeof bankSchema>
-
-function Field({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{value || "—"}</dd>
-    </div>
-  )
+const REVIEWABLE: Record<string, CustomerEntryAction[]> = {
+  PENDING: ["verify", "reject"],
+  VERIFIED: ["revoke"],
+  REJECTED: [],
+  REVOKED: [],
 }
+
+const ACTION_LABELS: Record<CustomerEntryAction, string> = {
+  verify: "Verify",
+  reject: "Reject",
+  revoke: "Revoke",
+}
+
+const ACTION_ICONS = {
+  verify: CheckCircle2,
+  reject: XCircle,
+  revoke: Undo2,
+} as const
 
 type Props = {
   companyUuid: string
   customerUuid: string
-  /** Customer row version — bank writes lock the customer row. */
-  customerVersion: number
-  /** Bank data can only be changed while the customer is DRAFT/REWORK. */
-  editable: boolean
+  /** Adding is blocked only for REJECTED customers (not by DRAFT/REWORK). */
+  canAdd: boolean
 }
 
+/**
+ * `GET …/bank-entries` — active entry first, then newest. One PENDING or
+ * VERIFIED entry may exist at a time; proof files are downloadable.
+ */
 export function CustomerBankSection({
   companyUuid,
   customerUuid,
-  customerVersion,
-  editable,
+  canAdd,
 }: Props) {
-  const { data: account, isLoading, error, refetch } = useCustomerBank(
+  const { data: entries, isLoading, error, refetch } = useCustomerBankEntries(
     companyUuid,
     customerUuid
   )
-  const upsertMutation = useUpsertCustomerBank(companyUuid)
-  const [open, setOpen] = useState(false)
+  const { has } = usePermission()
+  const currentUserUuid = useAuthStore((s) => s.session?.user?.userUuid)
+  const canReview = has(PERMISSIONS.CUSTOMER.APPROVE)
 
-  const { control, handleSubmit, reset, setError } = useForm<BankFormValues>({
-    resolver: zodResolver(bankSchema),
-    defaultValues: {
-      accountHolder: "",
-      bankName: "",
-      accountNumber: "",
-      ifsc: "",
-      branch: "",
-      upiId: "",
-    },
-  })
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [downloading, setDownloading] = useState<string | null>(null)
+  const [review, setReview] = useState<{
+    entry: CustomerBankEntry
+    action: CustomerEntryAction
+  } | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-    reset({
-      accountHolder: account?.accountHolder ?? "",
-      bankName: account?.bankName ?? "",
-      // Write-only: never pre-fill the masked number.
-      accountNumber: "",
-      ifsc: account?.ifsc ?? "",
-      branch: account?.branch ?? "",
-      upiId: account?.upiId ?? "",
-    })
-  }, [open, account, reset])
+  const rows = entries ?? []
+  const active = rows.find(
+    (entry) => entry.status === "PENDING" || entry.status === "VERIFIED"
+  )
+  const verified = rows.some(
+    (entry) => entry.status === "VERIFIED" && entry.uuid === active?.uuid
+  )
 
-  const onSubmit = (values: BankFormValues) => {
-    upsertMutation.mutate(
+  const download = async (fileRef: string, fileName: string) => {
+    setDownloading(fileRef)
+    try {
+      const blob = await downloadCustomerFile(companyUuid, fileRef)
+      downloadBlob(blob, fileName)
+    } catch (downloadError) {
+      toast.error(getApiErrorMessage(downloadError, "Could not download proof"))
+    } finally {
+      setDownloading(null)
+    }
+  }
+
+  const columns = useMemo<DataTableColumn<CustomerBankEntry>[]>(
+    () => [
       {
-        customerUuid,
-        input: {
-          accountHolder: values.accountHolder.trim(),
-          bankName: values.bankName.trim(),
-          accountNumber: values.accountNumber.trim(),
-          ifsc: values.ifsc.trim().toUpperCase(),
-          branch: values.branch.trim(),
-          upiId: values.upiId?.trim() || undefined,
-          version: customerVersion,
-        },
+        id: "account",
+        header: "Account",
+        cell: ({ row }) => (
+          <div className="min-w-0">
+            <p className="font-medium">{row.original.bankName}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {row.original.holderName}
+            </p>
+          </div>
+        ),
       },
       {
-        onSuccess: () => {
-          toast.success("Bank account saved")
-          setOpen(false)
+        id: "number",
+        header: "Number",
+        cell: ({ row }) => (
+          <div className="flex flex-col gap-1">
+            <span className="font-mono text-sm">
+              {row.original.accountMasked}
+            </span>
+            {row.original.accountType ? (
+              <Badge variant="secondary" className="w-fit">
+                {row.original.accountType}
+              </Badge>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "ifsc",
+        header: "IFSC / Branch",
+        cell: ({ row }) => (
+          <div className="min-w-0">
+            <p className="font-mono text-sm">{row.original.ifsc}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {row.original.branch || "—"}
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "proof",
+        header: "Proof",
+        cell: ({ row }) =>
+          row.original.proofFileUuid ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8"
+              disabled={downloading === row.original.proofFileUuid}
+              onClick={() =>
+                void download(
+                  row.original.proofFileUuid as string,
+                  `${row.original.bankName}-proof`
+                )
+              }
+            >
+              <FileText className="mr-1.5 size-3.5" />
+              {downloading === row.original.proofFileUuid
+                ? "Downloading..."
+                : "View"}
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">None</span>
+          ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        id: "created",
+        header: "Added",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {formatDateTime(row.original.createdAt)}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => {
+          const entry = row.original
+          const actions = REVIEWABLE[entry.status] ?? []
+          if (!actions.length) return null
+          const isOwn = !!currentUserUuid && entry.createdBy === currentUserUuid
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="cursor-pointer"
+                aria-label="Bank entry actions"
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-48">
+                <PermissionGate permission={PERMISSIONS.CUSTOMER.APPROVE}>
+                  {actions.map((action, index) => {
+                    const Icon = ACTION_ICONS[action]
+                    return (
+                      <div key={action}>
+                        {index > 0 ? <DropdownMenuSeparator /> : null}
+                        <DropdownMenuItem
+                          variant={
+                            action === "verify" ? "default" : "destructive"
+                          }
+                          disabled={!canReview || isOwn}
+                          title={
+                            isOwn
+                              ? "You cannot review an entry you created."
+                              : undefined
+                          }
+                          onClick={() => setReview({ entry, action })}
+                        >
+                          <Icon className="mr-2 size-4" />
+                          {ACTION_LABELS[action]}
+                        </DropdownMenuItem>
+                      </div>
+                    )
+                  })}
+                </PermissionGate>
+                {entry.rejectedReason || entry.revokeReason ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled className="max-w-64 text-xs">
+                      {entry.rejectedReason ?? entry.revokeReason}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
         },
-        onError: (err) => {
-          applyApiFieldErrors(err, setError)
-          toast.error(getApiErrorMessage(err, "Failed to save bank account"))
-        },
-      }
-    )
-  }
+      },
+    ],
+    // `download` only depends on the company + setter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canReview, currentUserUuid, downloading, companyUuid]
+  )
 
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Landmark className="size-5" /> Bank Account
+            <Landmark className="size-5" /> Bank account
           </CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Settlement account used for payouts and collections.
+            {active
+              ? `${verified ? "Verified" : "Pending"} · ${active.bankName} ${active.accountMasked}`
+              : "No active bank account yet."}
+            {rows.length > 1 ? ` · ${rows.length} entries` : ""}
           </p>
         </div>
-        <PermissionGate permission={PERMISSIONS.CUSTOMER.UPDATE}>
+        <PermissionGate permission={PERMISSIONS.CUSTOMER.MANAGE}>
           <Button
             variant="outline"
-            onClick={() => setOpen(true)}
-            disabled={!editable || isLoading || !!error}
+            onClick={() => setDialogOpen(true)}
+            disabled={!canAdd || !!active}
             title={
-              editable
-                ? undefined
-                : "Bank details can only be edited while the customer is in DRAFT or REWORK."
+              !canAdd
+                ? "Bank entries cannot be added to a rejected customer."
+                : active
+                  ? "Only one pending or verified account is allowed. Reject the active entry first."
+                  : undefined
             }
           >
-            {account ? (
-              <Pencil className="mr-2 size-4" />
-            ) : (
-              <Plus className="mr-2 size-4" />
-            )}
-            {account ? "Edit" : "Add account"}
+            <Plus className="mr-2 size-4" />
+            Add account
           </Button>
         </PermissionGate>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Spinner />
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center gap-3 py-4 text-sm">
-            <p className="text-muted-foreground">
-              {getApiErrorMessage(error, "Failed to load bank account")}
-            </p>
-            <Button variant="outline" size="sm" onClick={() => void refetch()}>
-              Retry
-            </Button>
-          </div>
-        ) : !account ? (
-          <p className="text-sm text-muted-foreground">
-            No bank account on record yet.
-          </p>
-        ) : (
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Bank Name" value={account.bankName} />
-            <Field label="Account Holder" value={account.accountHolder} />
-            <Field label="Account Number" value={account.accountNumber} />
-            <Field label="IFSC" value={account.ifsc} />
-            <Field label="Branch" value={account.branch} />
-            <Field label="UPI ID" value={account.upiId} />
-          </dl>
-        )}
+        <DataTable
+          columns={columns}
+          data={rows}
+          getRowId={(entry) => entry.uuid}
+          isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          empty={{
+            icon: Landmark,
+            title: "No bank account",
+            description:
+              "Add the settlement account and attach a proof (cancelled cheque or statement).",
+          }}
+        />
+        <p className="mt-3 text-xs text-muted-foreground">
+          Approval needs one VERIFIED bank account. Only one pending or verified
+          entry is allowed at a time.
+        </p>
       </CardContent>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{account ? "Edit bank account" : "Add bank account"}</DialogTitle>
-            <DialogDescription>
-              The account number is write-only; re-enter it on every save.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-4"
-            noValidate
-          >
-            <FieldGroup>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormTextField
-                  control={control}
-                  name="bankName"
-                  label={requiredLabel("Bank Name")}
-                  maxLength={150}
-                />
-                <FormTextField
-                  control={control}
-                  name="accountHolder"
-                  label={requiredLabel("Account Holder")}
-                  maxLength={150}
-                />
-                <FormTextField
-                  control={control}
-                  name="accountNumber"
-                  label={requiredLabel("Account Number")}
-                  maxLength={20}
-                  autoComplete="off"
-                  placeholder="6-20 digits"
-                />
-                <FormTextField
-                  control={control}
-                  name="ifsc"
-                  label={requiredLabel("IFSC")}
-                  maxLength={11}
-                  placeholder="HDFC0001234"
-                />
-                <FormTextField
-                  control={control}
-                  name="branch"
-                  label={requiredLabel("Branch")}
-                  maxLength={150}
-                />
-                <FormTextField
-                  control={control}
-                  name="upiId"
-                  label="UPI ID"
-                  maxLength={200}
-                  placeholder="shop@upi"
-                />
-              </div>
-            </FieldGroup>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={upsertMutation.isPending}>
-                {upsertMutation.isPending ? "Saving..." : "Save account"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CustomerBankEntryDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        companyUuid={companyUuid}
+        customerUuid={customerUuid}
+      />
+
+      <CustomerEntryReviewDialog
+        open={!!review}
+        onOpenChange={(open) => !open && setReview(null)}
+        companyUuid={companyUuid}
+        customerUuid={customerUuid}
+        kind="bank-entries"
+        entryUuid={review?.entry.uuid}
+        entryLabel={
+          review
+            ? `${review.entry.bankName} ${review.entry.accountMasked}`
+            : undefined
+        }
+        action={review?.action ?? null}
+      />
     </Card>
   )
 }
