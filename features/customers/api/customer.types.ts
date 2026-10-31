@@ -222,6 +222,18 @@ export type CustomerListParams = {
   size?: number
 }
 
+/**
+ * `GET …/customers?pendingMyApproval=true` query. The server forces
+ * `SUBMITTED`, sorts by `createdAt,desc` and scopes the result to the caller's
+ * reporting users (admins see every company customer). `status` is accepted but
+ * ignored, so it is not exposed here.
+ */
+export type CustomerApprovalQueueParams = {
+  q?: string
+  page?: number
+  size?: number
+}
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 /**

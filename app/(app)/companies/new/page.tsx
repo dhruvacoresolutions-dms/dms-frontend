@@ -615,7 +615,11 @@ export default function NewCompanyPage() {
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={createCompanyMutation.isPending}>
+              <Button
+                type="button"
+                onClick={() => void handleSubmit(onSubmit)()}
+                disabled={createCompanyMutation.isPending}
+              >
                 {createCompanyMutation.isPending ? "Creating..." : "Create Company"}
               </Button>
             )}

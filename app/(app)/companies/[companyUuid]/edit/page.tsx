@@ -646,7 +646,11 @@ export default function EditCompanyPage() {
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={updateMutation.isPending}>
+              <Button
+                type="button"
+                onClick={() => void handleSubmit(onSubmit)()}
+                disabled={updateMutation.isPending}
+              >
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             )}

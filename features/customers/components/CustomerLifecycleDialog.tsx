@@ -288,7 +288,9 @@ export function CustomerLifecycleDialog({
               territory.
             </p>
             {territoryError ? (
-              <p className="text-xs text-destructive">{territoryError}</p>
+              <p role="alert" className="text-xs text-destructive">
+                {territoryError}
+              </p>
             ) : null}
           </div>
         ) : null}
@@ -322,12 +324,16 @@ export function CustomerLifecycleDialog({
             aria-invalid={!!reasonError}
           />
           {reasonError ? (
-            <p className="text-xs text-destructive">{reasonError}</p>
+            <p role="alert" className="text-xs text-destructive">
+              {reasonError}
+            </p>
           ) : null}
         </div>
 
         {fieldError ? (
-          <p className="text-sm text-destructive">{fieldError}</p>
+          <p role="alert" className="text-sm text-destructive">
+            {fieldError}
+          </p>
         ) : null}
 
         <DialogFooter>

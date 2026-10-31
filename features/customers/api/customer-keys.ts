@@ -6,6 +6,14 @@ export const customerKeys = {
     [...customerKeys.all(companyUuid), "list"] as const,
   list: (companyUuid: string, params?: Record<string, unknown>) =>
     [...customerKeys.lists(companyUuid), params] as const,
+  /**
+   * Approver queue (`pendingMyApproval=true`). Nested under `lists` so the
+   * lifecycle mutation invalidation also refreshes it.
+   */
+  pendingApprovals: (companyUuid: string) =>
+    [...customerKeys.lists(companyUuid), "pending-approval"] as const,
+  pendingApproval: (companyUuid: string, params?: Record<string, unknown>) =>
+    [...customerKeys.pendingApprovals(companyUuid), params] as const,
   countList: (companyUuid: string, lifecycleStatus?: string) =>
     [...customerKeys.lists(companyUuid), "count", lifecycleStatus ?? "ALL"] as const,
   details: (companyUuid: string) =>

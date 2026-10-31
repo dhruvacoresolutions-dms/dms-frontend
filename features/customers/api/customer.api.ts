@@ -3,6 +3,7 @@ import type { ApiSuccessResponse } from "@/lib/api-client"
 import { useAuthStore } from "@/stores/auth-store"
 import type { PageResponse } from "@/features/companies/api/company.types"
 import type {
+  CustomerApprovalQueueParams,
   CustomerBank,
   CustomerBankEntry,
   CustomerBankInput,
@@ -73,6 +74,24 @@ export async function getCustomers(
   const { data } = await apiClient.get<
     ApiSuccessResponse<PageResponse<CustomerResponse>>
   >(customersUrl(companyUuid), { params, headers: headers(companyUuid) })
+  return data.data
+}
+
+/**
+ * Approver queue: `GET …/customers?pendingMyApproval=true`. Returns only
+ * SUBMITTED customers created by the caller's reports (every company customer
+ * for admins), newest first.
+ */
+export async function getPendingCustomerApprovals(
+  companyUuid: string,
+  params?: CustomerApprovalQueueParams
+) {
+  const { data } = await apiClient.get<
+    ApiSuccessResponse<PageResponse<CustomerResponse>>
+  >(customersUrl(companyUuid), {
+    params: { ...params, pendingMyApproval: true },
+    headers: headers(companyUuid),
+  })
   return data.data
 }
 
