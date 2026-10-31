@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -174,7 +175,7 @@ function CustomerApprovalsContent() {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="cursor-pointer"
+                className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Row actions"
               >
                 <MoreHorizontal className="size-4" />
@@ -191,10 +192,11 @@ function CustomerApprovalsContent() {
                 {transitions.length > 0 ? (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground">
-                      Review
-                    </DropdownMenuLabel>
-                    {transitions.map((t) => {
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        Review
+                      </DropdownMenuLabel>
+                      {transitions.map((t) => {
                       const blocked =
                         isCreator &&
                         (t.action === "approve" ||
@@ -221,6 +223,7 @@ function CustomerApprovalsContent() {
                         </DropdownMenuItem>
                       )
                     })}
+                    </DropdownMenuGroup>
                   </>
                 ) : null}
               </DropdownMenuContent>
