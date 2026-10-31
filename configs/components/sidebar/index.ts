@@ -13,6 +13,7 @@ import {
   Network,
   ShieldCheck,
   FileCheck,
+  ClipboardCheck,
   ShieldAlert,
   Upload,
   // Primary Management
@@ -151,6 +152,12 @@ export const organizationNav: MainNav = [
         url: "/customers",
         icon: UsersRound,
         permission: PERMISSIONS.CUSTOMER.VIEW,
+      },
+      {
+        title: "Customer Approvals",
+        url: "/customers/approvals",
+        icon: ClipboardCheck,
+        permission: PERMISSIONS.CUSTOMER.APPROVE,
       },
       {
         title: "Pincode Mappings",

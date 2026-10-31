@@ -801,7 +801,11 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
                     Cancel
                   </Button>
                 )}
-                <Button type="submit" disabled={isPending}>
+                <Button
+                  type="button"
+                  onClick={() => void handleSubmit(onSubmit, onInvalidSubmit)()}
+                  disabled={isPending}
+                >
                   {isPending
                     ? isEdit
                       ? "Saving..."

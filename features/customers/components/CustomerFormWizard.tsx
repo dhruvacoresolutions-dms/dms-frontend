@@ -47,6 +47,7 @@ import {
   FormSelectField,
   FormSwitchField,
   FormTextField,
+  FormTimeField,
   requiredLabel,
 } from "@/components/common/form-fields"
 import { getApiError, getApiErrorMessage } from "@/lib/api/api-error"
@@ -1187,6 +1188,9 @@ export function CustomerFormWizard({
       />
     )
 
+  if (isEdit && customer?.lifecycleStatus === "REJECTED")
+    return <ErrorState message="Rejected customers cannot be edited." />
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <form
@@ -1540,17 +1544,15 @@ export function CustomerFormWizard({
                       </FieldDescription>
                     </Field>
                   </div>
-                  <FormTextField
+                  <FormTimeField
                     control={control}
                     name="shopTimings.openTime"
                     label={requiredLabel("Opening Time")}
-                    type="time"
                   />
-                  <FormTextField
+                  <FormTimeField
                     control={control}
                     name="shopTimings.closeTime"
                     label={requiredLabel("Closing Time")}
-                    type="time"
                   />
                 </div>
               </FieldGroup>
@@ -1960,7 +1962,11 @@ export function CustomerFormWizard({
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={isPending || isCheckingDuplicate}>
+              <Button
+                type="button"
+                onClick={() => void handleSubmit(onSubmit, handleInvalid)()}
+                disabled={isPending || isCheckingDuplicate}
+              >
                 {isCheckingDuplicate
                   ? "Checking duplicates..."
                   : isPending

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
+  ClipboardCheck,
   Eye,
   Landmark,
   MoreHorizontal,
@@ -279,8 +280,8 @@ function CustomersContent() {
         header: "",
         cell: ({ row }) => {
           const c = row.original
-          const editable =
-            c.lifecycleStatus === "DRAFT" || c.lifecycleStatus === "REWORK"
+          // Only rejected customers are locked — approved rows stay editable.
+          const editable = c.lifecycleStatus !== "REJECTED"
           // Approve/reject/rework need CUSTOMER_APPROVE; submit/deactivate/
           // activate need CUSTOMER_MASTER_MANAGE.
           const transitions = lifecycleActionsFor(c.lifecycleStatus).filter(
@@ -363,11 +364,21 @@ function CustomersContent() {
         title="Customers"
         description="Retailers and mechanics with their lifecycle, territory and KYC readiness."
         action={
-          <PermissionGate permission={PERMISSIONS.CUSTOMER.CREATE}>
-            <Button onClick={() => router.push("/customers/new")}>
-              <Plus className="mr-2 size-4" /> Create Customer
-            </Button>
-          </PermissionGate>
+          <div className="flex flex-wrap items-center gap-2">
+            <PermissionGate permission={PERMISSIONS.CUSTOMER.APPROVE}>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/customers/approvals")}
+              >
+                <ClipboardCheck className="mr-2 size-4" /> Pending approvals
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.CUSTOMER.CREATE}>
+              <Button onClick={() => router.push("/customers/new")}>
+                <Plus className="mr-2 size-4" /> Create Customer
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 

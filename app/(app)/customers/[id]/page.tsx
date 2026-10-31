@@ -69,7 +69,12 @@ function CustomerDetailContent({
   if (isLoading) return <LoadingState message="Loading customer..." />
   if (error || !customer) return <ErrorState onRetry={refetch} />
 
-  const editable =
+  // Only rejected customers are locked: approved (ACTIVE) and deactivated
+  // customers can still have their profile details corrected.
+  const editable = customer.lifecycleStatus !== "REJECTED"
+  // Credit terms, bank and KYC entries are managed separately and still follow
+  // the draft-stage rules.
+  const draftStage =
     customer.lifecycleStatus === "DRAFT" ||
     customer.lifecycleStatus === "REWORK"
   // Approve/reject/rework need CUSTOMER_APPROVE; submit/deactivate/activate
@@ -135,7 +140,7 @@ function CustomerDetailContent({
                 title={
                   editable
                     ? undefined
-                    : "Customers can only be edited while in DRAFT or REWORK."
+                    : "Rejected customers cannot be edited."
                 }
               >
                 <Pencil className="mr-2 size-4" />
@@ -146,12 +151,18 @@ function CustomerDetailContent({
         }
       />
 
-      {editable ? (
+      {draftStage ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           This customer is in {customer.lifecycleStatus.toLowerCase()}. Profile
           edits, credit terms, and KYC/bank entries can still be changed until
           it is submitted. Approval needs one verified KYC entry, no pending KYC
           entries, and one verified bank account.
+        </div>
+      ) : editable ? (
+        <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          This customer is {customer.lifecycleStatus.toLowerCase()}. Profile
+          details, bank accounts, and KYC entries can still be updated. Credit
+          terms stay locked outside DRAFT and REWORK.
         </div>
       ) : null}
 
@@ -194,7 +205,7 @@ function CustomerDetailContent({
             companyUuid={companyUuid}
             customerUuid={id}
             customerVersion={customer.version}
-            editable={editable}
+            editable={draftStage}
           />
         </TabsContent>
         <TabsContent value="kyc" className="pt-3">
