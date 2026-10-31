@@ -48,8 +48,8 @@ export function CustomerKpiCards({ counts, isLoading }: Props) {
     },
     {
       key: "SUBMITTED",
-      label: "Awaiting verification",
-      hint: "Submitted, not verified",
+      label: "Awaiting approval",
+      hint: "Submitted for approval",
       icon: Clock3,
       iconClass:
         "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300",

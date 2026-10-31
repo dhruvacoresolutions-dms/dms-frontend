@@ -224,9 +224,13 @@ export type CustomerListParams = {
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
+/**
+ * Legal lifecycle actions. `approve` is the only path from SUBMITTED to ACTIVE
+ * (`…/approve`); the retired `verify` action is not exposed by the API.
+ * `VERIFIED` only survives on legacy rows and is approved like SUBMITTED.
+ */
 export type CustomerLifecycleAction =
   | "submit"
-  | "verify"
   | "approve"
   | "reject"
   | "rework"
@@ -236,6 +240,11 @@ export type CustomerLifecycleAction =
 export type CustomerLifecycleRequest = {
   version: number
   reason?: string
+  /**
+   * Approve only. Required when the customer has no territory yet — the API
+   * answers 400 on `territoryUuid` otherwise.
+   */
+  territoryUuid?: string
 }
 
 export type CustomerHistoryEntry = {
@@ -302,6 +311,12 @@ export type CustomerKycEntry = CustomerEntryVerification & {
   /** Null on rows created before the holder-name requirement. */
   holderFirstName?: string | null
   holderLastName?: string | null
+  /**
+   * Third-party verification id supplied when the entry was added (trimmed,
+   * blank → null). Always serialised; null when none was sent and on legacy
+   * entries. Stored only in MANUAL mode — the entry still needs a reviewer.
+   */
+  verificationRef?: string | null
 }
 
 /** `GET …/bank-entries` item. `accountMasked` is `X…X` + last 4 digits. */
@@ -336,6 +351,12 @@ export type CustomerKycInput = {
   number: string
   holderFirstName: string
   holderLastName: string
+  /**
+   * Optional third-party verification id (≤100 letters, digits, `_ - : .`).
+   * Trimmed; blank becomes null. In MANUAL mode it is only stored and the entry
+   * stays PENDING.
+   */
+  verificationRef?: string
   /** with-files only: must reference an uploaded/attached document. */
   documentClientRef?: string
 }

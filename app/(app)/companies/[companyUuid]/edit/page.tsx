@@ -298,7 +298,20 @@ export default function EditCompanyPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4 sm:px-6" noValidate>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return
+          const target = event.target as HTMLElement | null
+          if (!target) return
+          if (target.tagName === "TEXTAREA") return
+          if (target.tagName === "BUTTON") return
+          if (target.getAttribute("aria-expanded") === "true") return
+          event.preventDefault()
+        }}
+        className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4 sm:px-6"
+        noValidate
+      >
         <div className="flex-1 overflow-y-auto space-y-8 pr-1 pb-4">
         {/* Step 1: Company Information */}
         {currentStep === 0 && (

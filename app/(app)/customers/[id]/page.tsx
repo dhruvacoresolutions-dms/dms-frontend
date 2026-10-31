@@ -18,6 +18,7 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { usePermission } from "@/hooks/use-permission"
 import { PERMISSIONS } from "@/lib/permissions"
 import { useCustomer } from "@/features/customers/hooks/use-customer"
 import { CustomerOverviewTab } from "@/features/customers/components/CustomerOverviewTab"
@@ -27,6 +28,7 @@ import { CustomerKycSection } from "@/features/customers/components/CustomerKycS
 import { CustomerHistoryTab } from "@/features/customers/components/CustomerHistoryTab"
 import {
   CustomerLifecycleDialog,
+  REVIEW_LIFECYCLE_ACTIONS,
   lifecycleActionsFor,
 } from "@/features/customers/components/CustomerLifecycleDialog"
 import type { CustomerLifecycleAction } from "@/features/customers/api/customer.types"
@@ -52,6 +54,8 @@ function CustomerDetailContent({
   const router = useRouter()
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const currentUserUuid = useAuthStore((s) => s.session?.user?.userUuid)
+  const { has } = usePermission()
   const [lifecycleAction, setLifecycleAction] =
     useState<CustomerLifecycleAction | null>(null)
 
@@ -68,7 +72,13 @@ function CustomerDetailContent({
   const editable =
     customer.lifecycleStatus === "DRAFT" ||
     customer.lifecycleStatus === "REWORK"
-  const transitions = lifecycleActionsFor(customer.lifecycleStatus)
+  // Approve/reject/rework need CUSTOMER_APPROVE; submit/deactivate/activate
+  // need CUSTOMER_MASTER_MANAGE. Hide what the API would refuse.
+  const transitions = lifecycleActionsFor(customer.lifecycleStatus).filter(
+    (t) => has(t.permission)
+  )
+  const isCreator =
+    !!currentUserUuid && customer.createdBy === currentUserUuid
   const typeName = customer.displayNames?.customerType
 
   return (
@@ -85,31 +95,38 @@ function CustomerDetailContent({
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={customer.lifecycleStatus} />
             {transitions.length > 0 ? (
-              <PermissionGate permission={PERMISSIONS.CUSTOMER.MANAGE}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="outline">
-                        <Workflow className="mr-2 size-4" />
-                        Update status
-                        <ChevronDown className="ml-2 size-4" />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-auto min-w-52">
-                    {transitions.map((t) => (
-                      <DropdownMenuItem
-                        key={t.action}
-                        variant={t.destructive ? "destructive" : "default"}
-                        onClick={() => setLifecycleAction(t.action)}
-                      >
-                        <t.icon className="mr-2 size-4" />
-                        {t.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </PermissionGate>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline">
+                      <Workflow className="mr-2 size-4" />
+                      Update status
+                      <ChevronDown className="ml-2 size-4" />
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="w-auto min-w-52">
+                  {transitions.map((t) => (
+                    <DropdownMenuItem
+                      key={t.action}
+                      variant={t.destructive ? "destructive" : "default"}
+                      disabled={
+                        isCreator && REVIEW_LIFECYCLE_ACTIONS.includes(t.action)
+                      }
+                      title={
+                        isCreator &&
+                        REVIEW_LIFECYCLE_ACTIONS.includes(t.action)
+                          ? "You cannot review a customer you created."
+                          : undefined
+                      }
+                      onClick={() => setLifecycleAction(t.action)}
+                    >
+                      <t.icon className="mr-2 size-4" />
+                      {t.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
             <PermissionGate permission={PERMISSIONS.CUSTOMER.UPDATE}>
               <Button
@@ -193,6 +210,7 @@ function CustomerDetailContent({
       </Tabs>
 
       <CustomerLifecycleDialog
+        key={lifecycleAction ?? "none"}
         open={!!lifecycleAction}
         onOpenChange={(open) => !open && setLifecycleAction(null)}
         companyUuid={companyUuid}
@@ -201,6 +219,8 @@ function CustomerDetailContent({
           lifecycleStatus: customer.lifecycleStatus,
           source: customer.source,
           version: customer.version,
+          territoryUuid: customer.territoryUuid,
+          kycBankComplete: customer.kycBankComplete,
         }}
         action={lifecycleAction}
         onSuccess={() => setLifecycleAction(null)}

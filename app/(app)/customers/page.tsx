@@ -37,6 +37,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { RouteGate } from "@/components/auth/RouteGate"
+import { usePermission } from "@/hooks/use-permission"
 import { PERMISSIONS } from "@/lib/permissions"
 import { useCustomers } from "@/features/customers/hooks/use-customers"
 import { useCustomerLifecycleCounts } from "@/features/customers/hooks/use-customer-lifecycle-counts"
@@ -44,6 +45,7 @@ import { CustomerTypeCombobox } from "@/features/customers/components/CustomerTy
 import { CustomerKpiCards } from "@/features/customers/components/CustomerKpiCards"
 import {
   CustomerLifecycleDialog,
+  REVIEW_LIFECYCLE_ACTIONS,
   lifecycleActionsFor,
 } from "@/features/customers/components/CustomerLifecycleDialog"
 import type {
@@ -107,6 +109,8 @@ function CustomersContent() {
   const router = useRouter()
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
+  const currentUserUuid = useAuthStore((s) => s.session?.user?.userUuid)
+  const { has } = usePermission()
 
   const [search, setSearch] = useState("")
   const [lifecycle, setLifecycle] = useState<"ALL" | CustomerLifecycleStatus>(
@@ -277,7 +281,15 @@ function CustomersContent() {
           const c = row.original
           const editable =
             c.lifecycleStatus === "DRAFT" || c.lifecycleStatus === "REWORK"
-          const transitions = lifecycleActionsFor(c.lifecycleStatus)
+          // Approve/reject/rework need CUSTOMER_APPROVE; submit/deactivate/
+          // activate need CUSTOMER_MASTER_MANAGE.
+          const transitions = lifecycleActionsFor(c.lifecycleStatus).filter(
+            (t) => has(t.permission)
+          )
+          // Backend refuses self-review: an approver cannot act on a customer
+          // they created.
+          const isCreator =
+            !!currentUserUuid && c.createdBy === currentUserUuid
           return (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -301,29 +313,40 @@ function CustomersContent() {
                   </DropdownMenuItem>
                 </PermissionGate>
                 {transitions.length > 0 ? (
-                  <PermissionGate permission={PERMISSIONS.CUSTOMER.MANAGE}>
+                  <>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="text-xs text-muted-foreground">
                         Lifecycle
                       </DropdownMenuLabel>
-                      {transitions.map((t) => (
-                        <DropdownMenuItem
-                          key={t.action}
-                          variant={t.destructive ? "destructive" : "default"}
-                          onClick={() =>
-                            setLifecycleTarget({
-                              customer: c,
-                              action: t.action,
-                            })
-                          }
-                        >
-                          <t.icon className="mr-2 size-4" />
-                          {t.label}
-                        </DropdownMenuItem>
-                      ))}
+                      {transitions.map((t) => {
+                        const blocked =
+                          isCreator &&
+                          REVIEW_LIFECYCLE_ACTIONS.includes(t.action)
+                        return (
+                          <DropdownMenuItem
+                            key={t.action}
+                            variant={t.destructive ? "destructive" : "default"}
+                            disabled={blocked}
+                            title={
+                              blocked
+                                ? "You cannot review a customer you created."
+                                : undefined
+                            }
+                            onClick={() =>
+                              setLifecycleTarget({
+                                customer: c,
+                                action: t.action,
+                              })
+                            }
+                          >
+                            <t.icon className="mr-2 size-4" />
+                            {t.label}
+                          </DropdownMenuItem>
+                        )
+                      })}
                     </DropdownMenuGroup>
-                  </PermissionGate>
+                  </>
                 ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -331,7 +354,7 @@ function CustomersContent() {
         },
       },
     ],
-    [router]
+    [router, has, currentUserUuid]
   )
 
   return (
@@ -448,6 +471,7 @@ function CustomersContent() {
       />
 
       <CustomerLifecycleDialog
+        key={`${lifecycleTarget?.customer.uuid ?? "none"}-${lifecycleTarget?.action ?? "none"}`}
         open={!!lifecycleTarget}
         onOpenChange={(open) => {
           if (!open) setLifecycleTarget(null)
@@ -460,6 +484,8 @@ function CustomersContent() {
                 lifecycleStatus: lifecycleTarget.customer.lifecycleStatus,
                 source: lifecycleTarget.customer.source,
                 version: lifecycleTarget.customer.version,
+                territoryUuid: lifecycleTarget.customer.territoryUuid,
+                kycBankComplete: lifecycleTarget.customer.kycBankComplete,
               }
             : null
         }

@@ -88,6 +88,7 @@ import {
   optionalAccountType,
   optionalCustomerMobile,
   optionalMoney,
+  optionalVerificationRef,
   requiredMoney,
 } from "../lib/customer-validation"
 import {
@@ -113,7 +114,8 @@ import type {
  *  - `shopSizeSqFt` / `monthlyPotential` are required JSON integers
  *  - GSTIN + GST category are required for REGISTERED and forbidden otherwise
  *  - `bank.accountType` is optional (≤30, letters/space/underscore)
- *  - `kyc[].holderFirstName`/`holderLastName` are required per entry
+ *  - `kyc[].holderFirstName`/`holderLastName` are required per entry;
+ *    `kyc[].verificationRef` is optional (≤100, `[A-Za-z0-9_:.-]+`)
  *  - update ignores `credit`, `bank` and `kyc`, so those steps are create-only
  */
 const customerBaseSchema = z.object({  customerType: z.string().min(1, "Customer type is required"),
@@ -223,6 +225,8 @@ const customerBaseSchema = z.object({  customerType: z.string().min(1, "Customer
       number: z.string().trim().min(1, "Document number is required"),
       holderFirstName: customerHolderName("Holder first name"),
       holderLastName: customerHolderName("Holder last name"),
+      /** Optional third-party verification id (`verificationRef`). */
+      verificationRef: optionalVerificationRef(),
     })
   ),
 })
@@ -351,7 +355,7 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
         add(`kyc.${index}.docType`, "Duplicate document type")
       }
       seen.add(docType)
-      const number = row.number.trim()
+      const number = row.number.trim().toUpperCase()
       if (number && !customerKycNumberPattern(docType).test(number)) {
         add(`kyc.${index}.number`, customerKycNumberMessage(docType))
       }
@@ -1068,6 +1072,7 @@ export function CustomerFormWizard({
             number: row.number.trim().toUpperCase(),
             holderFirstName: row.holderFirstName.trim(),
             holderLastName: row.holderLastName.trim(),
+            verificationRef: orUndefined(row.verificationRef),
           }))
         : undefined,
     }
@@ -1186,6 +1191,17 @@ export function CustomerFormWizard({
     <div className="flex flex-1 flex-col gap-4">
       <form
         onSubmit={handleSubmit(onSubmit, handleInvalid)}
+        onKeyDown={(event) => {
+          // Step forms must never auto-submit on Enter inside an input; submission
+          // only happens through the explicit submit button.
+          if (event.key !== "Enter") return
+          const target = event.target as HTMLElement | null
+          if (!target) return
+          if (target.tagName === "TEXTAREA") return
+          if (target.tagName === "BUTTON") return
+          if (target.getAttribute("aria-expanded") === "true") return
+          event.preventDefault()
+        }}
         className="flex w-full flex-1 flex-col"
         noValidate
       >
@@ -1711,6 +1727,8 @@ export function CustomerFormWizard({
                 <p className="text-sm text-muted-foreground">
                   Each document needs the holder&apos;s first and last name. One
                   entry per document type; a reviewer verifies it afterwards.
+                  Add the vendor verification reference when the document was
+                  already verified in the app.
                 </p>
               </div>
 
@@ -1778,6 +1796,13 @@ export function CustomerFormWizard({
                             label={requiredLabel("Holder Last Name")}
                             maxLength={100}
                           />
+                          <FormTextField
+                            control={control}
+                            name={`kyc.${index}.verificationRef`}
+                            label="Verification Reference"
+                            maxLength={100}
+                            placeholder="e.g. ver_91c2 (optional)"
+                          />
                         </div>
                       </FieldGroup>
                     </div>
@@ -1794,6 +1819,7 @@ export function CustomerFormWizard({
                     number: "",
                     holderFirstName: "",
                     holderLastName: "",
+                    verificationRef: "",
                   })
                 }
                 disabled={kycFields.length >= CUSTOMER_KYC_DOC_TYPES.length}
