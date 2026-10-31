@@ -294,3 +294,50 @@ After any grant/revoke/assign mutation, call `refreshCurrentAccess()` from `feat
 - Loading → loader/`loadingFallback`, never forbidden UI. Access-fetch error → fail open (render children); backend still enforces.
 - Deny-by-default: missing requirement / empty grants / unknown codes all deny.
 <!-- END:permission-gate-rules -->
+
+<!-- BEGIN:base-ui-component-rules -->
+# Base UI Component Pairing Rules (MANDATORY)
+
+This project uses `@base-ui/react` for all primitive UI components (`components/ui/*`). Base UI enforces **context pairing**: many "part" components MUST be rendered inside their matching parent/group part, otherwise React throws at runtime (e.g. `Base UI: MenuGroupContext is missing`, `…Context is missing`). These crashes often surface only when a menu/dialog opens, so they are easy to miss in build/typecheck.
+
+## Rule: always pair group/label/indicator parts with their parent
+
+| Part | MUST be used inside |
+|---|---|
+| `DropdownMenuLabel` / `Menu.GroupLabel` | `DropdownMenuGroup` / `Menu.Group` |
+| `DropdownMenuCheckboxItem` indicator | `DropdownMenuCheckboxItem` (auto) — never render `CheckboxItemIndicator` standalone |
+| `DropdownMenuRadioItem` indicator | `DropdownMenuRadioItem` (auto) |
+| `SelectGroup` / `SelectLabel` | `SelectGroup` |
+| `MenubarMenu` / `MenubarTrigger` | `Menubar` |
+| `ContextMenuTrigger` items | `ContextMenu` |
+| `NavigationMenuList` items | `NavigationMenu` |
+| `TabsTrigger` | `TabsList` |
+| `AccordionTrigger` / `AccordionContent` | `AccordionItem` → `Accordion` |
+| `CollapsibleTrigger` / `CollapsibleContent` | `Collapsible` |
+| `DialogTrigger` / `DialogContent` | `Dialog` (Root) |
+| `AlertDialog*` parts | `AlertDialog` (Root) |
+| `PopoverTrigger` / `PopoverContent` | `Popover` (Root) |
+| `TooltipTrigger` / `TooltipContent` | `Tooltip` (Root) |
+| `HoverCardTrigger` / `HoverCardContent` | `HoverCard` (Root) |
+
+When composing a dropdown menu with a section header, **always** wrap the label and its items in a group:
+
+```tsx
+<DropdownMenuGroup>
+  <DropdownMenuLabel>Section</DropdownMenuLabel>
+  <DropdownMenuItem>…</DropdownMenuItem>
+</DropdownMenuGroup>
+```
+
+## Rule: never render a *Label / *GroupLabel outside its group
+
+If you only need a loose label (no grouping), render a plain `<span>`/`<div>` with muted text styling instead of `DropdownMenuLabel`, so no context is required.
+
+## Rule: verify by opening the component
+
+Typecheck and lint will NOT catch missing-context crashes. After adding any Base UI composite, **open it in the browser** (click the trigger) and check the console for "Context is missing" errors before marking the task done. Use the dev server + browser tools when available.
+
+## Rule: prefer the shared wrappers
+
+Use the existing `components/ui/*` wrappers and the shared `RowActionsMenu` component rather than hand-rolling `MenuPrimitive.*` parts, so pairing is handled consistently. If you must use primitives directly, mirror an existing working usage in the codebase.
+<!-- END:base-ui-component-rules -->
