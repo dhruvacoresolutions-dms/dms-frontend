@@ -4,7 +4,6 @@ import * as React from "react"
 import { Clock, RotateCcw } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -57,14 +56,11 @@ export function TimePicker({
   const [view, setView] = React.useState<"hour" | "minute">("hour")
   const [hour, minute] = split(value)
   const [text, setText] = React.useState(value || "")
-
-  React.useEffect(() => {
-    if (open) setView("hour")
-  }, [open])
-
-  React.useEffect(() => {
+  const [prevValue, setPrevValue] = React.useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
     setText(value || "")
-  }, [value])
+  }
 
   const commitText = () => {
     if (/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(text)) {
@@ -105,7 +101,7 @@ export function TimePicker({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setView("hour") }}>
       <div className={cn("relative w-full", className)}>
         <Input
           id={id}
