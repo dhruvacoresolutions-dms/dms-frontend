@@ -260,25 +260,25 @@ export function CustomerBankEntryDialog({
               </div>
             </div>
           </FieldGroup>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Bank proof</span>
+            {proofDisplay}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={addMutation.isPending}>
+              {addMutation.isPending ? "Adding..." : "Add account"}
+            </Button>
+          </DialogFooter>
         </form>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">Bank proof</span>
-          {proofDisplay}
-        </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={addMutation.isPending}>
-            {addMutation.isPending ? "Adding..." : "Add account"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

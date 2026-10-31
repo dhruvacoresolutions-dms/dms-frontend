@@ -161,6 +161,7 @@ function Stepper({
                   <div className="flex flex-row items-start gap-3">
                     {/* Indicator */}
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       data-slot="stepper-trigger"
@@ -249,6 +250,7 @@ function Stepper({
                     {/* Top row: indicator centered + connector in between steps at equal distance */}
                     <div className="relative flex w-full items-center justify-center">
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
                         data-slot="stepper-trigger"
@@ -392,6 +394,7 @@ function StepperTrigger({
   void onStepChange
   return (
     <Button
+      type="button"
       variant="ghost"
       data-slot="stepper-trigger"
       className={cn("", className)}

@@ -538,6 +538,15 @@ export function ProductForm({ companyUuid, productUuid }: ProductFormProps) {
 
       <form
         onSubmit={handleSubmit(onSubmit, onInvalidSubmit)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return
+          const target = event.target as HTMLElement | null
+          if (!target) return
+          if (target.tagName === "TEXTAREA") return
+          if (target.tagName === "BUTTON") return
+          if (target.getAttribute("aria-expanded") === "true") return
+          event.preventDefault()
+        }}
         className="flex w-full flex-1 flex-col"
         noValidate
       >

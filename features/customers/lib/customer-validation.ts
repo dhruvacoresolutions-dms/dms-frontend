@@ -24,6 +24,8 @@ export const CUSTOMER_GSTIN_PATTERN =
 export const CUSTOMER_PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/
 /** `CustomerEntries.validateHolderName` → letters, spaces, dots, apostrophes, hyphens. */
 export const CUSTOMER_HOLDER_NAME_PATTERN = /^[\p{L} .'-]+$/u
+/** `CustomerEntries.validateItems` → KYC `verificationRef` charset. */
+export const CUSTOMER_VERIFICATION_REF_PATTERN = /^[A-Za-z0-9_:.-]+$/
 
 /** `CustomerModels.Request.shopSizeSqFt` → integer 0…10,000,000. */
 export const CUSTOMER_SHOP_SIZE_MAX = 10_000_000
@@ -36,7 +38,7 @@ export const CUSTOMER_KYC_DOC_TYPES: {
   label: string
   placeholder: string
 }[] = [
-  { value: "AADHAAR", label: "Aadhaar", placeholder: "12-digit Aadhaar number" },
+  { value: "AADHAAR", label: "Aadhaar", placeholder: "12-digit Aadhaar number (starts 2-9)" },
   { value: "PAN", label: "PAN", placeholder: "ABCDE1234F" },
   {
     value: "DRIVING_LICENCE",
@@ -51,7 +53,8 @@ export const CUSTOMER_KYC_DOC_TYPES: {
 export function customerKycNumberPattern(docType: CustomerKycDocType): RegExp {
   switch (docType) {
     case "AADHAAR":
-      return /^\d{12}$/
+      // `[2-9][0-9]{11}` — an Aadhaar number never starts with 0 or 1.
+      return /^[2-9][0-9]{11}$/
     case "PAN":
       return /^[A-Z]{5}[0-9]{4}[A-Z]$/
     default:
@@ -62,7 +65,7 @@ export function customerKycNumberPattern(docType: CustomerKycDocType): RegExp {
 export function customerKycNumberMessage(docType: CustomerKycDocType) {
   switch (docType) {
     case "AADHAAR":
-      return "Enter a 12-digit Aadhaar number"
+      return "Enter a 12-digit Aadhaar number starting with 2-9"
     case "PAN":
       return "Enter a valid PAN (e.g. ABCDE1234F)"
     default:
@@ -202,5 +205,21 @@ export function customerHolderName(label: string) {
     .regex(
       CUSTOMER_HOLDER_NAME_PATTERN,
       "Use letters, spaces, dots, apostrophes or hyphens only"
+    )
+}
+
+/**
+ * Optional KYC `verificationRef` — third-party verification id (for example
+ * `ver_91c2`). Trimmed; blank is dropped by the caller. At most 100 characters
+ * from letters, digits, `_`, `-`, `:` and `.`.
+ */
+export function optionalVerificationRef() {
+  return z
+    .string()
+    .trim()
+    .max(100, "Verification reference must not exceed 100 characters")
+    .refine(
+      (v) => v === "" || CUSTOMER_VERIFICATION_REF_PATTERN.test(v),
+      "Use letters, digits, underscores, hyphens, colons or dots only"
     )
 }

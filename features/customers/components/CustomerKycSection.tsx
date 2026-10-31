@@ -1,8 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   CheckCircle2,
+  FileText,
   MoreHorizontal,
   Plus,
   ShieldCheck,
@@ -22,10 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { PermissionGate } from "@/components/auth/PermissionGate"
 import { usePermission } from "@/hooks/use-permission"
+import { getApiErrorMessage } from "@/lib/api/api-error"
+import { downloadBlob } from "@/lib/file-download"
 import { formatDateTime } from "@/lib/format"
 import { PERMISSIONS } from "@/lib/permissions"
 import { useAuthStore } from "@/stores/auth-store"
 import { CUSTOMER_KYC_DOC_TYPES } from "../lib/customer-validation"
+import { downloadCustomerFile } from "../api/customer.api"
 import { useCustomerKycEntries } from "../hooks/use-customer-kyc-entries"
 import { CustomerKycEntryDialog } from "./CustomerKycEntryDialog"
 import { CustomerEntryReviewDialog } from "./CustomerEntryReviewDialog"
@@ -85,10 +90,25 @@ export function CustomerKycSection({
   const isAdmin = has(PERMISSIONS.CUSTOMER.MANAGE)
 
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [downloading, setDownloading] = useState<string | null>(null)
   const [review, setReview] = useState<{
     entry: CustomerKycEntry
     action: CustomerEntryAction
   } | null>(null)
+
+  const download = async (fileRef: string, fileName: string) => {
+    setDownloading(fileRef)
+    try {
+      const blob = await downloadCustomerFile(companyUuid, fileRef)
+      downloadBlob(blob, fileName)
+    } catch (downloadError) {
+      toast.error(
+        getApiErrorMessage(downloadError, "Could not download document")
+      )
+    } finally {
+      setDownloading(null)
+    }
+  }
 
   const rows = entries ?? []
   const verified = rows.filter((entry) => entry.status === "VERIFIED").length
@@ -128,6 +148,21 @@ export function CustomerKycSection({
         },
       },
       {
+        id: "verification",
+        header: "Verification Ref",
+        cell: ({ row }) => (
+          <span
+            className={
+              row.original.verificationRef
+                ? "font-mono text-xs"
+                : "text-xs text-muted-foreground"
+            }
+          >
+            {row.original.verificationRef || "—"}
+          </span>
+        ),
+      },
+      {
         id: "status",
         header: "Status",
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
@@ -158,6 +193,25 @@ export function CustomerKycSection({
                 <MoreHorizontal className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-auto min-w-48">
+                {entry.documentFileUuid ? (
+                  <DropdownMenuItem
+                    disabled={downloading === entry.documentFileUuid}
+                    onClick={() =>
+                      void download(
+                        entry.documentFileUuid as string,
+                        `${TYPE_LABELS.get(entry.docType) ?? entry.docType}-${entry.numberMasked}`
+                      )
+                    }
+                  >
+                    <FileText className="mr-2 size-4" />
+                    {downloading === entry.documentFileUuid
+                      ? "Downloading..."
+                      : "View document"}
+                  </DropdownMenuItem>
+                ) : null}
+                {actions.length && entry.documentFileUuid ? (
+                  <DropdownMenuSeparator />
+                ) : null}
                 <PermissionGate permission={PERMISSIONS.CUSTOMER.APPROVE}>
                   {actions.map((action, index) => {
                     const Icon = ACTION_ICONS[action]
@@ -197,7 +251,9 @@ export function CustomerKycSection({
         },
       },
     ],
-    [canReview, currentUserUuid, isAdmin]
+    // `download` only depends on the company + setter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canReview, currentUserUuid, isAdmin, downloading, companyUuid]
   )
 
   return (

@@ -26,6 +26,7 @@ import {
   customerHolderName,
   customerKycNumberMessage,
   customerKycNumberPattern,
+  optionalVerificationRef,
 } from "../lib/customer-validation"
 import { useAddCustomerKycEntry } from "../hooks/use-add-customer-kyc-entry"
 import type { CustomerKycDocType } from "../api/customer.types"
@@ -36,6 +37,8 @@ const kycSchema = z
     number: z.string().trim().min(1, "Document number is required"),
     holderFirstName: customerHolderName("Holder first name"),
     holderLastName: customerHolderName("Holder last name"),
+    /** Optional third-party verification id; stored only in MANUAL mode. */
+    verificationRef: optionalVerificationRef(),
   })
   .superRefine((values, ctx) => {
     if (!values.docType) return
@@ -56,6 +59,7 @@ const emptyValues: KycFormValues = {
   number: "",
   holderFirstName: "",
   holderLastName: "",
+  verificationRef: "",
 }
 
 const TYPE_OPTIONS = CUSTOMER_KYC_DOC_TYPES.map((type) => ({
@@ -144,6 +148,7 @@ export function CustomerKycEntryDialog({
           number: values.number.trim().toUpperCase(),
           holderFirstName: values.holderFirstName.trim(),
           holderLastName: values.holderLastName.trim(),
+          verificationRef: values.verificationRef?.trim() || undefined,
         },
         document: file,
       },
@@ -200,8 +205,21 @@ export function CustomerKycEntryDialog({
                 label={requiredLabel("Holder Last Name")}
                 maxLength={100}
               />
+              <FormTextField
+                control={control}
+                name="verificationRef"
+                label="Verification Reference"
+                maxLength={100}
+                placeholder="e.g. ver_91c2 (optional)"
+                className="sm:col-span-2"
+              />
             </div>
           </FieldGroup>
+          <p className="text-xs text-muted-foreground">
+            The verification reference is the vendor id returned when the
+            document was verified. It is stored with the entry; in manual mode
+            an approver still has to verify it.
+          </p>
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium">Document proof</span>
