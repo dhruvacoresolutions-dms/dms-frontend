@@ -20,6 +20,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 import {
   FormNumberField,
+  FormSelectField,
   requiredLabel,
 } from "@/components/common/form-fields"
 import { PermissionGate } from "@/components/auth/PermissionGate"
@@ -29,9 +30,21 @@ import { PERMISSIONS } from "@/lib/permissions"
 import { useCustomerCredit } from "../hooks/use-customer-credit"
 import { useUpsertCustomerCredit } from "../hooks/use-upsert-customer-credit"
 
+const MODE_OPTIONS = [
+  { value: "NONE", label: "None" },
+  { value: "ALERT_ALLOW", label: "Alert only" },
+  { value: "ALERT_STOP", label: "Alert + stop" },
+] as const
+
+const TRIGGER_OPTIONS = [
+  { value: "GTE", label: "Greater than or equal" },
+  { value: "GT", label: "Greater than" },
+  { value: "LTE", label: "Less than or equal" },
+  { value: "LT", label: "Less than" },
+  { value: "EQ", label: "Equal" },
+] as const
+
 const creditSchema = z.object({
-  // Mirrors `CustomerLifecycleModels.Credit`: creditLimit @NotNull @DecimalMin(0),
-  // creditDays @NotNull @Min(0) @Max(365), openingBalance unconstrained.
   creditLimit: z.coerce
     .number({
       required_error: "Credit limit is required",
@@ -46,9 +59,32 @@ const creditSchema = z.object({
     .int("Credit days must be a whole number")
     .min(0, "Credit days cannot be negative")
     .max(365, "Credit days cannot exceed 365"),
-  // Negative opening balances are valid (customer advance) and allowed by the API.
   openingBalance: z.coerce
     .number({ invalid_type_error: "Enter a valid amount" })
+    .optional(),
+  creditBills: z.coerce
+    .number({ invalid_type_error: "Enter a valid number" })
+    .int("Must be a whole number")
+    .min(0, "Cannot be negative")
+    .optional(),
+  creditLimitMode: z.enum(["ALERT_ALLOW", "ALERT_STOP", "NONE"]).optional(),
+  creditDaysMode: z.enum(["ALERT_ALLOW", "ALERT_STOP", "NONE"]).optional(),
+  creditBillsMode: z.enum(["ALERT_ALLOW", "ALERT_STOP", "NONE"]).optional(),
+  cashDiscount: z.coerce
+    .number({ invalid_type_error: "Enter a valid percentage" })
+    .min(0, "Cannot be negative")
+    .max(100, "Cannot exceed 100")
+    .optional(),
+  cdTriggerAction: z
+    .enum(["GTE", "GT", "LTE", "LT", "EQ"])
+    .optional(),
+  limitAmount: z.coerce
+    .number({ invalid_type_error: "Enter a valid amount" })
+    .min(0, "Cannot be negative")
+    .optional(),
+  triggerAmount: z.coerce
+    .number({ invalid_type_error: "Enter a valid amount" })
+    .min(0, "Cannot be negative")
     .optional(),
 })
 
@@ -97,6 +133,14 @@ export function CustomerCreditSection({
         creditLimit: 0,
         creditDays: 0,
         openingBalance: undefined,
+        creditBills: undefined,
+        creditLimitMode: "NONE",
+        creditDaysMode: "NONE",
+        creditBillsMode: "NONE",
+        cashDiscount: undefined,
+        cdTriggerAction: "GTE",
+        limitAmount: undefined,
+        triggerAmount: undefined,
       },
     }
   )
@@ -107,6 +151,14 @@ export function CustomerCreditSection({
       creditLimit: credit?.creditLimit ?? 0,
       creditDays: credit?.creditDays ?? 0,
       openingBalance: credit?.openingBalance ?? undefined,
+      creditBills: credit?.creditBills ?? undefined,
+      creditLimitMode: credit?.creditLimitMode ?? "NONE",
+      creditDaysMode: credit?.creditDaysMode ?? "NONE",
+      creditBillsMode: credit?.creditBillsMode ?? "NONE",
+      cashDiscount: credit?.cashDiscount ?? undefined,
+      cdTriggerAction: credit?.cdTriggerAction ?? "GTE",
+      limitAmount: credit?.limitAmount ?? undefined,
+      triggerAmount: credit?.triggerAmount ?? undefined,
     })
   }, [open, credit, reset])
 
@@ -118,6 +170,14 @@ export function CustomerCreditSection({
           creditLimit: values.creditLimit,
           creditDays: values.creditDays,
           openingBalance: values.openingBalance,
+          creditBills: values.creditBills,
+          creditLimitMode: values.creditLimitMode,
+          creditDaysMode: values.creditDaysMode,
+          creditBillsMode: values.creditBillsMode,
+          cashDiscount: values.cashDiscount,
+          cdTriggerAction: values.cdTriggerAction,
+          limitAmount: values.limitAmount,
+          triggerAmount: values.triggerAmount,
           version: customerVersion,
         },
       },
@@ -196,6 +256,14 @@ export function CustomerCreditSection({
                   : undefined
               }
             />
+            <Field label="Credit Bills" value={credit.creditBills != null ? String(credit.creditBills) : undefined} />
+            <Field label="Credit Limit Mode" value={credit.creditLimitMode ?? undefined} />
+            <Field label="Credit Days Mode" value={credit.creditDaysMode ?? undefined} />
+            <Field label="Credit Bills Mode" value={credit.creditBillsMode ?? undefined} />
+            <Field label="Cash Discount" value={credit.cashDiscount != null ? `${credit.cashDiscount}%` : undefined} />
+            <Field label="CD Trigger Action" value={credit.cdTriggerAction ?? undefined} />
+            <Field label="Limit Amount" value={credit.limitAmount != null ? inr.format(credit.limitAmount) : undefined} />
+            <Field label="Trigger Amount" value={credit.triggerAmount != null ? inr.format(credit.triggerAmount) : undefined} />
           </dl>
         )}
       </CardContent>
@@ -233,6 +301,55 @@ export function CustomerCreditSection({
                   control={control}
                   name="openingBalance"
                   label="Opening Balance (₹)"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="creditBills"
+                  label="Credit Bills"
+                  min={0}
+                />
+                <FormSelectField
+                  control={control}
+                  name="creditLimitMode"
+                  label="Credit Limit Mode"
+                  options={MODE_OPTIONS}
+                />
+                <FormSelectField
+                  control={control}
+                  name="creditDaysMode"
+                  label="Credit Days Mode"
+                  options={MODE_OPTIONS}
+                />
+                <FormSelectField
+                  control={control}
+                  name="creditBillsMode"
+                  label="Credit Bills Mode"
+                  options={MODE_OPTIONS}
+                />
+                <FormNumberField
+                  control={control}
+                  name="cashDiscount"
+                  label="Cash Discount (%)"
+                  min={0}
+                  max={100}
+                />
+                <FormSelectField
+                  control={control}
+                  name="cdTriggerAction"
+                  label="CD Trigger Action"
+                  options={TRIGGER_OPTIONS}
+                />
+                <FormNumberField
+                  control={control}
+                  name="limitAmount"
+                  label="Limit Amount (₹)"
+                  min={0}
+                />
+                <FormNumberField
+                  control={control}
+                  name="triggerAmount"
+                  label="Trigger Amount (₹)"
                   min={0}
                 />
               </div>

@@ -25,7 +25,7 @@ export function HeaderUserMenu() {
   const { logout, isLoggingOut } = useLogout()
   const [themeOpen, setThemeOpen] = useState(false)
 
-  const displayName = user?.displayName ?? "User"
+  const displayName = user?.profileName ?? user?.displayName ?? "User"
   const initials = displayName
     .split(" ")
     .map((part) => part.charAt(0))

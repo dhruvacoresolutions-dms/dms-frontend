@@ -381,6 +381,7 @@ export function DistributorFormDialog({
                     name="distributorCode"
                     label={requiredLabel("Code")}
                     maxLength={30}
+                    disabled={isEdit}
                   />
                   <FormTextField
                     control={control}

@@ -33,6 +33,7 @@ import type {
   BulkDistributorRequest,
   BulkDistributorDeactivateResponse,
   BulkDistributorLoginSummary,
+  BulkDistributorLoginDisableResponse,
 } from "./distributor.types"
 
 function resolveCompanyUuid(companyUuid: string): string {
@@ -124,6 +125,38 @@ export async function bulkDeactivateDistributors(
     headers: { "X-Company-Context": companyHeader(companyUuid) },
   })
   return data.data
+}
+
+export async function bulkDisableDistributorLogins(
+  companyUuid: string,
+  input: BulkDistributorRequest
+): Promise<BulkDistributorLoginDisableResponse> {
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{
+      totals: Record<string, number>
+      rows: Array<{
+        distributorUuid: string
+        result: "DISABLED" | "SKIPPED" | "FAILED"
+        reason: string | null
+      }>
+    }>
+  >(`${baseUrl(companyUuid)}/bulk-login/disable`, input, {
+    headers: { "X-Company-Context": companyHeader(companyUuid) },
+  })
+  const raw = data.data
+  const totals = raw.totals ?? {}
+  const rows = raw.rows ?? []
+  return {
+    total: totals.TOTAL ?? rows.length,
+    disabled: totals.DISABLED ?? 0,
+    skipped: totals.SKIPPED ?? 0,
+    failed: totals.FAILED ?? 0,
+    results: rows.map((r) => ({
+      distributorUuid: r.distributorUuid,
+      result: r.result,
+      message: r.reason,
+    })),
+  }
 }
 
 export async function bulkLoginDistributors(
@@ -519,6 +552,53 @@ export async function uploadDistributorImport(companyUuid: string, file: File) {
     headers: { "X-Company-Context": resolved },
   })
   return data.data
+}
+
+export async function getDistributorStatusImportTemplate(companyUuid: string) {
+  const resolved = companyHeader(companyUuid)
+  const { data } = await apiClient.get<Blob>(
+    `${baseUrl(companyUuid)}/status-import/template`,
+    {
+      headers: { "X-Company-Context": resolved },
+      responseType: "blob",
+    }
+  )
+  return data
+}
+
+export async function uploadDistributorStatusImport(companyUuid: string, file: File) {
+  const resolved = companyHeader(companyUuid)
+  const form = new FormData()
+  form.append("file", file, file.name)
+  const { data } = await apiClient.post<
+    ApiSuccessResponse<{
+      total: number
+      successful: number
+      failed: number
+      results: Array<{
+        rowNumber: number
+        distributorCode: string
+        status: string
+        message: string
+      }>
+    }>
+  >(`${baseUrl(companyUuid)}/status-import`, form, {
+    headers: { "X-Company-Context": resolved },
+  })
+  const raw = data.data
+  return {
+    totalRows: raw.total,
+    successRows: raw.successful,
+    failedRows: raw.failed,
+    status: raw.failed > 0 ? "PARTIAL" : "COMPLETED",
+    diagnostics: (raw.results ?? [])
+      .filter((r) => r.status !== "OK")
+      .map((r) => ({
+        rowNumber: r.rowNumber,
+        entityKey: r.distributorCode,
+        reason: r.message,
+      })),
+  }
 }
 
 // ── Import history / job detail / downloads ──────────────────────────────────

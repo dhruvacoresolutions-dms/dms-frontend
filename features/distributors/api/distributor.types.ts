@@ -362,3 +362,17 @@ export type BulkDistributorLoginSummary = {
   skipped?: number
   failed?: number
 }
+
+export type BulkDistributorLoginDisableResultRow = {
+  distributorUuid: string
+  result: "DISABLED" | "SKIPPED" | "FAILED"
+  message?: string | null
+}
+
+export type BulkDistributorLoginDisableResponse = {
+  total: number
+  disabled: number
+  skipped: number
+  failed: number
+  results: BulkDistributorLoginDisableResultRow[]
+}

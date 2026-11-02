@@ -293,7 +293,7 @@ export function DistributorBranchDialog({
               <FormTextField
                 control={control}
                 name="branchCode"
-                disabled={isDefaultBranch}
+                disabled={isEdit || isDefaultBranch}
                 label={requiredLabel("Code")}
                 maxLength={30}
               />

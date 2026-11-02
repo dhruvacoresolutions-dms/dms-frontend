@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import {
   Plus,
   MoreHorizontal,
+  ChevronDown,
   Eye,
   Pencil,
   ToggleLeft,
@@ -31,6 +32,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { PageHeader } from "@/components/common/PageHeader"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { PermissionGate } from "@/components/auth/PermissionGate"
+import { usePermission } from "@/hooks/use-permission"
 import { RouteGate } from "@/components/auth/RouteGate"
 import { ExportDropdown } from "@/components/common/ExportDropdown"
 import { useDistributors } from "@/features/distributors/hooks/use-distributors"
@@ -38,6 +40,7 @@ import { useUpdateDistributorStatus } from "@/features/distributors/hooks/use-up
 import type { DistributorListResponse } from "@/features/distributors/api/distributor.types"
 import { DistributorFormDialog } from "@/features/distributors/components/DistributorFormDialog"
 import { DistributorImportDialog } from "@/features/distributors/components/DistributorImportDialog"
+import { DistributorStatusImportDialog } from "@/features/distributors/components/DistributorStatusImportDialog"
 import { DistributorImportHistoryDialog } from "@/features/distributors/components/DistributorImportHistoryDialog"
 import { DistributorTypeCombobox } from "@/features/distributors/components/DistributorReferenceCombobox"
 import { exportDistributors } from "@/features/distributors/api/distributor.api"
@@ -60,6 +63,7 @@ import {
 } from "@/components/ui/dialog"
 import { useBulkDeactivateDistributors } from "@/features/distributors/hooks/use-bulk-deactivate-distributors"
 import { useBulkLoginDistributors } from "@/features/distributors/hooks/use-bulk-login-distributors"
+import { useBulkDisableDistributorLogins } from "@/features/distributors/hooks/use-bulk-disable-distributor-logins"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 
 export default function DistributorsPage() {
@@ -72,6 +76,7 @@ export default function DistributorsPage() {
 
 function DistributorsContent() {
   const router = useRouter()
+  const { has } = usePermission()
   const companyUuid =
     useAuthStore((s) => s.session?.user?.companyUuid) ?? "current"
   const [search, setSearch] = useState("")
@@ -83,6 +88,14 @@ function DistributorsContent() {
   >({})
   const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false)
   const [bulkLoginOpen, setBulkLoginOpen] = useState(false)
+  const [bulkDisableLoginOpen, setBulkDisableLoginOpen] = useState(false)
+  const [bulkLoginDisableResults, setBulkLoginDisableResults] = useState<
+    Awaited<
+      ReturnType<
+        typeof import("@/features/distributors/api/distributor.api").bulkDisableDistributorLogins
+      >
+    > | null
+  >(null)
   const [bulkResults, setBulkResults] = useState<Awaited<
     ReturnType<
       typeof import("@/features/distributors/api/distributor.api").bulkDeactivateDistributors
@@ -95,6 +108,7 @@ function DistributorsContent() {
   const [size, setSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [statusImportOpen, setStatusImportOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [editingUuid, setEditingUuid] = useState<string | null>(null)
   const [statusToggle, setStatusToggle] = useState<{
@@ -123,6 +137,7 @@ function DistributorsContent() {
   const updateStatusMutation = useUpdateDistributorStatus(companyUuid)
   const bulkDeactivateMutation = useBulkDeactivateDistributors(companyUuid)
   const bulkLoginMutation = useBulkLoginDistributors(companyUuid)
+  const bulkDisableLoginMutation = useBulkDisableDistributorLogins(companyUuid)
   const selectedUuids = [...new Set(Object.keys(selected))]
   const pageSelected =
     distributors.length > 0 &&
@@ -389,31 +404,63 @@ function DistributorsContent() {
           />
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {selectedUuids.length}/100 selected
-          </span>
+          {selectedUuids.length > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {selectedUuids.length} selected
+            </span>
+          ) : null}
+          {selectedUuids.length > 0 &&
+            (has(PERMISSIONS.DISTRIBUTOR.STATUS) ||
+              has(PERMISSIONS.DISTRIBUTOR.LOGIN_BULK_CREDENTIALS)) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline">
+                    <MoreHorizontal className="mr-2 size-4" />
+                    Bulk actions
+                    <ChevronDown className="ml-2 size-4" />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-56">
+                <PermissionGate permission={PERMISSIONS.DISTRIBUTOR.STATUS}>
+                  <DropdownMenuItem
+                    disabled={
+                      !selectedUuids.length || bulkDeactivateMutation.isPending
+                    }
+                    onClick={() => setBulkDeactivateOpen(true)}
+                  >
+                    <ToggleLeft className="mr-2 size-4" /> Bulk Deactivate
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate
+                  permission={PERMISSIONS.DISTRIBUTOR.LOGIN_BULK_CREDENTIALS}
+                >
+                  <DropdownMenuItem
+                    disabled={
+                      !selectedUuids.length || bulkLoginMutation.isPending
+                    }
+                    onClick={() => setBulkLoginOpen(true)}
+                  >
+                    <ShieldAlert className="mr-2 size-4" /> Download Login
+                    Credentials
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={
+                      !selectedUuids.length || bulkDisableLoginMutation.isPending
+                    }
+                    onClick={() => setBulkDisableLoginOpen(true)}
+                  >
+                    <ToggleLeft className="mr-2 size-4" /> Disable Login
+                  </DropdownMenuItem>
+                </PermissionGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <PermissionGate permission={PERMISSIONS.DISTRIBUTOR.STATUS}>
-            <Button
-              variant="outline"
-              disabled={
-                !selectedUuids.length || bulkDeactivateMutation.isPending
-              }
-              onClick={() => setBulkDeactivateOpen(true)}
-            >
-              <ToggleLeft className="mr-2 size-4" />
-              Bulk Deactivate
-            </Button>
-          </PermissionGate>
-          <PermissionGate
-            permission={PERMISSIONS.DISTRIBUTOR.LOGIN_BULK_CREDENTIALS}
-          >
-            <Button
-              variant="outline"
-              disabled={!selectedUuids.length || bulkLoginMutation.isPending}
-              onClick={() => setBulkLoginOpen(true)}
-            >
-              <ShieldAlert className="mr-2 size-4" />
-              Download Login Credentials
+            <Button variant="outline" onClick={() => setStatusImportOpen(true)}>
+              <Upload className="mr-2 size-4" />
+              Status Import
             </Button>
           </PermissionGate>
           <PermissionGate permission={PERMISSIONS.DISTRIBUTOR.IMPORT}>
@@ -527,6 +574,71 @@ function DistributorsContent() {
           )
         }
       />
+      <ConfirmDialog
+        open={bulkDisableLoginOpen}
+        onOpenChange={setBulkDisableLoginOpen}
+        title={`Disable login for ${selectedUuids.length} distributors?`}
+        description="Selected distributor logins will be disabled. Distributors without an active login are skipped."
+        confirmLabel="Disable selected logins"
+        variant="destructive"
+        isLoading={bulkDisableLoginMutation.isPending}
+        onConfirm={() =>
+          bulkDisableLoginMutation.mutate(
+            { distributorUuids: selectedUuids },
+            {
+              onSuccess: (result) => {
+                setBulkLoginDisableResults(result)
+                setSelected({})
+                setBulkDisableLoginOpen(false)
+                if (result.failed || result.skipped)
+                  toast.warning(
+                    `${result.disabled} disabled, ${result.skipped} skipped, ${result.failed} failed`
+                  )
+                else toast.success(`${result.disabled} logins disabled`)
+              },
+              onError: (error) =>
+                toast.error(
+                  getApiErrorMessage(error, "Bulk login disable failed")
+                ),
+            }
+          )
+        }
+      />
+      <Dialog
+        open={!!bulkLoginDisableResults}
+        onOpenChange={(open) => {
+          if (!open) setBulkLoginDisableResults(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk login disable results</DialogTitle>
+            <DialogDescription>
+              {bulkLoginDisableResults?.total ?? 0} processed ·{" "}
+              {bulkLoginDisableResults?.disabled ?? 0} disabled ·{" "}
+              {bulkLoginDisableResults?.skipped ?? 0} skipped ·{" "}
+              {bulkLoginDisableResults?.failed ?? 0} failed
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="max-h-72 space-y-2 overflow-y-auto text-sm">
+            {bulkLoginDisableResults?.results.map((result) => (
+              <li
+                key={result.distributorUuid}
+                className="flex justify-between gap-4 border-b pb-2"
+              >
+                <span>
+                  {selected[result.distributorUuid]?.distributorName ??
+                    result.distributorUuid}
+                </span>
+                <span className="text-muted-foreground">
+                  {result.result}
+                  {result.message ? ` · ${result.message}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={!!bulkResults}
         onOpenChange={(open) => {
@@ -613,6 +725,12 @@ function DistributorsContent() {
       <DistributorImportDialog
         open={bulkOpen}
         onOpenChange={setBulkOpen}
+        companyUuid={companyUuid}
+        onUploadComplete={() => refetch()}
+      />
+      <DistributorStatusImportDialog
+        open={statusImportOpen}
+        onOpenChange={setStatusImportOpen}
         companyUuid={companyUuid}
         onUploadComplete={() => refetch()}
       />

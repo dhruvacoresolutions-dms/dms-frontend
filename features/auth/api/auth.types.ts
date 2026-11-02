@@ -18,6 +18,10 @@ export type User = {
   mustChangePassword?: boolean
   /** Present for company users linked to an employee record. */
   employeeUuid?: string | null
+  /** Present for distributor logins. */
+  firmName?: string | null
+  distributorCode?: string | null
+  profileName?: string | null
 }
 
 export type UserContext = "PLATFORM" | "COMPANY"
