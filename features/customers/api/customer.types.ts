@@ -80,6 +80,16 @@ export type CustomerResponse = {
   classUuid?: string | null
   groupUuid?: string | null
   businessTypeCode?: string | null
+  fssaiNo?: string | null
+  fssaiExpiryDate?: string | null
+  drugLicenseNo1?: string | null
+  dl1ExpiryDate?: string | null
+  drugLicenseNo2?: string | null
+  dl2ExpiryDate?: string | null
+  licenseNo?: string | null
+  licExpiryDate?: string | null
+  pestLicenseNo?: string | null
+  cstNo?: string | null
   /** Numeric, required on create. `shopSizeCode` no longer exists. */
   shopSizeSqFt?: number | null
   /** Numeric (rupees), required on create. `monthlyPotentialCode` no longer exists. */
@@ -161,6 +171,16 @@ export type CustomerRequest = {
   /** Required for REGISTERED; must be absent for UNREGISTERED. */
   gstCategory?: GstCategory
   pan?: string
+  fssaiNo?: string
+  fssaiExpiryDate?: string
+  drugLicenseNo1?: string
+  dl1ExpiryDate?: string
+  drugLicenseNo2?: string
+  dl2ExpiryDate?: string
+  licenseNo?: string
+  licExpiryDate?: string
+  pestLicenseNo?: string
+  cstNo?: string
   subTypeUuid?: string
   channelUuid?: string
   segmentUuid?: string
@@ -392,10 +412,23 @@ export type CustomerBankInput = {
 }
 
 /** `CustomerLifecycleModels.Credit` — required on create only. */
+export type CustomerCreditLimitMode = "ALERT_ALLOW" | "ALERT_STOP" | "NONE"
+export type CustomerCreditDaysMode = "ALERT_ALLOW" | "ALERT_STOP" | "NONE"
+export type CustomerCreditBillsMode = "ALERT_ALLOW" | "ALERT_STOP" | "NONE"
+export type CustomerCdTriggerAction = "GTE" | "GT" | "LTE" | "LT" | "EQ"
+
 export type CustomerCreditInput = {
   creditLimit: number
   creditDays: number
   openingBalance?: number
+  creditBills?: number
+  creditLimitMode?: CustomerCreditLimitMode
+  creditDaysMode?: CustomerCreditDaysMode
+  creditBillsMode?: CustomerCreditBillsMode
+  cashDiscount?: number
+  cdTriggerAction?: CustomerCdTriggerAction
+  limitAmount?: number
+  triggerAmount?: number
 }
 
 export type CustomerCredit = {
@@ -403,6 +436,14 @@ export type CustomerCredit = {
   creditDays: number
   openingBalance?: number | null
   version?: number | null
+  creditBills?: number | null
+  creditLimitMode?: CustomerCreditLimitMode | null
+  creditDaysMode?: CustomerCreditDaysMode | null
+  creditBillsMode?: CustomerCreditBillsMode | null
+  cashDiscount?: number | null
+  cdTriggerAction?: CustomerCdTriggerAction | null
+  limitAmount?: number | null
+  triggerAmount?: number | null
 }
 
 export type UpsertCustomerCreditRequest = {
@@ -410,6 +451,14 @@ export type UpsertCustomerCreditRequest = {
   creditDays: number
   openingBalance?: number
   version?: number
+  creditBills?: number
+  creditLimitMode?: CustomerCreditLimitMode
+  creditDaysMode?: CustomerCreditDaysMode
+  creditBillsMode?: CustomerCreditBillsMode
+  cashDiscount?: number
+  cdTriggerAction?: CustomerCdTriggerAction
+  limitAmount?: number
+  triggerAmount?: number
 }
 
 /** With-files response attachment (JSON routes return plain fileRef UUIDs). */
@@ -572,6 +621,8 @@ export type CustomerPincodeResolution = {
   status: CustomerPincodeResolutionStatus
   territoryUuid?: string | null
   geographyPath?: CustomerGeographyPathItem[] | null
+  city?: string | null
+  state?: string | null
 }
 
 export type CustomerPincodeListParams = {

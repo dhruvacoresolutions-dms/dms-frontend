@@ -14,6 +14,10 @@ export type User = {
   roles: string[]
   /** Present for company users linked to an employee record. */
   employeeUuid?: string | null
+  /** Present for distributor logins. */
+  firmName?: string | null
+  distributorCode?: string | null
+  profileName?: string | null
 }
 
 export type SessionMode = "PLATFORM_STATELESS" | "TENANT_MANAGED"

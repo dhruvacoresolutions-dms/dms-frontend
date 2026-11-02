@@ -157,6 +157,16 @@ const customerBaseSchema = z.object({  customerType: z.string().min(1, "Customer
   gstNumber: z.string().optional(),
   gstCategory: z.string().optional(),
   pan: customerPan(),
+  fssaiNo: z.string().optional(),
+  fssaiExpiryDate: z.string().optional(),
+  drugLicenseNo1: z.string().optional(),
+  dl1ExpiryDate: z.string().optional(),
+  drugLicenseNo2: z.string().optional(),
+  dl2ExpiryDate: z.string().optional(),
+  licenseNo: z.string().optional(),
+  licExpiryDate: z.string().optional(),
+  pestLicenseNo: z.string().optional(),
+  cstNo: z.string().optional(),
   subTypeUuid: z.string().optional(),
   channelUuid: z.string().optional(),
   segmentUuid: z.string().optional(),
@@ -458,6 +468,16 @@ function toFormDefaults(
     gstNumber: "",
     gstCategory: "",
     pan: "",
+    fssaiNo: "",
+    fssaiExpiryDate: "",
+    drugLicenseNo1: "",
+    dl1ExpiryDate: "",
+    drugLicenseNo2: "",
+    dl2ExpiryDate: "",
+    licenseNo: "",
+    licExpiryDate: "",
+    pestLicenseNo: "",
+    cstNo: "",
     subTypeUuid: "",
     channelUuid: "",
     segmentUuid: "",
@@ -518,6 +538,16 @@ function toFormValues(customer: CustomerResponse): CustomerFormValues {
     gstNumber: customer.gstNumber ?? customer.gstin ?? "",
     gstCategory: customer.gstCategory ?? "",
     pan: customer.pan ?? "",
+    fssaiNo: customer.fssaiNo ?? "",
+    fssaiExpiryDate: apiDateToPicker(customer.fssaiExpiryDate),
+    drugLicenseNo1: customer.drugLicenseNo1 ?? "",
+    dl1ExpiryDate: apiDateToPicker(customer.dl1ExpiryDate),
+    drugLicenseNo2: customer.drugLicenseNo2 ?? "",
+    dl2ExpiryDate: apiDateToPicker(customer.dl2ExpiryDate),
+    licenseNo: customer.licenseNo ?? "",
+    licExpiryDate: apiDateToPicker(customer.licExpiryDate),
+    pestLicenseNo: customer.pestLicenseNo ?? "",
+    cstNo: customer.cstNo ?? "",
     subTypeUuid: customer.subTypeUuid ?? "",
     channelUuid: customer.channelUuid ?? "",
     segmentUuid: customer.segmentUuid ?? "",
@@ -886,6 +916,16 @@ export function CustomerFormWizard({
         shouldValidate: false,
       })
     }
+    // Pincode resolve now returns the matched city and state; auto-fill them so
+    // the user can review before saving.
+    if (resolution.data?.status === "MAPPED") {
+      if (resolution.data.city) {
+        setValue("city", resolution.data.city, { shouldValidate: false })
+      }
+      if (resolution.data.state) {
+        setValue("state", resolution.data.state, { shouldValidate: false })
+      }
+    }
   }, [resolution.data, setValue])
 
   // Unregistered customers must not carry a stale GSTIN from a previous toggle.
@@ -1010,6 +1050,22 @@ export function CustomerFormWizard({
         ? (values.gstCategory as GstCategory)
         : undefined,
       pan: values.pan?.trim() ? values.pan.trim().toUpperCase() : undefined,
+      fssaiNo: values.fssaiNo?.trim() ? values.fssaiNo.trim() : undefined,
+      fssaiExpiryDate: pickerDateToApi(values.fssaiExpiryDate) ?? undefined,
+      drugLicenseNo1: values.drugLicenseNo1?.trim()
+        ? values.drugLicenseNo1.trim()
+        : undefined,
+      dl1ExpiryDate: pickerDateToApi(values.dl1ExpiryDate) ?? undefined,
+      drugLicenseNo2: values.drugLicenseNo2?.trim()
+        ? values.drugLicenseNo2.trim()
+        : undefined,
+      dl2ExpiryDate: pickerDateToApi(values.dl2ExpiryDate) ?? undefined,
+      licenseNo: values.licenseNo?.trim() ? values.licenseNo.trim() : undefined,
+      licExpiryDate: pickerDateToApi(values.licExpiryDate) ?? undefined,
+      pestLicenseNo: values.pestLicenseNo?.trim()
+        ? values.pestLicenseNo.trim()
+        : undefined,
+      cstNo: values.cstNo?.trim() ? values.cstNo.trim() : undefined,
       subTypeUuid: orUndefined(values.subTypeUuid),
       channelUuid: orUndefined(values.channelUuid),
       segmentUuid: orUndefined(values.segmentUuid),
@@ -1101,6 +1157,31 @@ export function CustomerFormWizard({
       ) {
         void refetchCustomer()
       }
+
+      // TC-06: a duplicate mobile/email/GSTIN returns 409 DUPLICATE_CUSTOMER.
+      // On admin paths the response carries the existing customer's uuid and
+      // code — surface them and link to that record.
+      if (apiError?.code === "DUPLICATE_CUSTOMER") {
+        const details = (apiError as { details?: { existingCustomerUuid?: string; existingCustomerCode?: string } }).details
+        const existingCode = details?.existingCustomerCode
+        const existingUuid = details?.existingCustomerUuid
+        toast.error(
+          existingCode
+            ? `Customer already exists (${existingCode})`
+            : getApiErrorMessage(mutationError, "Customer already exists"),
+          existingUuid
+            ? {
+                description: "Open the existing customer record to review it.",
+                action: {
+                  label: "View customer",
+                  onClick: () => router.push(`/customers/${existingUuid}`),
+                },
+              }
+            : undefined
+        )
+        return
+      }
+
       toast.error(getApiErrorMessage(mutationError, "Failed to save customer"))
     }
 
@@ -1121,7 +1202,15 @@ export function CustomerFormWizard({
         : `${label} is already used by another customer`
       setError(field, { type: "server", message })
       goToFieldStep(field)
-      toast.error(message)
+      toast.error(message, probe.customerUuid
+        ? {
+            description: "Open the existing customer record to review it.",
+            action: {
+              label: "View customer",
+              onClick: () => router.push(`/customers/${probe.customerUuid}`),
+            },
+          }
+        : undefined)
       return
     }
 
@@ -1470,6 +1559,71 @@ export function CustomerFormWizard({
                     label="PAN"
                     maxLength={10}
                     placeholder="ABCDE1234F"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="fssaiNo"
+                    label="FSSAI Number"
+                    maxLength={14}
+                    placeholder="14-digit FSSAI number"
+                  />
+                  <FormDateField
+                    control={control}
+                    name="fssaiExpiryDate"
+                    label="FSSAI Expiry"
+                    allowClear
+                    clearLabel="Clear FSSAI expiry"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="drugLicenseNo1"
+                    label="Drug License No. 1"
+                    maxLength={50}
+                  />
+                  <FormDateField
+                    control={control}
+                    name="dl1ExpiryDate"
+                    label="Drug License 1 Expiry"
+                    allowClear
+                    clearLabel="Clear drug license 1 expiry"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="drugLicenseNo2"
+                    label="Drug License No. 2"
+                    maxLength={50}
+                  />
+                  <FormDateField
+                    control={control}
+                    name="dl2ExpiryDate"
+                    label="Drug License 2 Expiry"
+                    allowClear
+                    clearLabel="Clear drug license 2 expiry"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="licenseNo"
+                    label="Shop License No."
+                    maxLength={50}
+                  />
+                  <FormDateField
+                    control={control}
+                    name="licExpiryDate"
+                    label="Shop License Expiry"
+                    allowClear
+                    clearLabel="Clear shop license expiry"
+                  />
+                  <FormTextField
+                    control={control}
+                    name="pestLicenseNo"
+                    label="Pest License No."
+                    maxLength={50}
+                  />
+                  <FormTextField
+                    control={control}
+                    name="cstNo"
+                    label="CST No."
+                    maxLength={30}
                   />
                 </div>
               </FieldGroup>
