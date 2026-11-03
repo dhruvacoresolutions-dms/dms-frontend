@@ -16,32 +16,54 @@ export function FormTextField<T extends FieldValues>({
   type = "text",
   autoComplete = "off",
   maxLength,
+  sanitize,
+  format,
+  inputMode,
 }: BaseFieldProps<T> & {
   type?: string
   autoComplete?: string
   maxLength?: number
+  /**
+   * Normalizes the raw input before it is stored (for example, stripping
+   * separators or non-digits). The stored value stays canonical.
+   */
+  sanitize?: (value: string) => string
+  /**
+   * Renders the stored value for display without changing what is stored
+   * (for example, `1234-5678-9012` for a raw Aadhaar number).
+   */
+  format?: (value: string) => string
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
 }) {
   return (
     <Controller
       control={control}
       name={name}
-      render={({ field, fieldState }) => (
-        <Field className={className}>
-          <FieldLabel>{label}</FieldLabel>
-          <Input
-            type={type}
-            value={field.value ?? ""}
-            onChange={field.onChange}
-            onBlur={field.onBlur}
-            disabled={disabled}
-            autoComplete={autoComplete}
-            maxLength={maxLength}
-            placeholder={placeholder ?? getGenericTextPlaceholder(label)}
-            aria-invalid={!!fieldState.error}
-          />
-          <FieldError errors={[fieldState.error]} />
-        </Field>
-      )}
+      render={({ field, fieldState }) => {
+        const stored = field.value == null ? "" : String(field.value)
+
+        return (
+          <Field className={className}>
+            <FieldLabel>{label}</FieldLabel>
+            <Input
+              type={type}
+              value={format ? format(stored) : stored}
+              onChange={(event) => {
+                const next = event.target.value
+                field.onChange(sanitize ? sanitize(next) : next)
+              }}
+              onBlur={field.onBlur}
+              disabled={disabled}
+              autoComplete={autoComplete}
+              maxLength={maxLength}
+              inputMode={inputMode}
+              placeholder={placeholder ?? getGenericTextPlaceholder(label)}
+              aria-invalid={!!fieldState.error}
+            />
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )
+      }}
     />
   )
 }

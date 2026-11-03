@@ -82,8 +82,7 @@ function CustomerDetailContent({
   const transitions = lifecycleActionsFor(customer.lifecycleStatus).filter(
     (t) => has(t.permission)
   )
-  const isCreator =
-    !!currentUserUuid && customer.createdBy === currentUserUuid
+  const isCreator = !!currentUserUuid && customer.createdBy === currentUserUuid
   const typeName = customer.displayNames?.customerType
 
   return (
@@ -119,8 +118,7 @@ function CustomerDetailContent({
                         isCreator && REVIEW_LIFECYCLE_ACTIONS.includes(t.action)
                       }
                       title={
-                        isCreator &&
-                        REVIEW_LIFECYCLE_ACTIONS.includes(t.action)
+                        isCreator && REVIEW_LIFECYCLE_ACTIONS.includes(t.action)
                           ? "You cannot review a customer you created."
                           : undefined
                       }
@@ -138,9 +136,7 @@ function CustomerDetailContent({
                 onClick={() => router.push(`/customers/${id}/edit`)}
                 disabled={!editable}
                 title={
-                  editable
-                    ? undefined
-                    : "Rejected customers cannot be edited."
+                  editable ? undefined : "Rejected customers cannot be edited."
                 }
               >
                 <Pencil className="mr-2 size-4" />
@@ -155,8 +151,8 @@ function CustomerDetailContent({
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           This customer is in {customer.lifecycleStatus.toLowerCase()}. Profile
           edits, credit terms, and KYC/bank entries can still be changed until
-          it is submitted. Approval needs one verified KYC entry, no pending KYC
-          entries, and one verified bank account.
+          it is submitted. Pending KYC or bank entries do not block approval —
+          they stay on file for follow-up.
         </div>
       ) : editable ? (
         <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">

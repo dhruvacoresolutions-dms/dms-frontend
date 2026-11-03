@@ -6,7 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Attachment, AttachmentMedia, AttachmentContent, AttachmentTitle, AttachmentActions, AttachmentAction } from "@/components/ui/attachment"
+import {
+  Attachment,
+  AttachmentMedia,
+  AttachmentContent,
+  AttachmentTitle,
+  AttachmentActions,
+  AttachmentAction,
+} from "@/components/ui/attachment"
 import { FileText, X } from "lucide-react"
 import {
   Dialog,
@@ -18,14 +25,20 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { Dropzone } from "@/components/common/Dropzone"
-import { FormSelectField, FormTextField, requiredLabel } from "@/components/common/form-fields"
+import {
+  FormSelectField,
+  FormTextField,
+  requiredLabel,
+} from "@/components/common/form-fields"
 import { getApiErrorMessage } from "@/lib/api/api-error"
 import { applyApiFieldErrors } from "@/lib/api/form-errors"
 import {
   CUSTOMER_KYC_DOC_TYPES,
+  aadhaarDigits,
   customerHolderName,
   customerKycNumberMessage,
   customerKycNumberPattern,
+  formatAadhaar,
   optionalVerificationRef,
 } from "../lib/customer-validation"
 import { useAddCustomerKycEntry } from "../hooks/use-add-customer-kyc-entry"
@@ -43,7 +56,11 @@ const kycSchema = z
   .superRefine((values, ctx) => {
     if (!values.docType) return
     const type = values.docType as CustomerKycDocType
-    if (!customerKycNumberPattern(type).test(values.number.trim().toUpperCase())) {
+    const number =
+      type === "AADHAAR"
+        ? aadhaarDigits(values.number)
+        : values.number.trim().toUpperCase()
+    if (!customerKycNumberPattern(type).test(number)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["number"],
@@ -94,9 +111,10 @@ export function CustomerKycEntryDialog({
   })
 
   const docType = useWatch({ control, name: "docType" })
+  const isAadhaar = docType === "AADHAAR"
   const placeholder =
-    CUSTOMER_KYC_DOC_TYPES.find((type) => type.value === docType)?.placeholder ??
-    "Document number"
+    CUSTOMER_KYC_DOC_TYPES.find((type) => type.value === docType)
+      ?.placeholder ?? "Document number"
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
@@ -145,7 +163,10 @@ export function CustomerKycEntryDialog({
         customerUuid,
         input: {
           docType: values.docType as CustomerKycDocType,
-          number: values.number.trim().toUpperCase(),
+          number:
+            values.docType === "AADHAAR"
+              ? aadhaarDigits(values.number)
+              : values.number.trim().toUpperCase(),
           holderFirstName: values.holderFirstName.trim(),
           holderLastName: values.holderLastName.trim(),
           verificationRef: values.verificationRef?.trim() || undefined,
@@ -175,7 +196,11 @@ export function CustomerKycEntryDialog({
             one entry per document type may be active at a time.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FieldGroup>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormSelectField
@@ -189,7 +214,10 @@ export function CustomerKycEntryDialog({
                 control={control}
                 name="number"
                 label={requiredLabel("Document Number")}
-                maxLength={20}
+                maxLength={isAadhaar ? 14 : 20}
+                sanitize={isAadhaar ? aadhaarDigits : undefined}
+                format={isAadhaar ? formatAadhaar : undefined}
+                inputMode={isAadhaar ? "numeric" : undefined}
                 placeholder={placeholder}
                 autoComplete="off"
               />

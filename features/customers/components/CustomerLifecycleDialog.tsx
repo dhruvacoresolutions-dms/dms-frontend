@@ -56,7 +56,7 @@ const ACTION_META: Record<CustomerLifecycleAction, LifecycleActionMeta> = {
     action: "approve",
     label: "Approve & activate",
     description:
-      "Approves the submitted customer and activates the outlet. One verified KYC entry (none pending) and one verified bank account are required.",
+      "Approves the submitted customer and activates the outlet. Any pending KYC or bank entries remain available for follow-up.",
     icon: CheckCircle2,
     permission: PERMISSIONS.CUSTOMER.APPROVE,
   },
@@ -226,8 +226,7 @@ export function CustomerLifecycleDialog({
           // as field errors; surface them inline instead of only in a toast.
           const gate = details
             .filter(
-              (detail) =>
-                detail.field === "kyc" || detail.field === "bank"
+              (detail) => detail.field === "kyc" || detail.field === "bank"
             )
             .map((detail) => detail.message)
             .join(" ")
@@ -237,9 +236,6 @@ export function CustomerLifecycleDialog({
       }
     )
   }
-
-  const showApprovalGate =
-    action === "approve" && customer?.kycBankComplete === false
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -259,14 +255,6 @@ export function CustomerLifecycleDialog({
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Current status</span>
             <StatusBadge status={customer.lifecycleStatus} />
-          </div>
-        ) : null}
-
-        {showApprovalGate ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-            Verification is incomplete: approval needs at least one verified KYC
-            entry, no pending KYC entries and a verified bank account. Verify or
-            reject the entries on the KYC and Bank tabs first.
           </div>
         ) : null}
 

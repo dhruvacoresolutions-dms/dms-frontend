@@ -4,6 +4,11 @@ import * as React from "react"
 import { Clock, RotateCcw } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import {
+  isCompleteTime,
+  maskTimeInput,
+  normalizeTimeInput,
+} from "@/lib/time-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -63,8 +68,10 @@ export function TimePicker({
   }
 
   const commitText = () => {
-    if (/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(text)) {
-      onValueChange?.(text)
+    const next = normalizeTimeInput(text)
+    if (isCompleteTime(next)) {
+      setText(next)
+      onValueChange?.(next)
     } else {
       setText(value || "")
     }
@@ -101,7 +108,13 @@ export function TimePicker({
   }
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setView("hour") }}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o)
+        if (o) setView("hour")
+      }}
+    >
       <div className={cn("relative w-full", className)}>
         <Input
           id={id}
@@ -111,7 +124,8 @@ export function TimePicker({
           value={text}
           disabled={disabled}
           aria-invalid={!!hasError}
-          onChange={(e) => setText(e.target.value)}
+          maxLength={5}
+          onChange={(e) => setText(maskTimeInput(e.target.value))}
           onBlur={commitText}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -130,7 +144,7 @@ export function TimePicker({
               type="button"
               disabled={disabled}
               aria-label="Open time picker"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="absolute top-1/2 right-1 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <Clock className="size-4" />
             </button>
@@ -143,7 +157,7 @@ export function TimePicker({
         sideOffset={4}
       >
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             Select time
           </span>
           <div className="flex items-center gap-2">
@@ -205,7 +219,9 @@ export function TimePicker({
                       r={16}
                       className={cn(
                         "transition-colors",
-                        sel ? "fill-primary" : "fill-transparent hover:fill-accent"
+                        sel
+                          ? "fill-primary"
+                          : "fill-transparent hover:fill-accent"
                       )}
                     />
                     <text
@@ -214,7 +230,7 @@ export function TimePicker({
                       textAnchor="middle"
                       dominantBaseline="central"
                       className={cn(
-                        "select-none text-xs font-medium",
+                        "text-xs font-medium select-none",
                         sel ? "fill-primary-foreground" : "fill-foreground"
                       )}
                     >
@@ -239,7 +255,9 @@ export function TimePicker({
                       r={14}
                       className={cn(
                         "transition-colors",
-                        sel ? "fill-primary" : "fill-transparent hover:fill-accent"
+                        sel
+                          ? "fill-primary"
+                          : "fill-transparent hover:fill-accent"
                       )}
                     />
                     <text
@@ -248,8 +266,10 @@ export function TimePicker({
                       textAnchor="middle"
                       dominantBaseline="central"
                       className={cn(
-                        "select-none text-[10px] font-medium",
-                        sel ? "fill-primary-foreground" : "fill-muted-foreground"
+                        "text-[10px] font-medium select-none",
+                        sel
+                          ? "fill-primary-foreground"
+                          : "fill-muted-foreground"
                       )}
                     >
                       {String(h).padStart(2, "0")}
@@ -320,7 +340,9 @@ export function TimePicker({
                       r={16}
                       className={cn(
                         "transition-colors",
-                        sel ? "fill-primary" : "fill-transparent hover:fill-accent"
+                        sel
+                          ? "fill-primary"
+                          : "fill-transparent hover:fill-accent"
                       )}
                     />
                     <text
@@ -329,7 +351,7 @@ export function TimePicker({
                       textAnchor="middle"
                       dominantBaseline="central"
                       className={cn(
-                        "select-none text-xs font-medium",
+                        "text-xs font-medium select-none",
                         sel ? "fill-primary-foreground" : "fill-foreground"
                       )}
                     >
@@ -365,7 +387,7 @@ export function TimePicker({
                       y={tip.y}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      className="select-none text-xs font-medium fill-primary-foreground"
+                      className="fill-primary-foreground text-xs font-medium select-none"
                     >
                       {String(m).padStart(2, "0")}
                     </text>

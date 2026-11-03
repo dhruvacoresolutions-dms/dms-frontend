@@ -72,7 +72,8 @@ function CustomerMasterCombobox({
     const content = optionsOverride ?? listQuery.data?.content ?? []
     if (!customerTypeUuid) return content
     return content.filter(
-      (row) => !row.customerTypeUuid || row.customerTypeUuid === customerTypeUuid
+      (row) =>
+        !row.customerTypeUuid || row.customerTypeUuid === customerTypeUuid
     )
   }, [optionsOverride, listQuery.data?.content, customerTypeUuid])
 
@@ -119,10 +120,7 @@ function CustomerMasterCombobox({
           onValueChange(null, null)
           return
         }
-        onValueChange(
-          nextId,
-          rows.find((row) => row.uuid === nextId) ?? null
-        )
+        onValueChange(nextId, rows.find((row) => row.uuid === nextId) ?? null)
       }}
       disabled={disabled}
       options={options}
@@ -216,7 +214,10 @@ type LookupProps = {
   companyUuid: string
   lookupType: CustomerLookupType
   value?: string | null
-  onValueChange: (value: string | null, item?: CustomerMasterResponse | null) => void
+  onValueChange: (
+    value: string | null,
+    item?: CustomerMasterResponse | null
+  ) => void
   disabled?: boolean
   placeholder?: string
 }
@@ -258,10 +259,20 @@ export function CustomerLookupCombobox({
       })),
     [visibleRows]
   )
+  // Keep the saved code visible even when the lookup row is missing, inactive
+  // or still loading (e.g. a code retired after the customer was saved).
   const selected = React.useMemo(() => {
     const match = rows.find((row) => row.code === value)
-    return match ? { id: match.code, label: match.name } : null
+    if (match) return { id: match.code, label: match.name }
+    const code = value?.trim()
+    return code ? { id: code, label: code } : null
   }, [rows, value])
+
+  const renderOptions = React.useMemo(() => {
+    if (!selected) return options
+    if (options.some((option) => option.id === selected.id)) return options
+    return [...options, selected]
+  }, [options, selected])
 
   return (
     <EntityCombobox
@@ -272,13 +283,10 @@ export function CustomerLookupCombobox({
           onValueChange(null, null)
           return
         }
-        onValueChange(
-          nextId,
-          rows.find((row) => row.code === nextId) ?? null
-        )
+        onValueChange(nextId, rows.find((row) => row.code === nextId) ?? null)
       }}
       disabled={disabled}
-      options={options}
+      options={renderOptions}
       selectedOption={selected}
       loading={isFetching}
       emptyText="No lookup values found. Load the customer defaults first."

@@ -75,9 +75,7 @@ const creditSchema = z.object({
     .min(0, "Cannot be negative")
     .max(100, "Cannot exceed 100")
     .optional(),
-  cdTriggerAction: z
-    .enum(["GTE", "GT", "LTE", "LT", "EQ"])
-    .optional(),
+  cdTriggerAction: z.enum(["GTE", "GT", "LTE", "LT", "EQ"]).optional(),
   limitAmount: z.coerce
     .number({ invalid_type_error: "Enter a valid amount" })
     .min(0, "Cannot be negative")
@@ -119,31 +117,31 @@ export function CustomerCreditSection({
   customerVersion,
   editable,
 }: Props) {
-  const { data: credit, isLoading, error, refetch } = useCustomerCredit(
-    companyUuid,
-    customerUuid
-  )
+  const {
+    data: credit,
+    isLoading,
+    error,
+    refetch,
+  } = useCustomerCredit(companyUuid, customerUuid)
   const upsertMutation = useUpsertCustomerCredit(companyUuid)
   const [open, setOpen] = useState(false)
 
-  const { control, handleSubmit, reset, setError } = useForm<CreditFormValues>(
-    {
-      resolver: zodResolver(creditSchema),
-      defaultValues: {
-        creditLimit: 0,
-        creditDays: 0,
-        openingBalance: undefined,
-        creditBills: undefined,
-        creditLimitMode: "NONE",
-        creditDaysMode: "NONE",
-        creditBillsMode: "NONE",
-        cashDiscount: undefined,
-        cdTriggerAction: "GTE",
-        limitAmount: undefined,
-        triggerAmount: undefined,
-      },
-    }
-  )
+  const { control, handleSubmit, reset, setError } = useForm<CreditFormValues>({
+    resolver: zodResolver(creditSchema),
+    defaultValues: {
+      creditLimit: 0,
+      creditDays: 0,
+      openingBalance: undefined,
+      creditBills: undefined,
+      creditLimitMode: "NONE",
+      creditDaysMode: "NONE",
+      creditBillsMode: "NONE",
+      cashDiscount: undefined,
+      cdTriggerAction: "GTE",
+      limitAmount: undefined,
+      triggerAmount: undefined,
+    },
+  })
 
   useEffect(() => {
     if (!open) return
@@ -246,7 +244,10 @@ export function CustomerCreditSection({
           </p>
         ) : (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <Field label="Credit Limit" value={inr.format(credit.creditLimit)} />
+            <Field
+              label="Credit Limit"
+              value={inr.format(credit.creditLimit)}
+            />
             <Field label="Credit Days" value={`${credit.creditDays} days`} />
             <Field
               label="Opening Balance"
@@ -256,14 +257,54 @@ export function CustomerCreditSection({
                   : undefined
               }
             />
-            <Field label="Credit Bills" value={credit.creditBills != null ? String(credit.creditBills) : undefined} />
-            <Field label="Credit Limit Mode" value={credit.creditLimitMode ?? undefined} />
-            <Field label="Credit Days Mode" value={credit.creditDaysMode ?? undefined} />
-            <Field label="Credit Bills Mode" value={credit.creditBillsMode ?? undefined} />
-            <Field label="Cash Discount" value={credit.cashDiscount != null ? `${credit.cashDiscount}%` : undefined} />
-            <Field label="CD Trigger Action" value={credit.cdTriggerAction ?? undefined} />
-            <Field label="Limit Amount" value={credit.limitAmount != null ? inr.format(credit.limitAmount) : undefined} />
-            <Field label="Trigger Amount" value={credit.triggerAmount != null ? inr.format(credit.triggerAmount) : undefined} />
+            <Field
+              label="Credit Bills"
+              value={
+                credit.creditBills != null
+                  ? String(credit.creditBills)
+                  : undefined
+              }
+            />
+            <Field
+              label="Credit Limit Mode"
+              value={credit.creditLimitMode ?? undefined}
+            />
+            <Field
+              label="Credit Days Mode"
+              value={credit.creditDaysMode ?? undefined}
+            />
+            <Field
+              label="Credit Bills Mode"
+              value={credit.creditBillsMode ?? undefined}
+            />
+            <Field
+              label="Cash Discount"
+              value={
+                credit.cashDiscount != null
+                  ? `${credit.cashDiscount}%`
+                  : undefined
+              }
+            />
+            <Field
+              label="CD Trigger Action"
+              value={credit.cdTriggerAction ?? undefined}
+            />
+            <Field
+              label="Limit Amount"
+              value={
+                credit.limitAmount != null
+                  ? inr.format(credit.limitAmount)
+                  : undefined
+              }
+            />
+            <Field
+              label="Trigger Amount"
+              value={
+                credit.triggerAmount != null
+                  ? inr.format(credit.triggerAmount)
+                  : undefined
+              }
+            />
           </dl>
         )}
       </CardContent>
@@ -284,74 +325,105 @@ export function CustomerCreditSection({
             noValidate
           >
             <FieldGroup>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormNumberField
-                  control={control}
-                  name="creditLimit"
-                  label={requiredLabel("Credit Limit (₹)")}
-                  min={0}
-                />
-                <FormNumberField
-                  control={control}
-                  name="creditDays"
-                  label={requiredLabel("Credit Days")}
-                  min={0}
-                />
-                <FormNumberField
-                  control={control}
-                  name="openingBalance"
-                  label="Opening Balance (₹)"
-                  min={0}
-                />
-                <FormNumberField
-                  control={control}
-                  name="creditBills"
-                  label="Credit Bills"
-                  min={0}
-                />
-                <FormSelectField
-                  control={control}
-                  name="creditLimitMode"
-                  label="Credit Limit Mode"
-                  options={MODE_OPTIONS}
-                />
-                <FormSelectField
-                  control={control}
-                  name="creditDaysMode"
-                  label="Credit Days Mode"
-                  options={MODE_OPTIONS}
-                />
-                <FormSelectField
-                  control={control}
-                  name="creditBillsMode"
-                  label="Credit Bills Mode"
-                  options={MODE_OPTIONS}
-                />
-                <FormNumberField
-                  control={control}
-                  name="cashDiscount"
-                  label="Cash Discount (%)"
-                  min={0}
-                  max={100}
-                />
-                <FormSelectField
-                  control={control}
-                  name="cdTriggerAction"
-                  label="CD Trigger Action"
-                  options={TRIGGER_OPTIONS}
-                />
-                <FormNumberField
-                  control={control}
-                  name="limitAmount"
-                  label="Limit Amount (₹)"
-                  min={0}
-                />
-                <FormNumberField
-                  control={control}
-                  name="triggerAmount"
-                  label="Trigger Amount (₹)"
-                  min={0}
-                />
+              <div className="space-y-5">
+                <fieldset className="space-y-3">
+                  <legend className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Credit limit
+                  </legend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormNumberField
+                      control={control}
+                      name="creditLimit"
+                      label={requiredLabel("Credit Limit (₹)")}
+                      min={0}
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="creditLimitMode"
+                      label="Limit Mode"
+                      options={MODE_OPTIONS}
+                    />
+                    <FormNumberField
+                      control={control}
+                      name="limitAmount"
+                      label="Limit Amount (₹)"
+                      min={0}
+                    />
+                  </div>
+                </fieldset>
+
+                <fieldset className="space-y-3">
+                  <legend className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Payment window
+                  </legend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormNumberField
+                      control={control}
+                      name="creditDays"
+                      label={requiredLabel("Credit Days")}
+                      min={0}
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="creditDaysMode"
+                      label="Credit Days Mode"
+                      options={MODE_OPTIONS}
+                    />
+                    <FormNumberField
+                      control={control}
+                      name="creditBills"
+                      label="Credit Bills"
+                      min={0}
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="creditBillsMode"
+                      label="Credit Bills Mode"
+                      options={MODE_OPTIONS}
+                    />
+                  </div>
+                </fieldset>
+
+                <fieldset className="space-y-3">
+                  <legend className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Cash discount
+                  </legend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormNumberField
+                      control={control}
+                      name="cashDiscount"
+                      label="Cash Discount (%)"
+                      min={0}
+                      max={100}
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="cdTriggerAction"
+                      label="CD Trigger Action"
+                      options={TRIGGER_OPTIONS}
+                    />
+                    <FormNumberField
+                      control={control}
+                      name="triggerAmount"
+                      label="Trigger Amount (₹)"
+                      min={0}
+                    />
+                  </div>
+                </fieldset>
+
+                <fieldset className="space-y-3">
+                  <legend className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Opening balance
+                  </legend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormNumberField
+                      control={control}
+                      name="openingBalance"
+                      label="Opening Balance (₹)"
+                      min={0}
+                    />
+                  </div>
+                </fieldset>
               </div>
             </FieldGroup>
             <DialogFooter>

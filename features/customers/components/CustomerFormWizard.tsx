@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import {
   Controller,
@@ -74,10 +74,14 @@ import { useUpdateCustomer } from "../hooks/use-update-customer"
 import { checkCustomerDuplicate } from "../api/customer.api"
 import { useResolvePincode } from "../hooks/use-resolve-pincode"
 import { useCustomerClassificationOptions } from "../hooks/use-customer-classification-options"
+import { useCustomerLookups } from "../hooks/use-customer-lookups"
 import {
+  CUSTOMER_CONTACT_PERSON_MESSAGE,
+  CUSTOMER_CONTACT_PERSON_PATTERN,
   CUSTOMER_KYC_DOC_TYPES,
   CUSTOMER_SHOP_SIZE_MAX,
   CUSTOMER_MONTHLY_POTENTIAL_MAX,
+  aadhaarDigits,
   customerGstin,
   customerHolderName,
   customerInteger,
@@ -86,11 +90,13 @@ import {
   customerMobile,
   customerPan,
   customerPincode,
+  formatAadhaar,
   optionalAccountType,
   optionalCustomerMobile,
   optionalMoney,
   optionalVerificationRef,
   requiredMoney,
+  sanitizeContactPerson,
 } from "../lib/customer-validation"
 import {
   apiDateToPicker,
@@ -119,9 +125,15 @@ import type {
  *    `kyc[].verificationRef` is optional (≤100, `[A-Za-z0-9_:.-]+`)
  *  - update ignores `credit`, `bank` and `kyc`, so those steps are create-only
  */
-const customerBaseSchema = z.object({  customerType: z.string().min(1, "Customer type is required"),
+const customerBaseSchema = z.object({
+  customerType: z.string().min(1, "Customer type is required"),
   shopName: requiredName("Shop name", 150),
-  contactPerson: requiredName("Contact person", 150),
+  contactPerson: z
+    .string()
+    .trim()
+    .min(1, "Contact person is required")
+    .max(150, "Contact person must not exceed 150 characters")
+    .regex(CUSTOMER_CONTACT_PERSON_PATTERN, CUSTOMER_CONTACT_PERSON_MESSAGE),
   mobile: customerMobile(),
   whatsappNumber: customerMobile("WhatsApp number"),
   whatsappSameAsMobile: z.boolean(),
@@ -187,10 +199,7 @@ const customerBaseSchema = z.object({  customerType: z.string().min(1, "Customer
   establishedYear: z
     .string()
     .optional()
-    .refine(
-      (v) => !v || /^\d{4}$/.test(v),
-      "Enter a four-digit year"
-    ),
+    .refine((v) => !v || /^\d{4}$/.test(v), "Enter a four-digit year"),
   brandsStocked: z.string().optional(),
   shopTimings: z.object({
     openTime: z
@@ -221,6 +230,14 @@ const customerBaseSchema = z.object({  customerType: z.string().min(1, "Customer
   creditLimit: z.string().optional(),
   creditDays: z.string().optional(),
   openingBalance: z.string().optional(),
+  creditBills: z.string().optional(),
+  creditLimitMode: z.enum(["ALERT_ALLOW", "ALERT_STOP", "NONE"]).optional(),
+  creditDaysMode: z.enum(["ALERT_ALLOW", "ALERT_STOP", "NONE"]).optional(),
+  creditBillsMode: z.enum(["ALERT_ALLOW", "ALERT_STOP", "NONE"]).optional(),
+  cashDiscount: z.string().optional(),
+  cdTriggerAction: z.enum(["GTE", "GT", "LTE", "LT", "EQ"]).optional(),
+  limitAmount: z.string().optional(),
+  triggerAmount: z.string().optional(),
   // Bank account (optional, create only).
   bankEnabled: z.boolean(),
   bankAccountHolder: z.string().optional(),
@@ -271,7 +288,10 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
     if (values.gstRegistrationType === "REGISTERED") {
       const gstin = customerGstin().safeParse(values.gstNumber ?? "")
       if (!gstin.success) {
-        add("gstNumber", gstin.error.issues[0]?.message ?? "Enter a valid GSTIN")
+        add(
+          "gstNumber",
+          gstin.error.issues[0]?.message ?? "Enter a valid GSTIN"
+        )
       }
       if (
         !values.gstCategory ||
@@ -284,7 +304,10 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
         add("gstNumber", "GSTIN must be empty for unregistered customers")
       }
       if (values.gstCategory?.trim()) {
-        add("gstCategory", "GST category must be empty for unregistered customers")
+        add(
+          "gstCategory",
+          "GST category must be empty for unregistered customers"
+        )
       }
     }
 
@@ -313,7 +336,10 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
       max: CUSTOMER_SHOP_SIZE_MAX,
     }).safeParse(values.shopSizeSqFt ?? "")
     if (!shopSize.success) {
-      add("shopSizeSqFt", shopSize.error.issues[0]?.message ?? "Invalid shop size")
+      add(
+        "shopSizeSqFt",
+        shopSize.error.issues[0]?.message ?? "Invalid shop size"
+      )
     }
 
     const potential = customerInteger("Monthly potential", {
@@ -366,7 +392,10 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
         add(`kyc.${index}.docType`, "Duplicate document type")
       }
       seen.add(docType)
-      const number = row.number.trim().toUpperCase()
+      const number =
+        docType === "AADHAAR"
+          ? aadhaarDigits(row.number)
+          : row.number.trim().toUpperCase()
       if (number && !customerKycNumberPattern(docType).test(number)) {
         add(`kyc.${index}.number`, customerKycNumberMessage(docType))
       }
@@ -379,7 +408,10 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
       values.creditLimit ?? ""
     )
     if (!limit.success) {
-      add("creditLimit", limit.error.issues[0]?.message ?? "Invalid credit limit")
+      add(
+        "creditLimit",
+        limit.error.issues[0]?.message ?? "Invalid credit limit"
+      )
     }
     const days = customerInteger("Credit days", { max: 365 }).safeParse(
       values.creditDays ?? ""
@@ -395,6 +427,32 @@ function createCustomerSchema(isEdit: boolean, isMechanic: boolean) {
         "openingBalance",
         opening.error.issues[0]?.message ?? "Invalid opening balance"
       )
+    }
+
+    if (
+      values.creditBills?.trim() &&
+      !/^\d+$/.test(values.creditBills.trim())
+    ) {
+      add("creditBills", "Credit bills must be a whole number")
+    }
+    const nonNegativeCreditFields = [
+      ["cashDiscount", "Cash discount", 100],
+      ["limitAmount", "Limit amount"],
+      ["triggerAmount", "Trigger amount"],
+    ] as const
+    for (const [field, label, max] of nonNegativeCreditFields) {
+      const raw = values[field]?.trim()
+      if (!raw) continue
+      if (!/^\d+(\.\d{1,2})?$/.test(raw)) {
+        add(
+          field,
+          `${label} must be a non-negative number with up to 2 decimals`
+        )
+        continue
+      }
+      if (max !== undefined && Number(raw) > max) {
+        add(field, `${label} must not exceed ${max}`)
+      }
     }
 
     if (!values.bankEnabled) return
@@ -443,9 +501,7 @@ function parseBrands(value?: string) {
   return brands.length ? brands : undefined
 }
 
-function toFormDefaults(
-  source: CustomerSource = "ADMIN"
-): CustomerFormValues {
+function toFormDefaults(source: CustomerSource = "ADMIN"): CustomerFormValues {
   return {
     customerType: "",
     shopName: "",
@@ -501,6 +557,14 @@ function toFormDefaults(
     creditLimit: "",
     creditDays: "",
     openingBalance: "",
+    creditBills: "",
+    creditLimitMode: "NONE",
+    creditDaysMode: "NONE",
+    creditBillsMode: "NONE",
+    cashDiscount: "",
+    cdTriggerAction: "GTE",
+    limitAmount: "",
+    triggerAmount: "",
     bankEnabled: false,
     bankAccountHolder: "",
     bankName: "",
@@ -580,6 +644,14 @@ function toFormValues(customer: CustomerResponse): CustomerFormValues {
     creditLimit: "",
     creditDays: "",
     openingBalance: "",
+    creditBills: "",
+    creditLimitMode: "NONE",
+    creditDaysMode: "NONE",
+    creditBillsMode: "NONE",
+    cashDiscount: "",
+    cdTriggerAction: "GTE",
+    limitAmount: "",
+    triggerAmount: "",
     bankEnabled: false,
     bankAccountHolder: "",
     bankName: "",
@@ -617,6 +689,20 @@ const ENGINE_SPECIALTY_OPTIONS = [
   { value: "MECHANICAL", label: "Mechanical" },
   { value: "BOTH", label: "Both" },
 ]
+
+const CREDIT_MODE_OPTIONS = [
+  { value: "NONE", label: "None" },
+  { value: "ALERT_ALLOW", label: "Alert only" },
+  { value: "ALERT_STOP", label: "Alert + stop" },
+] as const
+
+const CD_TRIGGER_OPTIONS = [
+  { value: "GTE", label: "Greater than or equal" },
+  { value: "GT", label: "Greater than" },
+  { value: "LTE", label: "Less than or equal" },
+  { value: "LT", label: "Less than" },
+  { value: "EQ", label: "Equal" },
+] as const
 
 const KYC_TYPE_OPTIONS = CUSTOMER_KYC_DOC_TYPES.map((type) => ({
   value: type.value,
@@ -706,6 +792,14 @@ const CUSTOMER_STEPS: CustomerStep[] = [
       "creditLimit",
       "creditDays",
       "openingBalance",
+      "creditBills",
+      "creditLimitMode",
+      "creditDaysMode",
+      "creditBillsMode",
+      "cashDiscount",
+      "cdTriggerAction",
+      "limitAmount",
+      "triggerAmount",
       "bankEnabled",
       "bankAccountHolder",
       "bankName",
@@ -740,6 +834,29 @@ const CUSTOMER_STEPS: CustomerStep[] = [
   },
 ]
 
+/** Labelled card that keeps related credit fields together in the wizard. */
+function CreditSubsection({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+      <div className="space-y-0.5">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {description ? (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <FieldGroup>{children}</FieldGroup>
+    </div>
+  )
+}
+
 /**
  * Field names the API reports that do not match the flat form names, plus
  * nested `credit.` / `bank.` paths. `kyc[i]` is normalized centrally by
@@ -750,6 +867,14 @@ const API_FIELD_ALIASES: Record<string, FieldPath<CustomerFormValues>> = {
   "credit.creditLimit": "creditLimit",
   "credit.creditDays": "creditDays",
   "credit.openingBalance": "openingBalance",
+  "credit.creditBills": "creditBills",
+  "credit.creditLimitMode": "creditLimitMode",
+  "credit.creditDaysMode": "creditDaysMode",
+  "credit.creditBillsMode": "creditBillsMode",
+  "credit.cashDiscount": "cashDiscount",
+  "credit.cdTriggerAction": "cdTriggerAction",
+  "credit.limitAmount": "limitAmount",
+  "credit.triggerAmount": "triggerAmount",
   "bank.accountHolder": "bankAccountHolder",
   "bank.accountHolderName": "bankAccountHolder",
   "bank.bankName": "bankName",
@@ -786,6 +911,9 @@ export function CustomerFormWizard({
     refetch: refetchCustomer,
   } = useCustomer(companyUuid, customerUuid)
   const { data: customerTypes } = useCustomerTypes(companyUuid)
+  // Prefetch the workshop lookup on edit so a saved workshop type resolves
+  // before (or without) the mechanic-only section mounting.
+  useCustomerLookups(companyUuid, "WORKSHOP_TYPE", { enabled: isEdit })
   const createMutation = useCreateCustomer(companyUuid)
   const updateMutation = useUpdateCustomer(companyUuid)
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
@@ -824,8 +952,11 @@ export function CustomerFormWizard({
     defaultValues: toFormDefaults(),
   })
 
-  const { fields: kycFields, append: appendKyc, remove: removeKyc } =
-    useFieldArray({ control, name: "kyc" })
+  const {
+    fields: kycFields,
+    append: appendKyc,
+    remove: removeKyc,
+  } = useFieldArray({ control, name: "kyc" })
 
   const customerTypeUuid = useWatch({ control, name: "customerType" })
   const pincode = useWatch({ control, name: "pincode" })
@@ -847,7 +978,13 @@ export function CustomerFormWizard({
     [customerTypes, customerTypeUuid]
   )
   const customerTypeCode = selectedType?.code ?? ""
-  const isMechanicType = customerTypeCode === "MECHANIC"
+  // Fall back to the saved display label when the type master is unavailable,
+  // so an existing mechanic's workshop block (and saved values) still render.
+  const savedCustomerTypeCode =
+    customer?.displayNames?.customerType?.toUpperCase() ?? ""
+  const isMechanicType =
+    customerTypeCode === "MECHANIC" ||
+    (isEdit && !selectedType && savedCustomerTypeCode === "MECHANIC")
 
   const steps = useMemo(
     () => CUSTOMER_STEPS.filter((step) => !(isEdit && step.createOnly)),
@@ -970,9 +1107,7 @@ export function CustomerFormWizard({
   const stepIndexForField = (field?: string | null) => {
     if (!field) return -1
     return steps.findIndex((step) =>
-      step.fields.some(
-        (name) => field === name || field.startsWith(`${name}.`)
-      )
+      step.fields.some((name) => field === name || field.startsWith(`${name}.`))
     )
   }
 
@@ -1046,9 +1181,7 @@ export function CustomerFormWizard({
       gstNumber: registered
         ? values.gstNumber?.trim().toUpperCase()
         : undefined,
-      gstCategory: registered
-        ? (values.gstCategory as GstCategory)
-        : undefined,
+      gstCategory: registered ? (values.gstCategory as GstCategory) : undefined,
       pan: values.pan?.trim() ? values.pan.trim().toUpperCase() : undefined,
       fssaiNo: values.fssaiNo?.trim() ? values.fssaiNo.trim() : undefined,
       fssaiExpiryDate: pickerDateToApi(values.fssaiExpiryDate) ?? undefined,
@@ -1108,6 +1241,22 @@ export function CustomerFormWizard({
         openingBalance: values.openingBalance?.trim()
           ? Number(values.openingBalance)
           : undefined,
+        creditBills: values.creditBills?.trim()
+          ? Number(values.creditBills)
+          : undefined,
+        creditLimitMode: values.creditLimitMode || undefined,
+        creditDaysMode: values.creditDaysMode || undefined,
+        creditBillsMode: values.creditBillsMode || undefined,
+        cashDiscount: values.cashDiscount?.trim()
+          ? Number(values.cashDiscount)
+          : undefined,
+        cdTriggerAction: values.cdTriggerAction || undefined,
+        limitAmount: values.limitAmount?.trim()
+          ? Number(values.limitAmount)
+          : undefined,
+        triggerAmount: values.triggerAmount?.trim()
+          ? Number(values.triggerAmount)
+          : undefined,
       },
       bank:
         values.bankEnabled && values.bankAccountNumber?.trim()
@@ -1126,7 +1275,10 @@ export function CustomerFormWizard({
       kyc: values.kyc.length
         ? values.kyc.map((row) => ({
             docType: row.docType as CustomerKycDocType,
-            number: row.number.trim().toUpperCase(),
+            number:
+              row.docType === "AADHAAR"
+                ? aadhaarDigits(row.number)
+                : row.number.trim().toUpperCase(),
             holderFirstName: row.holderFirstName.trim(),
             holderLastName: row.holderLastName.trim(),
             verificationRef: orUndefined(row.verificationRef),
@@ -1162,7 +1314,14 @@ export function CustomerFormWizard({
       // On admin paths the response carries the existing customer's uuid and
       // code — surface them and link to that record.
       if (apiError?.code === "DUPLICATE_CUSTOMER") {
-        const details = (apiError as { details?: { existingCustomerUuid?: string; existingCustomerCode?: string } }).details
+        const details = (
+          apiError as {
+            details?: {
+              existingCustomerUuid?: string
+              existingCustomerCode?: string
+            }
+          }
+        ).details
         const existingCode = details?.existingCustomerCode
         const existingUuid = details?.existingCustomerUuid
         toast.error(
@@ -1202,15 +1361,18 @@ export function CustomerFormWizard({
         : `${label} is already used by another customer`
       setError(field, { type: "server", message })
       goToFieldStep(field)
-      toast.error(message, probe.customerUuid
-        ? {
-            description: "Open the existing customer record to review it.",
-            action: {
-              label: "View customer",
-              onClick: () => router.push(`/customers/${probe.customerUuid}`),
-            },
-          }
-        : undefined)
+      toast.error(
+        message,
+        probe.customerUuid
+          ? {
+              description: "Open the existing customer record to review it.",
+              action: {
+                label: "View customer",
+                onClick: () => router.push(`/customers/${probe.customerUuid}`),
+              },
+            }
+          : undefined
+      )
       return
     }
 
@@ -1343,6 +1505,8 @@ export function CustomerFormWizard({
                     name="contactPerson"
                     label={requiredLabel("Contact Person")}
                     maxLength={150}
+                    sanitize={sanitizeContactPerson}
+                    placeholder="Letters and spaces only"
                   />
                   <FormTextField
                     control={control}
@@ -1772,8 +1936,10 @@ export function CustomerFormWizard({
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Credit terms</h3>
-                <FieldGroup>
+                <CreditSubsection
+                  title="Credit limit"
+                  description="The outlet's maximum exposure and the alert threshold for each order."
+                >
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <FormNumberField
                       control={control}
@@ -1783,6 +1949,28 @@ export function CustomerFormWizard({
                       min={0}
                       emptyValue=""
                     />
+                    <FormSelectField
+                      control={control}
+                      name="creditLimitMode"
+                      label="Limit Mode"
+                      options={CREDIT_MODE_OPTIONS}
+                    />
+                    <FormNumberField
+                      control={control}
+                      name="limitAmount"
+                      label="Limit Amount (₹)"
+                      step="0.01"
+                      min={0}
+                      emptyValue=""
+                    />
+                  </div>
+                </CreditSubsection>
+
+                <CreditSubsection
+                  title="Payment window"
+                  description="How long the outlet may take to pay, measured in days or bills."
+                >
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <FormNumberField
                       control={control}
                       name="creditDays"
@@ -1792,6 +1980,65 @@ export function CustomerFormWizard({
                       max={365}
                       emptyValue=""
                     />
+                    <FormSelectField
+                      control={control}
+                      name="creditDaysMode"
+                      label="Credit Days Mode"
+                      options={CREDIT_MODE_OPTIONS}
+                    />
+                    <FormNumberField
+                      control={control}
+                      name="creditBills"
+                      label="Credit Bills"
+                      step="1"
+                      min={0}
+                      emptyValue=""
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="creditBillsMode"
+                      label="Credit Bills Mode"
+                      options={CREDIT_MODE_OPTIONS}
+                    />
+                  </div>
+                </CreditSubsection>
+
+                <CreditSubsection
+                  title="Cash discount"
+                  description="Early-payment discount and the amount that triggers it."
+                >
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <FormNumberField
+                      control={control}
+                      name="cashDiscount"
+                      label="Cash Discount (%)"
+                      step="0.01"
+                      min={0}
+                      max={100}
+                      emptyValue=""
+                    />
+                    <FormSelectField
+                      control={control}
+                      name="cdTriggerAction"
+                      label="CD Trigger Action"
+                      options={CD_TRIGGER_OPTIONS}
+                    />
+                    <FormNumberField
+                      control={control}
+                      name="triggerAmount"
+                      label="Trigger Amount (₹)"
+                      step="0.01"
+                      min={0}
+                      emptyValue=""
+                    />
+                  </div>
+                </CreditSubsection>
+
+                <CreditSubsection
+                  title="Opening balance"
+                  description="A negative balance records an advance."
+                >
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <FormNumberField
                       control={control}
                       name="openingBalance"
@@ -1800,10 +2047,12 @@ export function CustomerFormWizard({
                       emptyValue=""
                     />
                   </div>
-                </FieldGroup>
+                </CreditSubsection>
+
                 <FieldDescription>
-                  Credit days must be between 0 and 365. A negative opening
-                  balance records an advance.
+                  Credit days must be between 0 and 365. Selecting &ldquo;Alert
+                  + stop&rdquo; blocks orders that exceed the configured
+                  threshold.
                 </FieldDescription>
               </div>
 
@@ -1898,71 +2147,79 @@ export function CustomerFormWizard({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {kycFields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="rounded-lg border bg-muted/20 p-4"
-                    >
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <h3 className="text-sm font-medium">
-                          Document {index + 1}
-                        </h3>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeKyc(index)}
-                          aria-label={`Remove document ${index + 1}`}
-                        >
-                          <Trash2 className="size-4" />
-                          Remove
-                        </Button>
-                      </div>
-                      <FieldGroup>
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                          <FormSelectField
-                            control={control}
-                            name={`kyc.${index}.docType`}
-                            label={requiredLabel("Document Type")}
-                            options={KYC_TYPE_OPTIONS}
-                            placeholder="Select document type..."
-                          />
-                          <FormTextField
-                            control={control}
-                            name={`kyc.${index}.number`}
-                            label={requiredLabel("Document Number")}
-                            maxLength={20}
-                            placeholder={
-                              CUSTOMER_KYC_DOC_TYPES.find(
-                                (type) =>
-                                  type.value === kycRows?.[index]?.docType
-                              )?.placeholder ?? "Document number"
-                            }
-                            autoComplete="off"
-                          />
-                          <FormTextField
-                            control={control}
-                            name={`kyc.${index}.holderFirstName`}
-                            label={requiredLabel("Holder First Name")}
-                            maxLength={100}
-                          />
-                          <FormTextField
-                            control={control}
-                            name={`kyc.${index}.holderLastName`}
-                            label={requiredLabel("Holder Last Name")}
-                            maxLength={100}
-                          />
-                          <FormTextField
-                            control={control}
-                            name={`kyc.${index}.verificationRef`}
-                            label="Verification Reference"
-                            maxLength={100}
-                            placeholder="e.g. ver_91c2 (optional)"
-                          />
+                  {kycFields.map((field, index) => {
+                    const kycDocType = kycRows?.[index]?.docType as
+                      CustomerKycDocType | undefined
+                    const isAadhaar = kycDocType === "AADHAAR"
+                    return (
+                      <div
+                        key={field.id}
+                        className="rounded-lg border bg-muted/20 p-4"
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h3 className="text-sm font-medium">
+                            Document {index + 1}
+                          </h3>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeKyc(index)}
+                            aria-label={`Remove document ${index + 1}`}
+                          >
+                            <Trash2 className="size-4" />
+                            Remove
+                          </Button>
                         </div>
-                      </FieldGroup>
-                    </div>
-                  ))}
+                        <FieldGroup>
+                          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            <FormSelectField
+                              control={control}
+                              name={`kyc.${index}.docType`}
+                              label={requiredLabel("Document Type")}
+                              options={KYC_TYPE_OPTIONS}
+                              placeholder="Select document type..."
+                            />
+                            <FormTextField
+                              control={control}
+                              name={`kyc.${index}.number`}
+                              label={requiredLabel("Document Number")}
+                              maxLength={isAadhaar ? 14 : 20}
+                              sanitize={isAadhaar ? aadhaarDigits : undefined}
+                              format={isAadhaar ? formatAadhaar : undefined}
+                              inputMode={isAadhaar ? "numeric" : undefined}
+                              placeholder={
+                                CUSTOMER_KYC_DOC_TYPES.find(
+                                  (type) =>
+                                    type.value === kycRows?.[index]?.docType
+                                )?.placeholder ?? "Document number"
+                              }
+                              autoComplete="off"
+                            />
+                            <FormTextField
+                              control={control}
+                              name={`kyc.${index}.holderFirstName`}
+                              label={requiredLabel("Holder First Name")}
+                              maxLength={100}
+                            />
+                            <FormTextField
+                              control={control}
+                              name={`kyc.${index}.holderLastName`}
+                              label={requiredLabel("Holder Last Name")}
+                              maxLength={100}
+                            />
+                            <FormTextField
+                              control={control}
+                              name={`kyc.${index}.verificationRef`}
+                              label="Verification Reference"
+                              maxLength={100}
+                              placeholder="e.g. ver_91c2 (optional)"
+                            />
+                          </div>
+                        </FieldGroup>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 

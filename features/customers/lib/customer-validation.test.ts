@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
+  CUSTOMER_CONTACT_PERSON_PATTERN,
   CUSTOMER_VERIFICATION_REF_PATTERN,
+  aadhaarDigits,
   customerKycNumberPattern,
+  formatAadhaar,
   optionalVerificationRef,
+  sanitizeContactPerson,
 } from "./customer-validation"
 
 describe("customer KYC number rules", () => {
@@ -19,6 +23,36 @@ describe("customer KYC number rules", () => {
     expect(customerKycNumberPattern("PAN").test("abcde1234f")).toBe(false)
     expect(customerKycNumberPattern("PASSPORT").test("A1234567")).toBe(true)
     expect(customerKycNumberPattern("VOTER_ID").test("ABC")).toBe(false)
+  })
+})
+
+describe("customer Aadhaar input formatting", () => {
+  it("keeps only the first 12 digits in the stored value", () => {
+    expect(aadhaarDigits("1234 5678 9012")).toBe("123456789012")
+    expect(aadhaarDigits("1234-5678-9012-3456")).toBe("123456789012")
+    expect(aadhaarDigits("abc1234def5678ghi9012")).toBe("123456789012")
+  })
+
+  it("groups the display value as XXXX-XXXX-XXXX", () => {
+    expect(formatAadhaar("123456789012")).toBe("1234-5678-9012")
+    expect(formatAadhaar("1234")).toBe("1234")
+    expect(formatAadhaar("12345")).toBe("1234-5")
+    expect(aadhaarDigits(formatAadhaar("234567890123"))).toBe("234567890123")
+  })
+})
+
+describe("contact person rule", () => {
+  it("accepts letters and single spaces only", () => {
+    expect(CUSTOMER_CONTACT_PERSON_PATTERN.test("Aman Dhariwal")).toBe(true)
+    expect(CUSTOMER_CONTACT_PERSON_PATTERN.test("Rahul")).toBe(true)
+    expect(CUSTOMER_CONTACT_PERSON_PATTERN.test("Rahul  Patel")).toBe(false)
+    expect(CUSTOMER_CONTACT_PERSON_PATTERN.test("Rahul2")).toBe(false)
+    expect(CUSTOMER_CONTACT_PERSON_PATTERN.test("Rahul-Patel")).toBe(false)
+  })
+
+  it("strips digits, punctuation and extra spaces from typed input", () => {
+    expect(sanitizeContactPerson("Rahul 123 Patel!")).toBe("Rahul Patel")
+    expect(sanitizeContactPerson("Rahul  Patel")).toBe("Rahul Patel")
   })
 })
 
