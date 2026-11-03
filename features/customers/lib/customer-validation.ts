@@ -24,6 +24,13 @@ export const CUSTOMER_GSTIN_PATTERN =
 export const CUSTOMER_PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/
 /** `CustomerEntries.validateHolderName` → letters, spaces, dots, apostrophes, hyphens. */
 export const CUSTOMER_HOLDER_NAME_PATTERN = /^[\p{L} .'-]+$/u
+/**
+ * UI rule for the contact person: letters and single spaces only. The backend
+ * `@SafeName` rule is wider, so this is the stricter client-side gate.
+ */
+export const CUSTOMER_CONTACT_PERSON_PATTERN = /^[A-Za-z]+(?: [A-Za-z]+)*$/
+export const CUSTOMER_CONTACT_PERSON_MESSAGE =
+  "Use letters and single spaces only"
 /** `CustomerEntries.validateItems` → KYC `verificationRef` charset. */
 export const CUSTOMER_VERIFICATION_REF_PATTERN = /^[A-Za-z0-9_:.-]+$/
 
@@ -38,15 +45,27 @@ export const CUSTOMER_KYC_DOC_TYPES: {
   label: string
   placeholder: string
 }[] = [
-  { value: "AADHAAR", label: "Aadhaar", placeholder: "12-digit Aadhaar number (starts 2-9)" },
+  {
+    value: "AADHAAR",
+    label: "Aadhaar",
+    placeholder: "12-digit Aadhaar number (starts 2-9)",
+  },
   { value: "PAN", label: "PAN", placeholder: "ABCDE1234F" },
   {
     value: "DRIVING_LICENCE",
     label: "Driving licence",
     placeholder: "5–20 letters or digits",
   },
-  { value: "VOTER_ID", label: "Voter ID", placeholder: "5–20 letters or digits" },
-  { value: "PASSPORT", label: "Passport", placeholder: "5–20 letters or digits" },
+  {
+    value: "VOTER_ID",
+    label: "Voter ID",
+    placeholder: "5–20 letters or digits",
+  },
+  {
+    value: "PASSPORT",
+    label: "Passport",
+    placeholder: "5–20 letters or digits",
+  },
 ]
 
 /** `CustomerEntries.validateNumber` regexes, keyed by `docType`. */
@@ -73,6 +92,27 @@ export function customerKycNumberMessage(docType: CustomerKycDocType) {
   }
 }
 
+/** An Aadhaar number is exactly 12 digits. */
+export const CUSTOMER_AADHAAR_DIGITS = 12
+
+/** Keep only digits and cap at 12 — the stored/submitted value stays raw. */
+export function aadhaarDigits(value: string): string {
+  return value.replace(/\D/g, "").slice(0, CUSTOMER_AADHAAR_DIGITS)
+}
+
+/**
+ * Display-only grouping for an Aadhaar number: `1234-5678-9012`. A hyphen is
+ * inserted automatically after every four digits; the stored value is raw.
+ */
+export function formatAadhaar(value: string): string {
+  return aadhaarDigits(value).replace(/(\d{4})(?=\d)/g, "$1-")
+}
+
+/** Contact-person input sanitizer: drop everything except letters and spaces. */
+export function sanitizeContactPerson(value: string): string {
+  return value.replace(/[^A-Za-z ]/g, "").replace(/ {2,}/g, " ")
+}
+
 export function customerMobile(label = "Mobile number") {
   return z
     .string()
@@ -96,7 +136,10 @@ export function customerPincode() {
     .string()
     .trim()
     .min(1, "Pincode is required")
-    .regex(CUSTOMER_PINCODE_PATTERN, "Pincode must be 6 digits and start with 1-9")
+    .regex(
+      CUSTOMER_PINCODE_PATTERN,
+      "Pincode must be 6 digits and start with 1-9"
+    )
 }
 
 export function customerIfsc() {
@@ -134,8 +177,7 @@ export function customerPan() {
     .trim()
     .max(10, "PAN must not exceed 10 characters")
     .refine(
-      (v) =>
-        v === "" || CUSTOMER_PAN_PATTERN.test(v.trim().toUpperCase()),
+      (v) => v === "" || CUSTOMER_PAN_PATTERN.test(v.trim().toUpperCase()),
       "Enter a valid PAN (e.g. ABCDE1234F)"
     )
 }

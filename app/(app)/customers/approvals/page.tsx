@@ -129,7 +129,7 @@ function CustomerApprovalsContent() {
       },
       {
         id: "readiness",
-        header: "Approval readiness",
+        header: "Verification",
         cell: ({ row }) => {
           const { kycBankComplete, kycCount, hasBank } = row.original
           return (
@@ -137,12 +137,12 @@ function CustomerApprovalsContent() {
               {kycBankComplete ? (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                   <ShieldCheck className="size-3.5" aria-hidden="true" />
-                  Ready to approve
+                  All entries verified
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
                   <AlertTriangle className="size-3.5" aria-hidden="true" />
-                  Verification incomplete
+                  Entries pending
                 </span>
               )}
               <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -157,7 +157,7 @@ function CustomerApprovalsContent() {
         id: "submitted",
         header: "Created",
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
+          <span className="text-sm whitespace-nowrap text-muted-foreground">
             {formatDateTime(row.original.createdAt)}
           </span>
         ),
@@ -170,12 +170,11 @@ function CustomerApprovalsContent() {
           const transitions = lifecycleActionsFor(c.lifecycleStatus).filter(
             (t) => has(t.permission)
           )
-          const isCreator =
-            !!currentUserUuid && c.createdBy === currentUserUuid
+          const isCreator = !!currentUserUuid && c.createdBy === currentUserUuid
           return (
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 aria-label="Row actions"
               >
                 <MoreHorizontal className="size-4" />
@@ -197,32 +196,32 @@ function CustomerApprovalsContent() {
                         Review
                       </DropdownMenuLabel>
                       {transitions.map((t) => {
-                      const blocked =
-                        isCreator &&
-                        (t.action === "approve" ||
-                          t.action === "reject" ||
-                          t.action === "rework")
-                      return (
-                        <DropdownMenuItem
-                          key={t.action}
-                          variant={t.destructive ? "destructive" : "default"}
-                          disabled={blocked}
-                          title={
-                            blocked
-                              ? "You cannot review a customer you created."
-                              : undefined
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (blocked) return
-                            setTarget({ customer: c, action: t.action })
-                          }}
-                        >
-                          <t.icon className="mr-2 size-4" />
-                          {t.label}
-                        </DropdownMenuItem>
-                      )
-                    })}
+                        const blocked =
+                          isCreator &&
+                          (t.action === "approve" ||
+                            t.action === "reject" ||
+                            t.action === "rework")
+                        return (
+                          <DropdownMenuItem
+                            key={t.action}
+                            variant={t.destructive ? "destructive" : "default"}
+                            disabled={blocked}
+                            title={
+                              blocked
+                                ? "You cannot review a customer you created."
+                                : undefined
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (blocked) return
+                              setTarget({ customer: c, action: t.action })
+                            }}
+                          >
+                            <t.icon className="mr-2 size-4" />
+                            {t.label}
+                          </DropdownMenuItem>
+                        )
+                      })}
                     </DropdownMenuGroup>
                   </>
                 ) : null}
@@ -252,9 +251,9 @@ function CustomerApprovalsContent() {
       <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <p>
-          Approval requires one verified KYC entry, no pending KYC entries and a
-          verified bank account. You cannot review a customer you created
-          yourself.
+          Pending KYC or bank entries do not block approval — they stay on file
+          for follow-up after activation. You cannot review a customer you
+          created yourself.
         </p>
       </div>
 
@@ -277,9 +276,7 @@ function CustomerApprovalsContent() {
         onRetry={() => void refetch()}
         empty={{
           icon: ShieldCheck,
-          title: search
-            ? "No matching customers"
-            : "Nothing to approve",
+          title: search ? "No matching customers" : "Nothing to approve",
           description: search
             ? "Try a different search."
             : "Submitted customers from your team will appear here.",
