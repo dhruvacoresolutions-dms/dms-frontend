@@ -35,8 +35,6 @@ import {
   // Inventory Management
   Warehouse,
   Boxes,
-  Recycle,
-  PackageOpen,
   SlidersHorizontal,
   // Master Management
   Store,
@@ -326,6 +324,34 @@ export const mainNav: MainNav = [
   },
 ]
 
+/** Inventory — distributor godowns and stock documents. */
+export const inventoryNav: MainNav = [
+  {
+    title: "Godown Management",
+    url: "/inventory/godown-warehouse",
+    icon: Warehouse,
+    permission: PERMISSIONS.GODOWN.VIEW,
+  },
+  {
+    title: "Stock Adjustment",
+    url: "/inventory/stock-adjustment",
+    icon: SlidersHorizontal,
+    permission: PERMISSIONS.STOCK_ADJUSTMENT.VIEW,
+  },
+  {
+    title: "Stock Transfer",
+    url: "/inventory/stock-transfer",
+    icon: ArrowRightLeft,
+    permission: PERMISSIONS.STOCK_TRANSFER.VIEW,
+  },
+  {
+    title: "Stock Summary",
+    url: "/inventory/stock-summary",
+    icon: Boxes,
+    permission: PERMISSIONS.STOCK_SUMMARY.VIEW,
+  },
+]
+
 /** Sales Force Automation — visit planning and field-sales execution. */
 export const sfaNav: MainNav = [
   {
@@ -359,6 +385,12 @@ export const primaryNav: MainNav = [
     url: "#",
     icon: Route,
     items: flattenNav(sfaNav),
+  },
+  {
+    title: "Inventory",
+    url: "#",
+    icon: Warehouse,
+    items: flattenNav(inventoryNav),
   },
   {
     title: "Organization",
@@ -518,38 +550,7 @@ export const navGroups: NavGroup[] = [
   {
     label: "Inventory Management",
     icon: Warehouse,
-    items: [
-      {
-        title: "Godown/Warehouse",
-        url: "/inventory/godown-warehouse",
-        icon: Warehouse,
-      },
-      {
-        title: "Batch Transfer",
-        url: "/inventory/batch-transfer",
-        icon: ArrowRightLeft,
-      },
-      {
-        title: "Salvage Management",
-        url: "/inventory/salvage-management",
-        icon: Recycle,
-      },
-      {
-        title: "Opening Stock",
-        url: "/inventory/opening-stock",
-        icon: PackageOpen,
-      },
-      {
-        title: "Stock Adjustment",
-        url: "/inventory/stock-adjustment",
-        icon: SlidersHorizontal,
-      },
-      {
-        title: "Stock Transfer",
-        url: "/inventory/stock-transfer",
-        icon: Truck,
-      },
-    ],
+    items: [...inventoryNav],
   },
   {
     label: "Master Management",
@@ -653,6 +654,7 @@ const allNav = [
   ...productPricingNav,
   ...companyCalendarNav,
   ...sfaNav,
+  ...inventoryNav,
   ...flatGroupItems,
 ]
 

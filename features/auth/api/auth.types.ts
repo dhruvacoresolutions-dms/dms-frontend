@@ -22,6 +22,13 @@ export type User = {
   firmName?: string | null
   distributorCode?: string | null
   profileName?: string | null
+  /** Actor classification from `GET /auth/me` (`COMPANY_USER` | `DISTRIBUTOR_USER`). */
+  actorType?: "COMPANY_USER" | "DISTRIBUTOR_USER" | string | null
+  /**
+   * The single distributor a `DISTRIBUTOR_USER` is scoped to. Inventory routes
+   * must pin their path to this value instead of offering a selector.
+   */
+  distributorUuid?: string | null
 }
 
 export type UserContext = "PLATFORM" | "COMPANY"
