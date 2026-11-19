@@ -18,6 +18,10 @@ export type User = {
   firmName?: string | null
   distributorCode?: string | null
   profileName?: string | null
+  /** Actor classification from `GET /auth/me` (`COMPANY_USER` | `DISTRIBUTOR_USER`). */
+  actorType?: "COMPANY_USER" | "DISTRIBUTOR_USER" | string | null
+  /** Distributor scope for distributor logins; pins every inventory route. */
+  distributorUuid?: string | null
 }
 
 export type SessionMode = "PLATFORM_STATELESS" | "TENANT_MANAGED"
